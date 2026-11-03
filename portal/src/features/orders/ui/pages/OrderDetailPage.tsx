@@ -5,12 +5,11 @@ import { money } from "@/shared/lib/format";
 import { QueryState } from "@/shared/ui/QueryState";
 
 import { useOrder } from "../../hooks/useOrders";
-import { ErpWritePanel } from "../components/ErpWritePanel";
 import { OrderActions } from "../components/OrderActions";
 import { OrderStatusBadge } from "../components/OrderStatusBadge";
 import { OrderTimeline } from "../components/OrderTimeline";
 
-/** One order: its lines (copied from the accepted version), ERP write, actions and timeline. */
+/** One order: its lines (copied from the accepted version), actions and timeline. */
 export function OrderDetailPage() {
   const { orderId = "" } = useParams();
   const query = useOrder(orderId);
@@ -31,8 +30,6 @@ export function OrderDetailPage() {
             <p className="muted">
               From <Link to={`/quotations/${order.quotation_id}`}>{order.quotation_number}</Link>{" "}
               version {order.version}
-              {order.erp_order_id && <> · ERP order {order.erp_order_id}</>}
-              {order.erp_customer && <> · ERP customer {order.erp_customer}</>}
             </p>
             {order.hold_reason && <p className="notice">On hold: {order.hold_reason}</p>}
             <section className="card">
@@ -66,7 +63,6 @@ export function OrderDetailPage() {
                 <strong>Total {money(order.total, order.currency)}</strong>
               </p>
             </section>
-            {order.fulfilment === "erp" && <ErpWritePanel order={order} />}
             {can("orders:manage") && <OrderActions order={order} />}
             <OrderTimeline events={order.events} />
           </>

@@ -25,7 +25,7 @@ from sales_platform.seed import seed_demo_tenants
 type ApiKeyFactory = Callable[[UUID, Role], str]
 
 _INTAKE_TABLES = (
-    "order_events, order_operations, order_lines, orders, catalogue_sync_runs, "
+    "order_events, order_lines, orders, "
     "connection_routes, approval_reply_prompts, manager_reply_classifications, media_links, "
     "customer_action_refs, customer_sessions, conversation_messages, conversations, "
     "contact_identities, contacts, "

@@ -1,15 +1,17 @@
 """Idempotently insert fictional tenants, people, memberships, policies and connections.
 
 Runs with owner credentials, development/test only. Existing rows are left unchanged. Subjects
-use the reserved .example domain. Each demo business gets one `simulated` connection (ADR 0018):
-the fake manager phone and its demo catalogue. Phase 2: the demo businesses are live, each demo
-person is a verified user and, when SALES_DEMO_PASSWORD is set, can also sign in with that
-password (user answer Q24); the dev login keeps working either way. Phase 3: a third, local
-demo business keeps its products in our own catalogue (Q20), seeded with the same synthetic
-industrial data, so the product screens can be tried without touching the other demos.
+use the reserved .example domain. Each demo business gets the `simulated` connection (ADR 0018),
+the fake manager phone, and our own product list holding its synthetic demo products, prices and
+stock (DEMO_CATALOGUES, user decision 2026-11-03: mock product data in the database, no ERP).
+Phase 2: the demo businesses are live, each demo person is a verified user and, when
+SALES_DEMO_PASSWORD is set, can also sign in with that password (user answer Q24); the dev
+login keeps working either way. The local demo business uses the industrial products.
 """
 
 import hashlib
+from dataclasses import dataclass
+from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
@@ -23,7 +25,6 @@ from sales_platform.accounts.persistence.tables import (
     User,
     UserCredential,
 )
-from sales_platform.catalogue.adapters.erp.simulated import SimulatedCatalogue, demo_catalogue
 from sales_platform.catalogue.domain.catalogue_admin import (
     DEFAULT_LOCATION,
     LOCAL_PRICE_LIST,
@@ -38,8 +39,8 @@ from sales_platform.catalogue.persistence.tables import (
     CatalogueStockRow,
 )
 from sales_platform.composition import build_secret_store
-from sales_platform.integrations.domain.connections import ConnectionStatus, Purpose
-from sales_platform.integrations.persistence.connections import ensure_connection, record_event
+from sales_platform.integrations.domain.connections import Purpose
+from sales_platform.integrations.persistence.connections import ensure_connection
 from sales_platform.integrations.persistence.tables import ConnectionRow
 from sales_platform.platform.config import Settings
 from sales_platform.platform.domain.money import RoundingMode
@@ -59,6 +60,83 @@ DEMO_TENANTS = (
     (OFFICE_TENANT, "Demo Office Equipment"),
     (LOCAL_TENANT, "Demo Local Catalogue"),
 )
+
+
+@dataclass(frozen=True)
+class DemoProduct:
+    """One synthetic product. stock: None = "not tracked" (unknown); prices: (amount, currency,
+    start) in order, so a later start replaces an earlier one."""
+
+    sku: str
+    name: str
+    category: str
+    prices: tuple[tuple[Decimal, str, datetime], ...] = ()
+    stock: Decimal | None = None
+    unit: str = "each"
+    minimum_quantity: Decimal = Decimal(1)
+    quantity_step: Decimal = Decimal(1)
+
+
+_FROM_2025 = datetime(2025, 1, 1, tzinfo=UTC)
+_FROM_2026 = datetime(2026, 1, 1, tzinfo=UTC)
+
+# Two fictional businesses whose items exercise each pricing and stock rule.
+DEMO_CATALOGUES: dict[str, tuple[DemoProduct, ...]] = {
+    "industrial": (
+        DemoProduct(
+            "IND-FAN-450",
+            "Industrial exhaust fan 450 mm",
+            "Exhaust fans",
+            ((Decimal("3990.00"), "INR", _FROM_2025), (Decimal("4250.00"), "INR", _FROM_2026)),
+            Decimal(120),
+        ),
+        DemoProduct(
+            "IND-BOLT-M8",
+            "M8 hex bolt, zinc plated",
+            "Fasteners",
+            ((Decimal("2.375"), "INR", _FROM_2026),),
+            Decimal(5000),
+            minimum_quantity=Decimal(100),
+            quantity_step=Decimal(50),
+        ),
+        # Stock not tracked: quotations show "unknown", never a guessed number.
+        DemoProduct(
+            "IND-CABLE-2C",
+            "2-core power cable",
+            "Cables",
+            ((Decimal("38.40"), "INR", _FROM_2026),),
+            None,
+            unit="metre",
+            quantity_step=Decimal("0.5"),
+        ),
+        # Deliberately no price: it must never be quoted as zero.
+        DemoProduct("IND-PUMP-2HP", "2 HP centrifugal pump", "Pumps", (), Decimal(4)),
+        # A second fan size makes "exhaust fans" genuinely ambiguous in demos and tests.
+        DemoProduct(
+            "IND-FAN-600",
+            "Industrial exhaust fan 600 mm",
+            "Exhaust fans",
+            ((Decimal("6890.00"), "INR", _FROM_2026),),
+            Decimal(15),
+        ),
+    ),
+    "office": (
+        DemoProduct(
+            "OFF-CHAIR-ERG",
+            "Ergonomic office chair",
+            "Office chairs",
+            ((Decimal("189.99"), "EUR", _FROM_2026),),
+            Decimal(0),
+        ),
+        DemoProduct(
+            "OFF-DESK-160",
+            "Desk 160 x 80 cm",
+            "Desks",
+            ((Decimal("349.50"), "EUR", _FROM_2026),),
+            Decimal(3),
+        ),
+    ),
+}
 
 DEMO_MEMBERSHIPS = (
     (INDUSTRIAL_TENANT, "admin@industrial.example", Role.ADMINISTRATOR),
@@ -80,14 +158,15 @@ DEMO_POLICIES = (
 )
 
 
-# The development provider (dev-only, refused in production) and its demo catalogue names.
+# The development provider (dev-only, refused in production): the fake manager phone.
 SIMULATED_PROVIDER = "simulated"
 SIMULATED_ACCOUNT = "simulated-local"
 DEMO_CONNECTIONS = (
     (INDUSTRIAL_TENANT, "industrial"),
     (OFFICE_TENANT, "office"),
+    (LOCAL_TENANT, "industrial"),
 )
-# The local demo: our own catalogue, plus the simulated phone for approvals only.
+# Every demo business: our own product list, plus the simulated phone for approvals.
 LOCAL_CATALOGUE_PROVIDER = "local_catalogue"
 LOCAL_CATALOGUE_ACCOUNT = "local"
 SEED_ACTOR = "seed"
@@ -135,25 +214,6 @@ def _enable_hook(
             webhook_token_sha256=hashlib.sha256(token.encode("utf-8")).hexdigest(),
         )
     )
-
-
-def _keep_demo_catalogue(connection: Connection, tenant_id: UUID) -> None:
-    """The ERP demos quote from the simulated catalogue. Migration 0011 gives a business our
-    product list when it has no active source (e.g. after a downgrade and upgrade before this
-    seed ran); such a second source is disabled here, as one business has one source."""
-    others = connection.execute(
-        update(ConnectionRow)
-        .where(
-            ConnectionRow.tenant_id == tenant_id,
-            ConnectionRow.status == ConnectionStatus.ACTIVE.value,
-            ConnectionRow.purposes.contains([Purpose.CATALOGUE.value]),
-            ConnectionRow.provider_key != SIMULATED_PROVIDER,
-        )
-        .values(status=ConnectionStatus.DISABLED.value, updated_at=func.now())
-        .returning(ConnectionRow.id)
-    ).scalars()
-    for connection_id in list(others):
-        record_event(connection, tenant_id, connection_id, "status_changed", SEED_ACTOR)
 
 
 def _demo_people(connection: Connection, password: str | None) -> None:
@@ -242,16 +302,14 @@ def seed_demo_tenants(settings: Settings) -> None:
                 )
             for tenant_id, catalogue in DEMO_CONNECTIONS:
                 _set_tenant(connection, tenant_id)
-                _keep_demo_catalogue(connection, tenant_id)
                 connection_id = ensure_connection(
                     connection,
                     tenant_id=tenant_id,
                     provider_key=SIMULATED_PROVIDER,
                     account_ref=SIMULATED_ACCOUNT,
-                    display_name="Simulated phone and demo catalogue",
-                    purposes=[Purpose.MANAGER_APPROVALS, Purpose.CATALOGUE],
-                    created_by="seed",
-                    config={"catalogue": catalogue},
+                    display_name="Simulated phone",
+                    purposes=[Purpose.MANAGER_APPROVALS],
+                    created_by=SEED_ACTOR,
                 )
                 if settings.simulated_channel_secret is not None:
                     _enable_hook(
@@ -261,43 +319,24 @@ def seed_demo_tenants(settings: Settings) -> None:
                         settings.simulated_channel_secret.get_secret_value(),
                         build_secret_store(settings),
                     )
-            _set_tenant(connection, LOCAL_TENANT)
-            # Migration 0011 may already have given it a product source (one per business).
-            has_source = connection.execute(
-                select(ConnectionRow.id).where(
-                    ConnectionRow.tenant_id == LOCAL_TENANT,
-                    ConnectionRow.status == "active",
-                    ConnectionRow.purposes.contains([Purpose.CATALOGUE.value]),
-                )
-            ).first()
-            if has_source is None:
                 ensure_connection(
                     connection,
-                    tenant_id=LOCAL_TENANT,
+                    tenant_id=tenant_id,
                     provider_key=LOCAL_CATALOGUE_PROVIDER,
                     account_ref=LOCAL_CATALOGUE_ACCOUNT,
                     display_name="Our product list",
                     purposes=[Purpose.CATALOGUE],
                     created_by=SEED_ACTOR,
                 )
-            ensure_connection(
-                connection,
-                tenant_id=LOCAL_TENANT,
-                provider_key=SIMULATED_PROVIDER,
-                account_ref=SIMULATED_ACCOUNT,
-                display_name="Simulated phone",
-                purposes=[Purpose.MANAGER_APPROVALS],
-                created_by=SEED_ACTOR,
-            )
-            seed_local_catalogue(connection, LOCAL_TENANT, demo_catalogue("industrial"))
+                seed_local_catalogue(connection, tenant_id, DEMO_CATALOGUES[catalogue])
     finally:
         engine.dispose()
 
 
 def seed_local_catalogue(
-    connection: Connection, tenant_id: UUID, catalogue: SimulatedCatalogue
+    connection: Connection, tenant_id: UUID, products: tuple[DemoProduct, ...]
 ) -> None:
-    """Copy a synthetic catalogue into our own catalogue tables, once (owner role, dev/test).
+    """Copy synthetic demo products into our own catalogue tables, once (owner role, dev/test).
 
     Prices keep their original start dates (fixtures may be back-dated; staff entries may not)
     and become revisions of the one "standard" list. Stock counts are as of now. Nothing is
@@ -309,7 +348,7 @@ def seed_local_catalogue(
     ).first():
         return
     categories: dict[str, UUID] = {}
-    for name in sorted({p.category for p in catalogue.products.values() if p.category}):
+    for name in sorted({product.category for product in products}):
         categories[name] = uuid4()
         connection.execute(
             insert(CatalogueCategory).values(
@@ -320,12 +359,12 @@ def seed_local_catalogue(
                 updated_by=SEED_ACTOR,
             )
         )
-    for sku, product in sorted(catalogue.products.items()):
+    for product in sorted(products, key=lambda item: item.sku):
         product_id = uuid4()
         fields = ProductFields(
-            name=product.description,
+            name=product.name,
             unit=product.unit,
-            category_id=categories.get(product.category or ""),
+            category_id=categories[product.category],
             minimum_quantity=product.minimum_quantity,
             quantity_step=product.quantity_step,
         )
@@ -333,15 +372,14 @@ def seed_local_catalogue(
             insert(CatalogueProductRow).values(
                 id=product_id,
                 tenant_id=tenant_id,
-                sku=sku,
-                search_terms=sorted(product_terms(sku, product.description, product.category)),
+                sku=product.sku,
+                search_terms=sorted(product_terms(product.sku, product.name, product.category)),
                 created_by=SEED_ACTOR,
                 updated_by=SEED_ACTOR,
                 **fields_as_dict(fields),
             )
         )
-        ordered = sorted(catalogue.prices.get(sku, ()), key=lambda price: price.effective_from)
-        for revision, price in enumerate(ordered, start=1):
+        for revision, (amount, currency, start) in enumerate(product.prices, start=1):
             connection.execute(
                 insert(CataloguePriceRow).values(
                     id=uuid4(),
@@ -349,28 +387,27 @@ def seed_local_catalogue(
                     product_id=product_id,
                     price_list=LOCAL_PRICE_LIST,
                     revision=revision,
-                    currency=price.currency,
+                    currency=currency,
                     unit=product.unit,
-                    unit_price=price.unit_price,
-                    effective_from=price.effective_from,
+                    unit_price=amount,
+                    effective_from=start,
                     command_id=uuid4(),
                     created_by=SEED_ACTOR,
                 )
             )
-        if sku in catalogue.stock:
-            connection.execute(
-                insert(CatalogueStockRow).values(
-                    id=uuid4(),
-                    tenant_id=tenant_id,
-                    product_id=product_id,
-                    location_code=DEFAULT_LOCATION,  # one location per business (Q21)
-                    quantity=catalogue.stock[sku],
-                    unit=product.unit,
-                    as_of=func.now(),
-                    command_id=uuid4(),
-                    recorded_by=SEED_ACTOR,
-                )
+        connection.execute(
+            insert(CatalogueStockRow).values(
+                id=uuid4(),
+                tenant_id=tenant_id,
+                product_id=product_id,
+                location_code=DEFAULT_LOCATION,
+                quantity=product.stock,  # None: "not tracked"
+                unit=product.unit,
+                as_of=func.now(),
+                command_id=uuid4(),
+                recorded_by=SEED_ACTOR,
             )
+        )
 
 
 def main() -> None:

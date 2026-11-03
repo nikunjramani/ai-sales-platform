@@ -11,7 +11,6 @@ from sqlalchemy import Engine, text
 from sqlalchemy.exc import ProgrammingError
 
 from sales_platform.api_app import create_app
-from sales_platform.catalogue.adapters.erp.simulated import SimulatedErp, demo_catalogues
 from sales_platform.catalogue.domain.catalogue import Product
 from sales_platform.catalogue.ports.erp import ErpError, ErpErrorCode
 from sales_platform.enquiries.adapters.documents.text import PdfAndTextReader
@@ -42,6 +41,7 @@ from sales_platform.quotations.application.pricing import QuotationPricingServic
 from sales_platform.quotations.domain.pricing import PricedQuotation
 from sales_platform.quotations.persistence.pricing_policy import SqlPricingPolicyReader
 from sales_platform.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
+from tests.support.demo_catalogue import DemoCatalogue
 
 type ApiKeyFactory = Callable[[UUID, Role], str]
 
@@ -71,8 +71,8 @@ def client(integration_settings: Settings, runtime_engine: Engine) -> Iterator[T
 
 
 @pytest.fixture
-def erp() -> SimulatedErp:
-    return SimulatedErp(demo_catalogues(INDUSTRIAL_TENANT, OFFICE_TENANT))
+def erp() -> DemoCatalogue:
+    return DemoCatalogue({INDUSTRIAL_TENANT: "industrial", OFFICE_TENANT: "office"})
 
 
 @pytest.fixture
@@ -85,7 +85,7 @@ def worker(
     worker_engine: Engine,
     storage: LocalObjectStorage,
     integration_settings: Settings,
-    erp: SimulatedErp,
+    erp: DemoCatalogue,
     interpreter: CountingInterpreter,
 ) -> Iterator[JobRunner]:
     store = SqlWorkflowStore(worker_engine)
@@ -151,7 +151,7 @@ def test_enquiry_is_read_matched_and_priced_by_the_calculator(
 
     # The workflow never prices. The M1 calculator turns the extracted lines into money.
     pricing = QuotationPricingService(
-        SimulatedErp(demo_catalogues(INDUSTRIAL_TENANT, OFFICE_TENANT)),
+        DemoCatalogue({INDUSTRIAL_TENANT: "industrial", OFFICE_TENANT: "office"}),
         SqlPricingPolicyReader(runtime_engine),
     )
     sales = TenantContext(
@@ -186,7 +186,7 @@ def test_progress_survives_a_worker_restart(
     worker_engine: Engine,
     storage: LocalObjectStorage,
     integration_settings: Settings,
-    erp: SimulatedErp,
+    erp: DemoCatalogue,
     interpreter: CountingInterpreter,
     owner_engine: Engine,
 ) -> None:

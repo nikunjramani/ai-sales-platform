@@ -1,11 +1,12 @@
-"""Print an M1 pricing trace using the local database and the simulated ERP.
+"""Print an M1 pricing trace using the local database and its demo products.
 
 Requires a migrated, seeded local database. Reads only; nothing is stored or sent.
 """
 
 from decimal import Decimal
 
-from sales_platform.catalogue.adapters.erp.simulated import SimulatedErp, demo_catalogues
+from sales_platform.catalogue.adapters.catalogue.local import LocalCatalogue
+from sales_platform.catalogue.persistence.catalogue import SqlCatalogueStore
 from sales_platform.enquiries.domain.requirements import RequestedLine
 from sales_platform.platform.application.tenancy import TenantContextResolver
 from sales_platform.platform.config import Settings
@@ -23,7 +24,7 @@ def main() -> None:
     try:
         resolver = TenantContextResolver(SqlMembershipReader(engine))
         service = QuotationPricingService(
-            SimulatedErp(demo_catalogues(INDUSTRIAL_TENANT, OFFICE_TENANT)),
+            LocalCatalogue(SqlCatalogueStore(engine)),
             SqlPricingPolicyReader(engine),
         )
         sales = resolver.resolve("sales@industrial.example", INDUSTRIAL_TENANT)

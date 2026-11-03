@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import type { FormEvent } from "react";
 import { Link } from "react-router";
 
 import { useCurrentTenant } from "@/features/tenant";
@@ -11,13 +11,11 @@ import { OrderStatusBadge } from "./OrderStatusBadge";
 /**
  * On an accepted quotation (exported for the quotations feature): its order, or "Create order"
  * for staff with orders:manage (also for quotations accepted before orders existed, Q14).
- * The ERP customer is optional: empty means the one the ERP connection was set up with.
  */
 export function QuotationOrderPanel({ quotationId, accepted }: { quotationId: string; accepted: boolean }) {
   const { can } = useCurrentTenant();
   const order = useQuotationOrder(quotationId);
   const create = useCreateOrder(quotationId);
-  const [customer, setCustomer] = useState("");
   if (!can("orders:view") || order.isLoading) return null;
   if (order.data) {
     return (
@@ -36,17 +34,12 @@ export function QuotationOrderPanel({ quotationId, accepted }: { quotationId: st
   if (!accepted || !can("orders:manage")) return null;
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    create.mutate(customer.trim() || null);
+    create.mutate();
   };
   return (
     <form className="card" onSubmit={submit}>
       <h2>Order</h2>
       <p className="muted">The customer accepted this quotation. No order exists yet.</p>
-      <label>
-        ERP customer (optional)
-        <input value={customer} maxLength={140} onChange={(event) => setCustomer(event.target.value)} />
-        <span className="muted small">Only used when orders are written to your ERP.</span>
-      </label>
       <button className="primary" type="submit" disabled={create.isPending}>
         Create order
       </button>

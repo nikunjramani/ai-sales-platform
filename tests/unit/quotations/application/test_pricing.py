@@ -1,14 +1,13 @@
 """Use-case tests: permissions, tenant scoping and ERP failure handling."""
 
 from collections.abc import Callable
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
 import pytest
 
-from sales_platform.catalogue.adapters.erp.simulated import SimulatedErp, demo_catalogues
 from sales_platform.catalogue.ports.erp import ErpError, ErpErrorCode
 from sales_platform.enquiries.domain.requirements import RequestedLine
 from sales_platform.platform.domain.money import Money
@@ -22,15 +21,16 @@ from sales_platform.quotations.domain.pricing import (
     StockStatus,
 )
 from sales_platform.quotations.ports.pricing_policy import PricingPolicyNotConfigured
+from tests.support.demo_catalogue import DemoCatalogue
 
 type ContextFactory = Callable[[UUID, Role], TenantContext]
 
 
 @pytest.fixture
 def service(
-    simulated_erp: SimulatedErp, policy_reader: Any, now: datetime
+    demo_catalogue: DemoCatalogue, policy_reader: Any, now: datetime
 ) -> QuotationPricingService:
-    return QuotationPricingService(simulated_erp, policy_reader, clock=lambda: now)
+    return QuotationPricingService(demo_catalogue, policy_reader, clock=lambda: now)
 
 
 @pytest.fixture
@@ -50,19 +50,19 @@ def test_sales_operator_prices_with_own_policy_and_current_price_list(
     line = outcome.lines[0]
     # The 2025 price list has expired; the 2026 entry is selected.
     assert line.unit_price == Money(Decimal("4250.00"), "INR")
-    assert line.price_evidence.price_list_id == "STD-2026"
+    assert line.price_evidence.price_list_id == "standard"
     assert outcome.total == Money(Decimal("10030.00"), "INR")
 
 
 @pytest.mark.parametrize("role", [Role.VIEWER, Role.APPROVER])
 def test_permission_is_checked_before_any_erp_call(
     service: QuotationPricingService,
-    simulated_erp: SimulatedErp,
+    demo_catalogue: DemoCatalogue,
     make_context: ContextFactory,
     industrial_tenant: UUID,
     role: Role,
 ) -> None:
-    simulated_erp.failures["get_products"] = ErpError(ErpErrorCode.UNKNOWN_OUTCOME, "not called")
+    demo_catalogue.failures["get_products"] = ErpError(ErpErrorCode.UNKNOWN_OUTCOME, "not called")
     with pytest.raises(PermissionDenied):
         service.price(make_context(industrial_tenant, role), [each("IND-FAN-450", "1")])
 
@@ -99,27 +99,10 @@ def test_demo_catalogue_exposes_each_business_case(
     assert cable.lines[0].stock.status is StockStatus.UNKNOWN
 
 
-def test_old_erp_data_is_reported_stale(
-    policy_reader: Any,
-    industrial_sales: TenantContext,
-    now: datetime,
-    industrial_tenant: UUID,
-    office_tenant: UUID,
-) -> None:
-    erp_time = now - timedelta(minutes=20)
-    stale_erp = SimulatedErp(
-        demo_catalogues(industrial_tenant, office_tenant), clock=lambda: erp_time
-    )
-    service = QuotationPricingService(stale_erp, policy_reader, clock=lambda: now)
-    outcome = service.price(industrial_sales, [each("IND-FAN-450", "1")])
-    assert isinstance(outcome, PricingRejected)
-    assert [issue.code for issue in outcome.issues] == [IssueCode.PRICE_STALE]
-
-
 def test_erp_failure_propagates_instead_of_fabricating(
-    service: QuotationPricingService, simulated_erp: SimulatedErp, industrial_sales: TenantContext
+    service: QuotationPricingService, demo_catalogue: DemoCatalogue, industrial_sales: TenantContext
 ) -> None:
-    simulated_erp.failures["get_prices"] = ErpError(ErpErrorCode.TEMPORARY_UNAVAILABLE, "down")
+    demo_catalogue.failures["get_prices"] = ErpError(ErpErrorCode.TEMPORARY_UNAVAILABLE, "down")
     with pytest.raises(ErpError) as raised:
         service.price(industrial_sales, [each("IND-FAN-450", "1")])
     assert raised.value.retryable

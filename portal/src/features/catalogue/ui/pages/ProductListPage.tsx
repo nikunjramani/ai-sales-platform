@@ -6,7 +6,6 @@ import { PageHeader } from "@/shared/ui/PageHeader";
 import { useCanEditCatalogue, useCatalogueSummary, useCategories, useProducts } from "../../hooks/useCatalogue";
 import { useProductFilters } from "../../hooks/useProductFilters";
 import { CatalogueSourceBanner } from "../components/CatalogueSourceBanner";
-import { CatalogueSyncPanel } from "../components/CatalogueSyncPanel";
 import { ProductFilters } from "../components/ProductFilters";
 import { ProductTable } from "../components/ProductTable";
 import { QueryState } from "@/shared/ui/QueryState";
@@ -42,7 +41,6 @@ export function ProductListPage() {
         }
       />
       {counts && <CatalogueSourceBanner summary={counts} />}
-      <CatalogueSyncPanel />
       {counts && (
         <p className="muted small">
           {counts.active_products} active of {counts.max_active_products.toLocaleString()} allowed ·{" "}

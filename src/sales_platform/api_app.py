@@ -37,8 +37,6 @@ from sales_platform.accounts.persistence.accounts import (
 from sales_platform.accounts.persistence.api_keys import SqlApiKeyAdminStore, SqlApiKeyReader
 from sales_platform.catalogue.api.catalogue import build_catalogue_router
 from sales_platform.catalogue.application.catalogue_admin import ProductService
-from sales_platform.catalogue.application.catalogue_sync import CatalogueSyncService
-from sales_platform.catalogue.persistence.catalogue_sync import SqlCatalogueSync
 from sales_platform.composition import (
     DEV_PUBLIC_BASE_URL,
     build_catalogue_store,
@@ -247,7 +245,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         build_catalogue_router(
             auth,
             products,
-            CatalogueSyncService(connections, runtime.registry, SqlCatalogueSync(engine)),
         )
     )
     # The signed approval link page (phase 5, P5-14): sign-in, then one click.

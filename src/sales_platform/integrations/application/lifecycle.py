@@ -47,7 +47,7 @@ from sales_platform.integrations.ports.providers import (
     ProvisionStatus,
     TestResult,
 )
-from sales_platform.platform.domain.jobs import JobKind, PermanentJobError
+from sales_platform.platform.domain.jobs import PermanentJobError
 from sales_platform.platform.domain.tenancy import Permission, TenantContext
 from sales_platform.platform.ports.jobs import ClaimedJob
 from sales_platform.platform.ports.secrets import SecretStore
@@ -308,13 +308,8 @@ class ConnectionLifecycle:
         return EnableOutcome(updated, pending, _detail(updated))
 
     def _first_jobs(self, connection: Connection) -> tuple[tuple[str, Mapping[str, str]], ...]:
-        """A product source that copies its catalogue starts with a first copy at once."""
-        provider = self._registry.find(connection.provider_key)
-        abilities = None if provider is None else provider.capabilities.catalogue
-        if Purpose.CATALOGUE not in connection.purposes or abilities is None or not abilities.sync:
-            return ()
-        payload = {"connection_id": str(connection.connection_id), "trigger": "connected"}
-        return ((JobKind.SYNC_CATALOGUE.value, payload),)
+        """Jobs to queue when a tool is connected (none since ADR 0027 removed catalogue sync)."""
+        return ()
 
     def _own(self, context: TenantContext, connection_id: UUID) -> Connection:
         connection = self._connections.get(context.tenant_id, connection_id)
@@ -346,9 +341,8 @@ class ConnectionLifecycle:
             raise ValueError(str(error) or "This tool cannot do that") from None
 
 
-# A business has one product source and one order destination (ADR 0023): enabling another
-# replaces the active one.
-EXCLUSIVE_PURPOSES = (Purpose.CATALOGUE, Purpose.ORDERS)
+# A business has one product source (ADR 0023): enabling another replaces the active one.
+EXCLUSIVE_PURPOSES = (Purpose.CATALOGUE,)
 
 
 def _exclusive(connection: Connection) -> tuple[str, ...]:

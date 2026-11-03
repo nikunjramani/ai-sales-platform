@@ -5,7 +5,6 @@ import hashlib
 from collections.abc import Iterator
 from dataclasses import replace
 from datetime import datetime
-from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -297,9 +296,7 @@ def test_changed_prices_and_erp_failures_are_explained(
     assert unavailable.status_code == 503 and "nothing was recorded" in unavailable.json()["detail"]
     del harness.erp.failures["get_prices"]
 
-    catalogue = harness.erp.catalogue(industrial_tenant)
-    [price] = catalogue.prices["IND-FAN-450"][-1:]
-    catalogue.prices["IND-FAN-450"] = (replace(price, unit_price=Decimal("4500.00")),)
+    harness.erp.set_price(industrial_tenant, "IND-FAN-450", "4500.00")
     refused = client.post(issued["response_path"], json=body, headers=headers)
     assert refused.status_code == 409
     detail = refused.json()["detail"]

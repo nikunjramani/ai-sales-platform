@@ -21,7 +21,7 @@ describe("HomePage", () => {
     expect(screen.getByText("Customer requests that need you")).toBeTruthy();
     // The test approver may not draft, see orders or messages: those cards and lists stay away.
     expect(screen.queryByText("Quotes that need changes")).toBeNull();
-    expect(screen.queryByText("Orders that need attention")).toBeNull();
+    expect(screen.queryByText("Orders on hold")).toBeNull();
     const urls = fetch.mock.calls.map(([url]) => url);
     expect(urls.some((url) => url.includes("/orders") || url.includes("/conversations"))).toBe(false);
   });

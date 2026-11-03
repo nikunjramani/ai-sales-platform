@@ -8,7 +8,6 @@ from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import (
-    CheckConstraint,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
@@ -84,8 +83,6 @@ class CatalogueProductRow(Base):
     quantity_step: Mapped[Decimal] = mapped_column(Numeric())
     search_terms: Mapped[list[str]] = mapped_column(ARRAY(Text))
     source: Mapped[str] = mapped_column(String(16), server_default=text("'manual'"))
-    external_id: Mapped[str | None] = mapped_column(String(200))
-    synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     archived_by: Mapped[str | None] = mapped_column(String(200))
     row_version: Mapped[int] = mapped_column(Integer, server_default=text("1"))
@@ -192,42 +189,3 @@ class CatalogueChange(Base):
     changes: Mapped[dict[str, object]] = mapped_column(JSONB)
     actor: Mapped[str] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-
-
-class CatalogueSyncRun(Base):
-    """One copy of a product source's catalogue into ours (phase 6, migration 0014)."""
-
-    __tablename__ = "catalogue_sync_runs"
-    __table_args__ = (
-        ForeignKeyConstraint(
-            ["tenant_id", "connection_id"],
-            ["connections.tenant_id", "connections.id"],
-            name="fk_catalogue_sync_runs_connection",
-        ),
-        CheckConstraint(
-            "trigger IN ('schedule', 'manual', 'connected')", name="ck_catalogue_sync_runs_trigger"
-        ),
-        CheckConstraint(
-            "status IN ('running', 'succeeded', 'failed')", name="ck_catalogue_sync_runs_status"
-        ),
-        CheckConstraint(
-            "(status = 'running') = (finished_at IS NULL)", name="ck_catalogue_sync_runs_finished"
-        ),
-        Index(
-            "ix_catalogue_sync_runs_latest", "tenant_id", "connection_id", text("started_at DESC")
-        ),
-    )
-
-    id: Mapped[UUID] = mapped_column(primary_key=True)
-    tenant_id: Mapped[UUID] = mapped_column(ForeignKey("tenants.id"))
-    connection_id: Mapped[UUID] = mapped_column()
-    trigger: Mapped[str] = mapped_column(String(16))
-    status: Mapped[str] = mapped_column(String(16))
-    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    counts: Mapped[dict[str, object] | None] = mapped_column(JSONB)
-    issues: Mapped[list[dict[str, object]]] = mapped_column(
-        JSONB, server_default=text("'[]'::jsonb")
-    )
-    error: Mapped[str | None] = mapped_column(String(500))
-    next_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
