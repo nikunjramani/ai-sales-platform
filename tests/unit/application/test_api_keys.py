@@ -3,14 +3,14 @@ from uuid import UUID
 
 import pytest
 
-from quotation_app.application.api_keys import (
+from sales_platform.application.api_keys import (
     ApiKeyAuthenticator,
     AuthenticationFailed,
     generate_api_key,
     parse_token,
 )
-from quotation_app.domain.tenancy import Role
-from quotation_app.ports.api_keys import ApiKeyRecord
+from sales_platform.domain.tenancy import Role
+from sales_platform.ports.api_keys import ApiKeyRecord
 
 
 def register(reader: Any, tenant: UUID, *, revoked: bool = False) -> str:

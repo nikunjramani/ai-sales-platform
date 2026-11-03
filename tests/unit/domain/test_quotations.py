@@ -8,11 +8,11 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.adapters.erp.simulated import SimulatedErp
-from quotation_app.application.pricing import QuotationPricingService
-from quotation_app.domain.messages import TemplateKey, render_template
-from quotation_app.domain.pricing import PricedQuotation, RequestedLine
-from quotation_app.domain.quotations import (
+from sales_platform.adapters.erp.simulated import SimulatedErp
+from sales_platform.application.pricing import QuotationPricingService
+from sales_platform.domain.messages import TemplateKey, render_template
+from sales_platform.domain.pricing import PricedQuotation, RequestedLine
+from sales_platform.domain.quotations import (
     ApprovalAction,
     DecisionCommand,
     ReviewPacket,
@@ -20,7 +20,7 @@ from quotation_app.domain.quotations import (
     quotation_content,
     quotation_number,
 )
-from quotation_app.domain.tenancy import Role, TenantContext
+from sales_platform.domain.tenancy import Role, TenantContext
 
 
 @pytest.fixture

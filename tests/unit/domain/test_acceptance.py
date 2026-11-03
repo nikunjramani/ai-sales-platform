@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from quotation_app.domain.acceptance import (
+from sales_platform.domain.acceptance import (
     DEFAULT_QUOTE_VALIDITY_DAYS,
     CustomerStatus,
     ResponseAction,
@@ -14,7 +14,7 @@ from quotation_app.domain.acceptance import (
     price_differences,
     valid_until,
 )
-from quotation_app.domain.quotations import QuotationStatus
+from sales_platform.domain.quotations import QuotationStatus
 
 NOW = datetime(2026, 10, 23, 10, 0, tzinfo=UTC)
 LATER = NOW + timedelta(days=7)

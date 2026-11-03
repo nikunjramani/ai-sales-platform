@@ -7,10 +7,10 @@ from fastapi.testclient import TestClient
 from pydantic import SecretStr
 from sqlalchemy.exc import OperationalError
 
-from quotation_app.api.app import create_app
-from quotation_app.config import Settings
+from sales_platform.api.app import create_app
+from sales_platform.config import Settings
 
-DATABASE_READY = "quotation_app.api.app.database_ready"
+DATABASE_READY = "sales_platform.api.app.database_ready"
 
 
 @pytest.fixture

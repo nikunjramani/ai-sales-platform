@@ -9,12 +9,12 @@ import pytest
 from sqlalchemy import Engine, text
 from sqlalchemy.exc import DBAPIError, ProgrammingError
 
-from quotation_app.domain.catalogue_admin import InvalidCatalogueEntry, ProductFields
-from quotation_app.domain.catalogue_search import query_terms
-from quotation_app.domain.tenancy import Role, TenantContext
-from quotation_app.persistence.catalogue import SqlCatalogueStore
-from quotation_app.persistence.seed import INDUSTRIAL_TENANT, LOCAL_TENANT
-from quotation_app.ports.catalogue_admin import (
+from sales_platform.domain.catalogue_admin import InvalidCatalogueEntry, ProductFields
+from sales_platform.domain.catalogue_search import query_terms
+from sales_platform.domain.tenancy import Role, TenantContext
+from sales_platform.persistence.catalogue import SqlCatalogueStore
+from sales_platform.persistence.seed import INDUSTRIAL_TENANT, LOCAL_TENANT
+from sales_platform.ports.catalogue_admin import (
     CatalogueLimitReached,
     CategoryNameTaken,
     CategoryNotFound,

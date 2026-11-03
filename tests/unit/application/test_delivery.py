@@ -13,14 +13,14 @@ from uuid import UUID, uuid4
 import pytest
 from pypdf import PdfReader
 
-from quotation_app.application.messaging import NOT_LIVE
-from quotation_app.domain.documents import DeliveryRecord, DeliveryStatus
-from quotation_app.domain.jobs import JobKind, PermanentJobError
-from quotation_app.domain.messages import MessageStatus
-from quotation_app.domain.quotations import ApprovalAction
-from quotation_app.domain.tenancy import TenantStatus
-from quotation_app.ports.jobs import ClaimedJob
-from quotation_app.ports.providers import SendRejected, SendUncertain
+from sales_platform.application.messaging import NOT_LIVE
+from sales_platform.domain.documents import DeliveryRecord, DeliveryStatus
+from sales_platform.domain.jobs import JobKind, PermanentJobError
+from sales_platform.domain.messages import MessageStatus
+from sales_platform.domain.quotations import ApprovalAction
+from sales_platform.domain.tenancy import TenantStatus
+from sales_platform.ports.jobs import ClaimedJob
+from sales_platform.ports.providers import SendRejected, SendUncertain
 
 FAN = ("IND-FAN-450", "2", "each")
 MANAGER = "manager@industrial.example"

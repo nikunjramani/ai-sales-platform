@@ -11,8 +11,8 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy import Engine, text
 
-from quotation_app.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
-from quotation_app.persistence.tenancy import tenant_transaction
+from sales_platform.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
+from sales_platform.persistence.tenancy import tenant_transaction
 
 pytestmark = pytest.mark.usefixtures("fresh_accounts")
 
@@ -20,9 +20,9 @@ pytestmark = pytest.mark.usefixtures("fresh_accounts")
 def alembic(*arguments: str) -> None:
     environment = {
         **os.environ,
-        "QUOTATION_ENVIRONMENT": "test",
-        "QUOTATION_DATABASE_URL": os.environ["TEST_DATABASE_URL"],
-        "QUOTATION_MIGRATION_DATABASE_URL": os.environ["TEST_MIGRATION_DATABASE_URL"],
+        "SALES_ENVIRONMENT": "test",
+        "SALES_DATABASE_URL": os.environ["TEST_DATABASE_URL"],
+        "SALES_MIGRATION_DATABASE_URL": os.environ["TEST_MIGRATION_DATABASE_URL"],
     }
     subprocess.run([sys.executable, "-m", "alembic", *arguments], check=True, env=environment)
 

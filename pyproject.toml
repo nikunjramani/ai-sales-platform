@@ -1,5 +1,5 @@
 [project]
-name = "ai-sales-quotation-order-processing"
+name = "sales-platform"
 version = "0.1.0"
 description = "Multi-business sales quotation and order automation"
 readme = "README.md"
@@ -28,22 +28,22 @@ dependencies = [
 
 # Pluggable parts are found by name through these entry points (ADR 0018). A new provider or
 # secret store is one package plus one entry point (here or in its own package); no core change.
-[project.entry-points."quotation_app.providers"]
-api = "quotation_app.adapters.providers.api:build"
-simulated = "quotation_app.adapters.providers.simulated:build"
-local_catalogue = "quotation_app.adapters.providers.local_catalogue:build"
-web_chat = "quotation_app.adapters.providers.web_chat:build"
-telegram = "quotation_app.adapters.providers.telegram:build"
-erpnext = "quotation_app.adapters.providers.erpnext:build"
+[project.entry-points."sales_platform.providers"]
+api = "sales_platform.adapters.providers.api:build"
+simulated = "sales_platform.adapters.providers.simulated:build"
+local_catalogue = "sales_platform.adapters.providers.local_catalogue:build"
+web_chat = "sales_platform.adapters.providers.web_chat:build"
+telegram = "sales_platform.adapters.providers.telegram:build"
+erpnext = "sales_platform.adapters.providers.erpnext:build"
 
-[project.entry-points."quotation_app.secret_stores"]
-local = "quotation_app.adapters.secrets.local:build"
-none = "quotation_app.adapters.secrets.none:build"
+[project.entry-points."sales_platform.secret_stores"]
+local = "sales_platform.adapters.secrets.local:build"
+none = "sales_platform.adapters.secrets.none:build"
 
 # Account email senders (phase 2): `console` writes files for development. A real sender is one
-# more package with its own entry point (phase 5), chosen by QUOTATION_MAILER.
-[project.entry-points."quotation_app.mailers"]
-console = "quotation_app.adapters.accounts.mail.console:build"
+# more package with its own entry point (phase 5), chosen by SALES_MAILER.
+[project.entry-points."sales_platform.mailers"]
+console = "sales_platform.adapters.accounts.mail.console:build"
 
 [project.optional-dependencies]
 # AI enquiry reader: the generic model loader plus the provider packages in use. Any other
@@ -68,7 +68,7 @@ requires = ["hatchling>=1.27,<2"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/quotation_app"]
+packages = ["src/sales_platform"]
 
 [tool.ruff]
 target-version = "py313"

@@ -13,13 +13,13 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from quotation_app.adapters.identity.dev import DevIdentityProvider
-from quotation_app.api.auth import CSRF_HEADER, SESSION_COOKIE, PortalAuth, build_auth_router
-from quotation_app.api.portal import build_portal_router
-from quotation_app.application.intake import EnquiryListService
-from quotation_app.application.sessions import SessionService
-from quotation_app.application.tenancy import TenantContextResolver
-from quotation_app.domain.quotations import ApprovalAction
+from sales_platform.adapters.identity.dev import DevIdentityProvider
+from sales_platform.api.auth import CSRF_HEADER, SESSION_COOKIE, PortalAuth, build_auth_router
+from sales_platform.api.portal import build_portal_router
+from sales_platform.application.intake import EnquiryListService
+from sales_platform.application.sessions import SessionService
+from sales_platform.application.tenancy import TenantContextResolver
+from sales_platform.domain.quotations import ApprovalAction
 
 MANAGER = "manager@industrial.example"
 SALES = "sales@industrial.example"

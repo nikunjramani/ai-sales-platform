@@ -9,16 +9,16 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine, text
 
-from quotation_app.adapters.interpreters.rules import RulesInterpreter
-from quotation_app.api.app import create_app
-from quotation_app.api.auth import CSRF_HEADER
-from quotation_app.application.jobs import JobRunner
-from quotation_app.composition import build_job_handlers, build_runtime
-from quotation_app.config import Settings
-from quotation_app.persistence.jobs import SqlJobQueue
-from quotation_app.persistence.seed import LOCAL_TENANT
-from quotation_app.persistence.tenancy import tenant_transaction
-from quotation_app.persistence.workflow import open_checkpointer
+from sales_platform.adapters.interpreters.rules import RulesInterpreter
+from sales_platform.api.app import create_app
+from sales_platform.api.auth import CSRF_HEADER
+from sales_platform.application.jobs import JobRunner
+from sales_platform.composition import build_job_handlers, build_runtime
+from sales_platform.config import Settings
+from sales_platform.persistence.jobs import SqlJobQueue
+from sales_platform.persistence.seed import LOCAL_TENANT
+from sales_platform.persistence.tenancy import tenant_transaction
+from sales_platform.persistence.workflow import open_checkpointer
 
 pytestmark = pytest.mark.integration
 
@@ -332,7 +332,7 @@ def test_an_enquiry_stored_before_phase_1_is_still_delivered(
 ) -> None:
     """Regression (found in the phase 4 live run): an envelope without reply_to (written by
     an older process) made the approved quotation's delivery fail on a NULL recipient."""
-    from quotation_app.domain.tenancy import Role
+    from sales_platform.domain.tenancy import Role
 
     token = make_api_key(LOCAL_TENANT, Role.INTAKE_SERVICE)
     response = client.post(

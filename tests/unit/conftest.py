@@ -18,32 +18,32 @@ from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 import pytest
 from langgraph.checkpoint.memory import InMemorySaver
 
-from quotation_app.adapters.documents.pdf import ReportLabQuotationRenderer
-from quotation_app.adapters.erp.simulated import SimulatedErp
-from quotation_app.adapters.providers.api import ApiProvider
-from quotation_app.application.acceptance import (
+from sales_platform.adapters.documents.pdf import ReportLabQuotationRenderer
+from sales_platform.adapters.erp.simulated import SimulatedErp
+from sales_platform.adapters.providers.api import ApiProvider
+from sales_platform.application.acceptance import (
     QuotationExpiryHandler,
     QuotationResponseService,
     ResponseNotificationHandler,
 )
-from quotation_app.application.approvals import ApprovalService
-from quotation_app.application.channel_actions import ChannelActionService
-from quotation_app.application.delivery import (
+from sales_platform.application.approvals import ApprovalService
+from sales_platform.application.channel_actions import ChannelActionService
+from sales_platform.application.delivery import (
     QuotationDeliveryHandler,
     QuotationDocumentHook,
 )
-from quotation_app.application.documents import QuotationDocumentService
-from quotation_app.application.inbound import ProcessInboundHandler, routes_for
-from quotation_app.application.messaging import OutboundService, SendMessageHandler
-from quotation_app.application.notifications import (
+from sales_platform.application.documents import QuotationDocumentService
+from sales_platform.application.inbound import ProcessInboundHandler, routes_for
+from sales_platform.application.messaging import OutboundService, SendMessageHandler
+from sales_platform.application.notifications import (
     ApprovalNotificationHandler,
     ApprovalRequestHook,
 )
-from quotation_app.application.pricing import QuotationPricingService
-from quotation_app.application.providers import ProviderRegistry
-from quotation_app.application.quotations import QuotationService
-from quotation_app.application.tenancy import TenantContextResolver
-from quotation_app.domain.acceptance import (
+from sales_platform.application.pricing import QuotationPricingService
+from sales_platform.application.providers import ProviderRegistry
+from sales_platform.application.quotations import QuotationService
+from sales_platform.application.tenancy import TenantContextResolver
+from sales_platform.domain.acceptance import (
     DEFAULT_QUOTE_VALIDITY_DAYS,
     QUOTATION_STATUS_FOR,
     SYSTEM_SUBJECT,
@@ -53,24 +53,24 @@ from quotation_app.domain.acceptance import (
     ResponseOutcome,
     customer_status,
 )
-from quotation_app.domain.connections import (
+from sales_platform.domain.connections import (
     Capabilities,
     Connection,
     ConnectionStatus,
     Purpose,
 )
-from quotation_app.domain.documents import (
+from sales_platform.domain.documents import (
     OFFERED_STATUSES,
     DeliveryRecord,
     DeliveryStatus,
     DocumentSource,
     StoredDocument,
 )
-from quotation_app.domain.intake import InboundEvent, InboundEventType, event_type
-from quotation_app.domain.jobs import JobKind
-from quotation_app.domain.messages import MessageStatus, OutboundMessage, TemplateKey
-from quotation_app.domain.pricing import RequestedLine
-from quotation_app.domain.quotations import (
+from sales_platform.domain.intake import InboundEvent, InboundEventType, event_type
+from sales_platform.domain.jobs import JobKind
+from sales_platform.domain.messages import MessageStatus, OutboundMessage, TemplateKey
+from sales_platform.domain.pricing import RequestedLine
+from sales_platform.domain.quotations import (
     QUOTATION_STATUS_AFTER,
     REVISABLE,
     TASK_STATUS_AFTER,
@@ -83,29 +83,29 @@ from quotation_app.domain.quotations import (
     TaskStatus,
     quotation_number,
 )
-from quotation_app.domain.tenancy import Role, TenantContext, TenantStatus
-from quotation_app.ports.acceptance import NewResponse
-from quotation_app.ports.approvals import TaskState
-from quotation_app.ports.channels import ActionReference, ChannelBinding
-from quotation_app.ports.documents import DeliveryWork
-from quotation_app.ports.identity import SessionRecord, VerifiedIdentity
-from quotation_app.ports.inbound import RecordedEvent, StoredEvent
-from quotation_app.ports.jobs import ClaimedJob
-from quotation_app.ports.messages import NewMessage
-from quotation_app.ports.providers import (
+from sales_platform.domain.tenancy import Role, TenantContext, TenantStatus
+from sales_platform.ports.acceptance import NewResponse
+from sales_platform.ports.approvals import TaskState
+from sales_platform.ports.channels import ActionReference, ChannelBinding
+from sales_platform.ports.documents import DeliveryWork
+from sales_platform.ports.identity import SessionRecord, VerifiedIdentity
+from sales_platform.ports.inbound import RecordedEvent, StoredEvent
+from sales_platform.ports.jobs import ClaimedJob
+from sales_platform.ports.messages import NewMessage
+from sales_platform.ports.providers import (
     ProviderDefaults,
     ReceiptKind,
     RenderedMessage,
     SendReceipt,
 )
-from quotation_app.ports.quotations import (
+from sales_platform.ports.quotations import (
     QuotationDetail,
     QuotationSummary,
     TaskView,
     VersionView,
 )
-from quotation_app.ports.storage import ObjectStorage
-from quotation_app.workflows.quotation import (
+from sales_platform.ports.storage import ObjectStorage
+from sales_platform.workflows.quotation import (
     QuotationJobHandler,
     QuotationWorkflowDeps,
     build_quotation_graph,
@@ -1133,7 +1133,7 @@ class MemoryDirectory:
         self._db = db
 
     def tenants_for(self, subject: str) -> list[Any]:
-        from quotation_app.ports.tenancy import TenantMembership
+        from sales_platform.ports.tenancy import TenantMembership
 
         return [
             TenantMembership(tenant, self._db.tenant_names.get(tenant, "Demo"), roles)
@@ -1718,8 +1718,8 @@ class NoPeople:
 
 @pytest.fixture
 def session_view(memory_directory: MemoryDirectory) -> Any:
-    from quotation_app.api.auth import SessionView
-    from quotation_app.application.accounts import ProfileService
+    from sales_platform.api.auth import SessionView
+    from sales_platform.application.accounts import ProfileService
 
     return SessionView(memory_directory, ProfileService(NoPeople()))  # type: ignore[arg-type]
 

@@ -5,21 +5,21 @@ from pathlib import Path
 
 import pytest
 
-from quotation_app import ops
-from quotation_app.adapters.secrets.local import new_key
+from sales_platform import ops
+from sales_platform.adapters.secrets.local import new_key
 
 
 @pytest.fixture(autouse=True)
 def local_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # Settings needs a database URL even though this command never connects (CI has no .env).
     monkeypatch.setenv(
-        "QUOTATION_DATABASE_URL",
+        "SALES_DATABASE_URL",
         "postgresql+psycopg://quotation_app:unused@127.0.0.1/quotation_dev",
     )
-    monkeypatch.setenv("QUOTATION_ENVIRONMENT", "development")
-    monkeypatch.setenv("QUOTATION_SECRET_STORE", "local")
-    monkeypatch.setenv("QUOTATION_SECRET_STORE_KEY", new_key())
-    monkeypatch.setenv("QUOTATION_STORAGE_DIR", str(tmp_path))
+    monkeypatch.setenv("SALES_ENVIRONMENT", "development")
+    monkeypatch.setenv("SALES_SECRET_STORE", "local")
+    monkeypatch.setenv("SALES_SECRET_STORE_KEY", new_key())
+    monkeypatch.setenv("SALES_STORAGE_DIR", str(tmp_path))
 
 
 def test_settings_are_checked_stored_and_shown_masked() -> None:

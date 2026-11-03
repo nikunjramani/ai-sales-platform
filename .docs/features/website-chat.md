@@ -27,7 +27,7 @@ Our own chat for a business's website: provider `web_chat`, capability `hosted_c
 | Session | token `cs_<session>_<secret>`, kept in the visitor's browser for that chat only; only its SHA-256 is stored; 30 idle days |
 | Business | always from the handle or the session (lookup policies reveal one row), never from the request body |
 | Unknown, disabled, suspended, wrong website | the same 404 |
-| IP addresses | stored only as an HMAC with `QUOTATION_CHAT_IP_KEY` |
+| IP addresses | stored only as an HMAC with `SALES_CHAT_IP_KEY` |
 | Text | shown with `textContent` in a Shadow DOM; never HTML |
 | Hosted page | CSP `default-src 'self'`; framed only by the chat's allowed websites |
 
@@ -37,7 +37,7 @@ Our own chat for a business's website: provider `web_chat`, capability `hosted_c
 ## Code
 - **Backend:** `adapters/providers/web_chat`, `application/chat.py` (`HostedChatService`), `persistence/chat.py`, `api/public_chat.py`.
 - **Admin:** `application/connections.py` (enable, settings, address, on/off) and `persistence/connections.SqlHostedChatAdmin`.
-- **Widget:** `portal/src/widget/` (built by `npm run build` into `portal/dist/widget/widget.js`, about 3 KB gzip; served by the API when `QUOTATION_PORTAL_DIST_DIR` is set).
+- **Widget:** `portal/src/widget/` (built by `npm run build` into `portal/dist/widget/widget.js`, about 3 KB gzip; served by the API when `SALES_PORTAL_DIST_DIR` is set).
 
 ## Adding another chat-like tool
 A new provider package with `hosted_chat=True` (or, for an outside tool, webhooks in phase 5). The core, portal and routes do not change.

@@ -14,38 +14,38 @@ import pytest
 from sqlalchemy import Engine, text
 from sqlalchemy.exc import DBAPIError, ProgrammingError
 
-from quotation_app.application.api_keys import generate_api_key, hash_secret
-from quotation_app.domain.accounts import (
+from sales_platform.application.api_keys import generate_api_key, hash_secret
+from sales_platform.domain.accounts import (
     AccountEmailPurpose,
     LastAdministrator,
     RateRule,
     SetupItemKey,
 )
-from quotation_app.domain.jobs import JobKind
-from quotation_app.domain.tenancy import Role, TenantContext, TenantStatus
-from quotation_app.persistence.accounts import (
+from sales_platform.domain.jobs import JobKind
+from sales_platform.domain.tenancy import Role, TenantContext, TenantStatus
+from sales_platform.persistence.accounts import (
     SqlAccountEmailStore,
     SqlBusinessStore,
     SqlInvitationStore,
     SqlMemberStore,
     SqlUserStore,
 )
-from quotation_app.persistence.api_keys import SqlApiKeyAdminStore
-from quotation_app.persistence.rate_limits import SqlRateLimiter
-from quotation_app.persistence.sessions import SqlSessionStore
-from quotation_app.persistence.tenancy import (
+from sales_platform.persistence.api_keys import SqlApiKeyAdminStore
+from sales_platform.persistence.rate_limits import SqlRateLimiter
+from sales_platform.persistence.sessions import SqlSessionStore
+from sales_platform.persistence.tenancy import (
     SqlMembershipReader,
     SqlPricingPolicyReader,
     tenant_transaction,
 )
-from quotation_app.ports.accounts import (
+from sales_platform.ports.accounts import (
     InvitationNotUsable,
     NewBusiness,
     NotAllowed,
     PricingSettings,
 )
-from quotation_app.ports.identity import VerifiedIdentity
-from quotation_app.ports.tenancy import PricingPolicyNotConfigured
+from sales_platform.ports.identity import VerifiedIdentity
+from sales_platform.ports.tenancy import PricingPolicyNotConfigured
 
 pytestmark = pytest.mark.usefixtures("fresh_accounts")
 
@@ -352,7 +352,7 @@ def test_go_live_needs_the_checklist_and_status_rules_hold(
         SetupItemKey.CUSTOMER_CHANNEL,
         SetupItemKey.TEST_ENQUIRY,
     ]
-    from quotation_app.ports.accounts import ProfileUpdate
+    from sales_platform.ports.accounts import ProfileUpdate
 
     version = businesses.settings(context).profile.version
     businesses.update_profile(context, ProfileUpdate("Acme Pvt Ltd", "1 Road", None, None), version)

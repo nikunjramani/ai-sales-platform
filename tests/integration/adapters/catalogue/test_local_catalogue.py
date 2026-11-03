@@ -8,13 +8,13 @@ from pathlib import Path
 import pytest
 from sqlalchemy import Engine
 
-from quotation_app.adapters.catalogue.local import LocalCatalogue
-from quotation_app.composition import build_catalogue, build_runtime
-from quotation_app.config import Settings
-from quotation_app.domain.tenancy import Role, TenantContext
-from quotation_app.persistence.catalogue import SqlCatalogueStore
-from quotation_app.persistence.seed import INDUSTRIAL_TENANT, LOCAL_TENANT
-from quotation_app.ports.erp import ErpError, ErpErrorCode, ErpReader
+from sales_platform.adapters.catalogue.local import LocalCatalogue
+from sales_platform.composition import build_catalogue, build_runtime
+from sales_platform.config import Settings
+from sales_platform.domain.tenancy import Role, TenantContext
+from sales_platform.persistence.catalogue import SqlCatalogueStore
+from sales_platform.persistence.seed import INDUSTRIAL_TENANT, LOCAL_TENANT
+from sales_platform.ports.erp import ErpError, ErpErrorCode, ErpReader
 
 pytestmark = pytest.mark.integration
 

@@ -14,12 +14,12 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import OperationalError
 
-from quotation_app.api.enquiries import MAX_REQUEST_BYTES, build_enquiry_router
-from quotation_app.application.api_keys import ApiKeyAuthenticator, generate_api_key
-from quotation_app.application.intake import EnquiryIntakeService
-from quotation_app.domain.tenancy import Role
-from quotation_app.ports.api_keys import ApiKeyRecord
-from quotation_app.ports.erp import ErpError, ErpErrorCode
+from sales_platform.api.enquiries import MAX_REQUEST_BYTES, build_enquiry_router
+from sales_platform.application.api_keys import ApiKeyAuthenticator, generate_api_key
+from sales_platform.application.intake import EnquiryIntakeService
+from sales_platform.domain.tenancy import Role
+from sales_platform.ports.api_keys import ApiKeyRecord
+from sales_platform.ports.erp import ErpError, ErpErrorCode
 
 BODY = {"text": "Please quote 50 industrial fans for Pune", "customer_reference": "CUST-1"}
 

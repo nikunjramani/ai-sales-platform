@@ -129,7 +129,7 @@ Facts below come from official documentation, **checked 2026-10-23** by search; 
 | # | Item | Notes |
 |---|---|---|
 | P6.0 | Ask the questions in 5.6 and D21; run the spike (5.1); write the ADR | No code before answers |
-| P6.1 | Connector package `adapters/providers/<vendor>/` registered by entry point (`quotation_app.providers`), `purposes = {catalogue}` (later also `orders`) | Shared contracts §3. Vendor SDK only inside the package. No `if vendor == ...` anywhere else |
+| P6.1 | Connector package `adapters/providers/<vendor>/` registered by entry point (`sales_platform.providers`), `purposes = {catalogue}` (later also `orders`) | Shared contracts §3. Vendor SDK only inside the package. No `if vendor == ...` anywhere else |
 | P6.2 | `config_model` (Pydantic) = connection settings + **mapping** (P6.3); portal renders it from JSON schema | Base URL/region, company/organisation ID, which price list, which warehouses |
 | P6.3 | Mapping (domain, standard library): `CatalogueMapping` | SKU field; unit map (ERP unit code -> our unit text, **exact rename only, never a conversion**); currency must equal the tenant policy currency, otherwise prices are omitted (ADR 0010); tax basis flag (prices with or without tax; see 5.6); warehouse selection (one, list, or "sum of listed"); category field; active/inactive filter. Unmapped values are reported, not guessed |
 | P6.4 | Capability declaration | Generic `Capabilities` plus catalogue/order flags (section 9): `live_prices`, `live_stock`, `stock_semantics` (`on_hand`/`available`/`unknown`), `warehouses`, `webhooks`, later `create_order`, `reference_lookup`, `idempotency_key`, `reserve_stock` |

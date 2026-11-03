@@ -11,7 +11,7 @@
 These replace today's three meanings of "channel" (see [01](01-current-state.md)).
 
 ## Provider registry (no provider names in the core)
-- **Discovery:** each adapter package registers itself with a standard Python *entry point* (group `quotation_app.providers`). Installing the package makes the provider available; nothing else in the code lists providers. This is the same idea as LangChain's `init_chat_model` for AI models.
+- **Discovery:** each adapter package registers itself with a standard Python *entry point* (group `sales_platform.providers`). Installing the package makes the provider available; nothing else in the code lists providers. This is the same idea as LangChain's `init_chat_model` for AI models.
 - **What a provider declares** (one small class):
   - `key`, `display_name`, `icon`.
   - `purposes` it can serve, e.g. Telegram serves customer messages and manager approvals.

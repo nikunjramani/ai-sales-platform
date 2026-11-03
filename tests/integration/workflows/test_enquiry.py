@@ -10,29 +10,29 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, text
 from sqlalchemy.exc import ProgrammingError
 
-from quotation_app.adapters.documents.text import PdfAndTextReader
-from quotation_app.adapters.erp.simulated import SimulatedErp, demo_catalogues
-from quotation_app.adapters.interpreters.rules import RulesInterpreter
-from quotation_app.adapters.storage.local import LocalObjectStorage
-from quotation_app.api.app import create_app
-from quotation_app.application.jobs import JobRunner
-from quotation_app.application.preparation import EnquiryPreparationHandler
-from quotation_app.application.pricing import QuotationPricingService
-from quotation_app.config import Settings
-from quotation_app.domain.catalogue import Product
-from quotation_app.domain.jobs import JobKind
-from quotation_app.domain.money import Money
-from quotation_app.domain.pricing import PricedQuotation, RequestedLine
-from quotation_app.domain.requirements import ExtractedRequirements, RequestedItem
-from quotation_app.domain.tenancy import Role, TenantContext
-from quotation_app.persistence.intake import SqlPreparationStore
-from quotation_app.persistence.jobs import SqlJobQueue
-from quotation_app.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
-from quotation_app.persistence.tenancy import SqlPricingPolicyReader, tenant_transaction
-from quotation_app.persistence.workflow import SqlWorkflowStore, open_checkpointer
-from quotation_app.ports.erp import ErpError, ErpErrorCode
-from quotation_app.ports.interpretation import DocumentText, EnquiryTranscript
-from quotation_app.workflows.enquiry import (
+from sales_platform.adapters.documents.text import PdfAndTextReader
+from sales_platform.adapters.erp.simulated import SimulatedErp, demo_catalogues
+from sales_platform.adapters.interpreters.rules import RulesInterpreter
+from sales_platform.adapters.storage.local import LocalObjectStorage
+from sales_platform.api.app import create_app
+from sales_platform.application.jobs import JobRunner
+from sales_platform.application.preparation import EnquiryPreparationHandler
+from sales_platform.application.pricing import QuotationPricingService
+from sales_platform.config import Settings
+from sales_platform.domain.catalogue import Product
+from sales_platform.domain.jobs import JobKind
+from sales_platform.domain.money import Money
+from sales_platform.domain.pricing import PricedQuotation, RequestedLine
+from sales_platform.domain.requirements import ExtractedRequirements, RequestedItem
+from sales_platform.domain.tenancy import Role, TenantContext
+from sales_platform.persistence.intake import SqlPreparationStore
+from sales_platform.persistence.jobs import SqlJobQueue
+from sales_platform.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
+from sales_platform.persistence.tenancy import SqlPricingPolicyReader, tenant_transaction
+from sales_platform.persistence.workflow import SqlWorkflowStore, open_checkpointer
+from sales_platform.ports.erp import ErpError, ErpErrorCode
+from sales_platform.ports.interpretation import DocumentText, EnquiryTranscript
+from sales_platform.workflows.enquiry import (
     EnquiryWorkflowDeps,
     ExtractionJobHandler,
     build_enquiry_graph,

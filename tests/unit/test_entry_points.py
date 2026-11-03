@@ -2,17 +2,17 @@
 
 from importlib.metadata import entry_points
 
-from quotation_app.composition import build_secret_store
-from quotation_app.config import Settings
+from sales_platform.composition import build_secret_store
+from sales_platform.config import Settings
 
 
 def test_providers_are_registered() -> None:
-    names = {entry.name for entry in entry_points(group="quotation_app.providers")}
+    names = {entry.name for entry in entry_points(group="sales_platform.providers")}
     assert {"api", "simulated"} <= names
 
 
 def test_secret_stores_are_registered() -> None:
-    names = {entry.name for entry in entry_points(group="quotation_app.secret_stores")}
+    names = {entry.name for entry in entry_points(group="sales_platform.secret_stores")}
     assert {"local", "none"} <= names
 
 

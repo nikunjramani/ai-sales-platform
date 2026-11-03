@@ -4,7 +4,7 @@ from uuid import uuid4
 
 import pytest
 
-from quotation_app.domain.catalogue_admin import (
+from sales_platform.domain.catalogue_admin import (
     CATALOGUE_UNITS,
     EntrySource,
     InvalidCatalogueEntry,

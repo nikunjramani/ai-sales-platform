@@ -6,13 +6,13 @@ import pytest
 from sqlalchemy import Engine, text
 from sqlalchemy.exc import ProgrammingError
 
-from quotation_app.domain.connections import Purpose
-from quotation_app.domain.messages import MessageStatus, TemplateKey
-from quotation_app.persistence.connections import SqlConnectionStore
-from quotation_app.persistence.messages import SqlMessageOutbox
-from quotation_app.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
-from quotation_app.persistence.tenancy import tenant_transaction
-from quotation_app.ports.messages import MessageLinks, NewMessage
+from sales_platform.domain.connections import Purpose
+from sales_platform.domain.messages import MessageStatus, TemplateKey
+from sales_platform.persistence.connections import SqlConnectionStore
+from sales_platform.persistence.messages import SqlMessageOutbox
+from sales_platform.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
+from sales_platform.persistence.tenancy import tenant_transaction
+from sales_platform.ports.messages import MessageLinks, NewMessage
 
 
 def new_message(engine: Engine, key: str = "notice:test-1") -> NewMessage:

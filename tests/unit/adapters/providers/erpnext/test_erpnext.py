@@ -17,24 +17,24 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from quotation_app.adapters.catalogue.local import LocalCatalogue
-from quotation_app.adapters.erp.simulated import SimulatedCatalogue
-from quotation_app.adapters.providers.erpnext.catalogue import ErpnextCatalogue, build_feed
-from quotation_app.adapters.providers.erpnext.client import FrappeClient
-from quotation_app.adapters.providers.erpnext.config import ErpnextForm, ErpnextSettings
-from quotation_app.adapters.providers.erpnext.orders import ErpnextOrderWriter, order_state
-from quotation_app.adapters.providers.erpnext.provider import ErpnextProvider, form_schema
-from quotation_app.domain.catalogue import Product
-from quotation_app.domain.connections import Purpose
-from quotation_app.domain.tenancy import Role, TenantContext
-from quotation_app.ports.erp import (
+from sales_platform.adapters.catalogue.local import LocalCatalogue
+from sales_platform.adapters.erp.simulated import SimulatedCatalogue
+from sales_platform.adapters.providers.erpnext.catalogue import ErpnextCatalogue, build_feed
+from sales_platform.adapters.providers.erpnext.client import FrappeClient
+from sales_platform.adapters.providers.erpnext.config import ErpnextForm, ErpnextSettings
+from sales_platform.adapters.providers.erpnext.orders import ErpnextOrderWriter, order_state
+from sales_platform.adapters.providers.erpnext.provider import ErpnextProvider, form_schema
+from sales_platform.domain.catalogue import Product
+from sales_platform.domain.connections import Purpose
+from sales_platform.domain.tenancy import Role, TenantContext
+from sales_platform.ports.erp import (
     ErpError,
     ErpErrorCode,
     ErpOrderState,
     OrderLineRequest,
     SalesOrderRequest,
 )
-from quotation_app.ports.providers import OperationUnsupported, ProvisionStatus
+from sales_platform.ports.providers import OperationUnsupported, ProvisionStatus
 from tests.support.catalogue_store import InMemoryCatalogueStore
 
 NOW = datetime(2026, 10, 29, 10, tzinfo=UTC)
@@ -300,7 +300,7 @@ def test_production_accepts_only_public_https_addresses(erp: FakeFrappe) -> None
 
 
 def test_orders_are_written_only_when_the_business_turned_it_on(erp: FakeFrappe) -> None:
-    from quotation_app.domain.connections import Connection, ConnectionStatus
+    from sales_platform.domain.connections import Connection, ConnectionStatus
 
     provider = ErpnextProvider("development", None, erp.client())
 

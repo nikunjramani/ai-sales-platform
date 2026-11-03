@@ -13,26 +13,26 @@
 - **Action reference:** the hidden token behind a message's buttons. It works once, for one task, from that one account, for 24 hours.
 
 ## Source files
-- **Domain:** [domain/quotations.py](../../src/quotation_app/domain/quotations.py) holds statuses, `DecisionCommand`, `quotation_content`, `content_sha256`; the review wording is `render_template(TemplateKey.APPROVAL_REQUEST, ...)` in [domain/messages.py](../../src/quotation_app/domain/messages.py).
+- **Domain:** [domain/quotations.py](../../src/sales_platform/domain/quotations.py) holds statuses, `DecisionCommand`, `quotation_content`, `content_sha256`; the review wording is `render_template(TemplateKey.APPROVAL_REQUEST, ...)` in [domain/messages.py](../../src/sales_platform/domain/messages.py).
 - **Application:**
-  - [application/approvals.py](../../src/quotation_app/application/approvals.py) (`ApprovalService`)
-  - [application/quotations.py](../../src/quotation_app/application/quotations.py) (list, get, revise)
-  - [application/channel_actions.py](../../src/quotation_app/application/channel_actions.py) (enrollment, channel decisions)
-  - [application/notifications.py](../../src/quotation_app/application/notifications.py) (review delivery job)
-  - [application/sessions.py](../../src/quotation_app/application/sessions.py)
-- **Workflow:** [workflows/quotation.py](../../src/quotation_app/workflows/quotation.py) (graph and `QuotationJobHandler`).
+  - [application/approvals.py](../../src/sales_platform/application/approvals.py) (`ApprovalService`)
+  - [application/quotations.py](../../src/sales_platform/application/quotations.py) (list, get, revise)
+  - [application/channel_actions.py](../../src/sales_platform/application/channel_actions.py) (enrollment, channel decisions)
+  - [application/notifications.py](../../src/sales_platform/application/notifications.py) (review delivery job)
+  - [application/sessions.py](../../src/sales_platform/application/sessions.py)
+- **Workflow:** [workflows/quotation.py](../../src/sales_platform/workflows/quotation.py) (graph and `QuotationJobHandler`).
 - **API:**
-  - [api/auth.py](../../src/quotation_app/api/auth.py) (sign-in and sessions)
-  - [api/portal.py](../../src/quotation_app/api/portal.py) (tenant routes)
-  - [api/channels.py](../../src/quotation_app/api/channels.py) (signed webhook)
+  - [api/auth.py](../../src/sales_platform/api/auth.py) (sign-in and sessions)
+  - [api/portal.py](../../src/sales_platform/api/portal.py) (tenant routes)
+  - [api/channels.py](../../src/sales_platform/api/channels.py) (signed webhook)
 - **Persistence:**
-  - [persistence/quotations.py](../../src/quotation_app/persistence/quotations.py)
-  - [persistence/channels.py](../../src/quotation_app/persistence/channels.py)
-  - [persistence/sessions.py](../../src/quotation_app/persistence/sessions.py)
+  - [persistence/quotations.py](../../src/sales_platform/persistence/quotations.py)
+  - [persistence/channels.py](../../src/sales_platform/persistence/channels.py)
+  - [persistence/sessions.py](../../src/sales_platform/persistence/sessions.py)
   - [0005_approvals.py](../../migrations/versions/0005_approvals.py)
 - **Adapters:**
-  - [adapters/identity/dev.py](../../src/quotation_app/adapters/identity/dev.py)
-  - [adapters/providers/simulated/](../../src/quotation_app/adapters/providers/simulated/provider.py) (phase 1: a provider; approval requests go through the outbox, the action token is created at send time; see [connections](connections.md))
+  - [adapters/identity/dev.py](../../src/sales_platform/adapters/identity/dev.py)
+  - [adapters/providers/simulated/](../../src/sales_platform/adapters/providers/simulated/provider.py) (phase 1: a provider; approval requests go through the outbox, the action token is created at send time; see [connections](connections.md))
 - **Portal:** [portal/](../../portal/src/app/App.tsx) (React; see [portal architecture](../development/portal-architecture.md)).
 - **Dev helper:** [scripts/simulated_channel.py](../../scripts/simulated_channel.py).
 
@@ -98,10 +98,10 @@ Non-members get 404 for any tenant URL. Missing or invalid CSRF gets 403, and no
 ## Configuration
 These are names only; see [configuration](../development/configuration.md):
 - `QUOTATION_AUTH_PROVIDER`
-- `QUOTATION_SESSION_HOURS`
-- `QUOTATION_SESSION_COOKIE_SECURE`
-- `QUOTATION_SIMULATED_CHANNEL_SECRET`
-- `QUOTATION_PORTAL_DIST_DIR`
+- `SALES_SESSION_HOURS`
+- `SALES_SESSION_COOKIE_SECURE`
+- `SALES_SIMULATED_CHANNEL_SECRET`
+- `SALES_PORTAL_DIST_DIR`
 
 ## Tests and example
 - **Unit tests:**

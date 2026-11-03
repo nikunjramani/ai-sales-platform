@@ -29,42 +29,42 @@ from pypdf import PdfReader
 from sqlalchemy import Engine, text
 from sqlalchemy.exc import DBAPIError, ProgrammingError
 
-from quotation_app.adapters.erp.simulated import SimulatedErp, demo_catalogues
-from quotation_app.adapters.interpreters.rules import RulesInterpreter
-from quotation_app.adapters.providers.simulated.signing import SIGNATURE_HEADER, hook_token, sign
-from quotation_app.adapters.secrets.local import new_key
-from quotation_app.api.app import create_app
-from quotation_app.api.auth import CSRF_HEADER
-from quotation_app.application.acceptance import (
+from sales_platform.adapters.erp.simulated import SimulatedErp, demo_catalogues
+from sales_platform.adapters.interpreters.rules import RulesInterpreter
+from sales_platform.adapters.providers.simulated.signing import SIGNATURE_HEADER, hook_token, sign
+from sales_platform.adapters.secrets.local import new_key
+from sales_platform.api.app import create_app
+from sales_platform.api.auth import CSRF_HEADER
+from sales_platform.application.acceptance import (
     QuotationResponseService,
 )
-from quotation_app.application.approvals import ApprovalService
-from quotation_app.application.jobs import JobRunner
-from quotation_app.application.pricing import QuotationPricingService
-from quotation_app.application.tenancy import TenantContextResolver
-from quotation_app.composition import build_job_handlers, build_runtime
-from quotation_app.config import Settings
-from quotation_app.domain.acceptance import (
+from sales_platform.application.approvals import ApprovalService
+from sales_platform.application.jobs import JobRunner
+from sales_platform.application.pricing import QuotationPricingService
+from sales_platform.application.tenancy import TenantContextResolver
+from sales_platform.composition import build_job_handlers, build_runtime
+from sales_platform.config import Settings
+from sales_platform.domain.acceptance import (
     OfferNotOpen,
     PricesChanged,
     ResponseAction,
     ResponseOutcome,
     ResponseRequest,
 )
-from quotation_app.domain.connections import ConnectionStatus
-from quotation_app.domain.quotations import ApprovalAction, DecisionCommand, DecisionConflict
-from quotation_app.domain.tenancy import Role, TenantContext
-from quotation_app.persistence.acceptance import SqlResponseStore
-from quotation_app.persistence.connections import SqlConnectionStore, set_status
-from quotation_app.persistence.jobs import SqlJobQueue
-from quotation_app.persistence.quotations import SqlApprovalStore
-from quotation_app.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT, seed_demo_tenants
-from quotation_app.persistence.tenancy import (
+from sales_platform.domain.connections import ConnectionStatus
+from sales_platform.domain.quotations import ApprovalAction, DecisionCommand, DecisionConflict
+from sales_platform.domain.tenancy import Role, TenantContext
+from sales_platform.persistence.acceptance import SqlResponseStore
+from sales_platform.persistence.connections import SqlConnectionStore, set_status
+from sales_platform.persistence.jobs import SqlJobQueue
+from sales_platform.persistence.quotations import SqlApprovalStore
+from sales_platform.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT, seed_demo_tenants
+from sales_platform.persistence.tenancy import (
     SqlMembershipReader,
     SqlPricingPolicyReader,
     tenant_transaction,
 )
-from quotation_app.persistence.workflow import open_checkpointer
+from sales_platform.persistence.workflow import open_checkpointer
 
 type ApiKeyFactory = Callable[[UUID, Role], str]
 
@@ -97,7 +97,7 @@ def make_client(settings: Settings, runtime_engine: Engine) -> Iterator[Callable
 
 @contextmanager
 def running_worker(settings: Settings, engine: Engine) -> Iterator[JobRunner]:
-    """Everything python -m quotation_app.worker wires, in-process (rules interpreter)."""
+    """Everything python -m sales_platform.worker wires, in-process (rules interpreter)."""
     erp = SimulatedErp(demo_catalogues(INDUSTRIAL_TENANT, OFFICE_TENANT))
     with open_checkpointer(settings.worker_url()) as checkpointer:
         handlers = build_job_handlers(
@@ -790,9 +790,9 @@ def test_answers_are_append_only_and_tenant_isolated(
 def alembic(*arguments: str) -> None:
     environment = {
         **os.environ,
-        "QUOTATION_ENVIRONMENT": "test",
-        "QUOTATION_DATABASE_URL": os.environ["TEST_DATABASE_URL"],
-        "QUOTATION_MIGRATION_DATABASE_URL": os.environ["TEST_MIGRATION_DATABASE_URL"],
+        "SALES_ENVIRONMENT": "test",
+        "SALES_DATABASE_URL": os.environ["TEST_DATABASE_URL"],
+        "SALES_MIGRATION_DATABASE_URL": os.environ["TEST_MIGRATION_DATABASE_URL"],
     }
     subprocess.run([sys.executable, "-m", "alembic", *arguments], check=True, env=environment)
 

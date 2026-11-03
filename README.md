@@ -50,20 +50,20 @@ docker compose up -d --wait
 uv run python scripts/check_database.py
 
 # 5. Load fictional demo businesses, users and pricing policies
-uv run python -m quotation_app.persistence.seed
+uv run python -m sales_platform.persistence.seed
 
 # 6. See a priced quotation, a blocked request and access checks
 uv run python scripts/demo_quotation.py
 
 # 7. Run the background worker (API keys are created in the portal: Settings -> API keys)
-uv run python -m quotation_app.worker
+uv run python -m sales_platform.worker
 
 ```
 Submitting an enquiry with the key is shown in the [setup guide](.docs/development/setup.md#enquiry-intake-m2). An existing M0/M1 database needs a one-time [upgrade step](.docs/development/setup.md#upgrading-an-existing-local-database-m0m1-to-m2).
 
 Run the API:
 ```powershell
-uv run uvicorn quotation_app.api.app:create_app --factory --host 127.0.0.1 --port 8000
+uv run uvicorn sales_platform.api.app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 Then open http://127.0.0.1:8000/docs. For the portal and approvals, see [approvals and portal](.docs/development/setup.md#approvals-and-portal-m4).
 
@@ -83,7 +83,7 @@ Integration tests never touch your development data: they need `--run-integratio
 
 ## Project layout
 ```text
-src/quotation_app/
+src/sales_platform/
   domain/        Pure business rules: money, tenancy, catalogue facts, pricing
   ports/         Contracts (interfaces) that adapters implement, e.g. ErpReader
   application/   Use cases: tenant context, pricing, enquiry intake, job running

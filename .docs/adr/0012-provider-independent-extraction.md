@@ -10,7 +10,7 @@ M3 turns enquiry text and attachments into structured requirements. The user wan
 - **One contract for models:** the workflow depends only on the `EnquiryInterpreter` port, which has two methods: `extract` and `choose_product`.
   - `rules`: a free, offline, deterministic interpreter and the default.
   - `ollama`: a free local model through a LangChain adapter.
-  - **Adding Claude, OpenAI or another provider:** add one LangChain chat model in [factory.py](../../src/quotation_app/adapters/interpreters/factory.py) and one setting value.
+  - **Adding Claude, OpenAI or another provider:** add one LangChain chat model in [factory.py](../../src/sales_platform/adapters/interpreters/factory.py) and one setting value.
 - **Portable model output:** the LangChain adapter asks for JSON and validates it with strict Pydantic schemas (extra fields forbidden). This works with any chat model, with or without native tool calling.
   - Customer content is wrapped in tags declared as data, and attempts to close the tag are neutralised.
   - Invalid output becomes `InterpretationRejected` and goes to a person. Connection errors are retried.

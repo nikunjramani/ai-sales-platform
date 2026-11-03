@@ -8,9 +8,9 @@ from uuid import UUID
 import pytest
 from sqlalchemy import Engine, text
 
-from quotation_app.domain.catalogue_admin import DEFAULT_LOCATION, LOCAL_PRICE_LIST
-from quotation_app.domain.catalogue_search import query_terms
-from quotation_app.domain.catalogue_sync import (
+from sales_platform.domain.catalogue_admin import DEFAULT_LOCATION, LOCAL_PRICE_LIST
+from sales_platform.domain.catalogue_search import query_terms
+from sales_platform.domain.catalogue_sync import (
     CatalogueFeed,
     FeedPrice,
     FeedProduct,
@@ -18,14 +18,14 @@ from quotation_app.domain.catalogue_sync import (
     SyncStatus,
     SyncTrigger,
 )
-from quotation_app.domain.connections import ConnectionStatus
-from quotation_app.persistence.catalogue import SqlCatalogueStore
-from quotation_app.persistence.catalogue_sync import SqlCatalogueSync
-from quotation_app.persistence.connections import SqlConnectionStore
-from quotation_app.persistence.provider_state import SqlConnectionLifecycle
-from quotation_app.persistence.seed import INDUSTRIAL_TENANT, LOCAL_TENANT
-from quotation_app.persistence.tenancy import tenant_transaction
-from quotation_app.ports.connections import ConnectionChange
+from sales_platform.domain.connections import ConnectionStatus
+from sales_platform.persistence.catalogue import SqlCatalogueStore
+from sales_platform.persistence.catalogue_sync import SqlCatalogueSync
+from sales_platform.persistence.connections import SqlConnectionStore
+from sales_platform.persistence.provider_state import SqlConnectionLifecycle
+from sales_platform.persistence.seed import INDUSTRIAL_TENANT, LOCAL_TENANT
+from sales_platform.persistence.tenancy import tenant_transaction
+from sales_platform.ports.connections import ConnectionChange
 
 pytestmark = pytest.mark.integration
 

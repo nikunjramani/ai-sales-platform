@@ -49,7 +49,7 @@ Plus the shared pieces these need: AI reading of manager replies (D10), a signed
 | P5-2 | **Manager approvals on Telegram.** Business-bot messages can only go to private chats that had an incoming message in the last 24 hours ([BusinessBotRights.can_reply](https://docs.python-telegram-bot.org/en/stable/telegram.businessbotrights.html)). Review packets are sent at any time, so they should come from **our platform bot's own chat** with the manager, which serves managers of many businesses | Business account route fails silently after 24 h; platform bot route is one bot shared by businesses (for internal managers only, never customers) | Platform bot for manager approvals; business account for customer messages. Ask: does this break D9? | W8 |
 | P5-3 | **Telegram Premium.** Connecting a business bot required Telegram Premium until recently; a third-party source says it is not required since 8 May 2026 | Cost and a step for the business | Show it in the steps as "may need Premium" until verified in the app | W8 |
 | P5-4 | **India SMS.** Indian A2P SMS uses alphanumeric sender IDs registered by the business itself on an operator DLT portal (an Indian entity with PAN/GST), plus template whitelisting through Twilio's sender ID team by email. Customers cannot reply to such senders | "We buy a number in their country" does not work for India; SMS there is send-only and not fully one-click | Offer India SMS as "notifications only" (quotation ready, links), no inbound, no manager approval; the business fills our form with its DLT IDs after registering itself | W6 |
-| P5-5 | **Reply approval without AI.** If `QUOTATION_MODEL` is unset (rules mode), what happens to free-text manager replies? | D10 says "the AI decides"; rules mode exists for development | Only exact one-word commands (`APPROVE`, `REJECT <reason>`, `REVISE <reason>`); everything else is "unclear" and gets the follow-up question | W2 |
+| P5-5 | **Reply approval without AI.** If `SALES_MODEL` is unset (rules mode), what happens to free-text manager replies? | D10 says "the AI decides"; rules mode exists for development | Only exact one-word commands (`APPROVE`, `REJECT <reason>`, `REVISE <reason>`); everything else is "unclear" and gets the follow-up question | W2 |
 | P5-6 | **Data sent to the AI.** Manager replies go to the configured model. On Gemini's free tier, prompts are used by Google (ADR 0017) | Real manager text and quotation numbers leave our system | Send only the reply text and the quotation number, never prices or customer names; free tier for synthetic data only (as ADR 0017) | W2 |
 | P5-7 | **SMS manager approvals.** SMS has no reply-to. Rule 2 needs a reply tied to one request | Without it, "ok" can't be tied to a quotation | SMS approval only by signed link; a text reply is accepted only if it contains the quotation number (`Q-1A2B3C4D`) of an open request for that manager, otherwise ask | W6 |
 | P5-8 | **Instagram/Messenger for managers.** [03](../03-connectors.md) lists Instagram as "not for managers" | Fewer moving parts | Customer messages only for both; managers use another tool | W9 |
@@ -108,7 +108,7 @@ The user answered in six rounds on 2026-10-29 and confirmed the summary ("Yes, s
 ## 4. Current-state findings (the code this phase builds on)
 Phase 1 moves several of these onto providers and the outbox; the findings say what stays true and what phase 5 must handle.
 
-### Manager channel actions — [application/channel_actions.py](../../../../src/quotation_app/application/channel_actions.py)
+### Manager channel actions — [application/channel_actions.py](../../../../src/sales_platform/application/channel_actions.py)
 | Line | Finding | Consequence for phase 5 |
 |---|---|---|
 | 22 | `ENROLLMENT_LIFETIME = 10 minutes` | Enrollment messages must arrive quickly; email may be delayed: show "send within 10 minutes" |
@@ -118,7 +118,7 @@ Phase 1 moves several of these onto providers and the outbox; the findings say w
 | 106-121 | `_decide` checks: reference exists, binding active, same channel, **same connection**, same external user, not expired | Exactly what rule 1 (only the linked account) and the forwarded-message defence need. AI-classified replies must reuse this path, never a new one |
 | 122-137 | `command_id = uuid5(channel:connection:event_id)`; `evidence_ref` = provider event | Replays of the same provider event are safe. For AI replies, the event ID is the provider message ID, so a webhook retry cannot create a second decision |
 
-### Approval service — [application/approvals.py](../../../../src/quotation_app/application/approvals.py)
+### Approval service — [application/approvals.py](../../../../src/sales_platform/application/approvals.py)
 | Line | Finding | Consequence |
 |---|---|---|
 | 64-65 | Membership and `APPROVE_QUOTATIONS` re-checked on every decision | Rule 5 is already enforced for every provider |
@@ -126,7 +126,7 @@ Phase 1 moves several of these onto providers and the outbox; the findings say w
 | 81-84 | Stale hash or non-current version → `StaleVersion` | Rule 5 "no outdated version": reply to an old review gets "Q-… changed; review version N" |
 | 85-86 | No self-approval | Rule 5 |
 
-### Domain — [domain/quotations.py](../../../../src/quotation_app/domain/quotations.py)
+### Domain — [domain/quotations.py](../../../../src/sales_platform/domain/quotations.py)
 | Line | Finding | Consequence |
 |---|---|---|
 | 44-47 | `ApprovalAction`: approve, reject, request_revision | The AI output maps to these three, plus "unclear" which never becomes a command |
@@ -138,19 +138,19 @@ Phase 1 moves several of these onto providers and the outbox; the findings say w
 ### Ports and persistence
 | File:line | Finding | Consequence |
 |---|---|---|
-| [ports/channels.py:153-166](../../../../src/quotation_app/ports/channels.py) | `ChannelBinding` = tenant, subject, channel, `connection_id` (string), `external_user_id` | `external_user_id` per provider: email address (lower-cased), WhatsApp `whatsapp:+E164`, SMS `+E164`, Telegram user ID |
-| [ports/channels.py:179-197](../../../../src/quotation_app/ports/channels.py) | `ApprovalNotifier.send_review(binding, packet, action_reference, expires_at)` | Phase 1 turns it into an outbox use; phase 5 needs the **provider message ID** of each sent review to resolve replies (C3) |
-| [application/notifications.py:19, 53-66](../../../../src/quotation_app/application/notifications.py) | References last 24 hours; one per (task, binding); stored before sending, marked sent after | 24 hours matches WhatsApp's window idea but not its rules: a review sent outside the window must use an approved template (§6.2) |
-| [application/notifications.py:54-57](../../../../src/quotation_app/application/notifications.py) | No notifier for a channel → warning and skip | With providers, "no provider" becomes a visible outbox `failed`, not a log line (phase 1) |
-| [persistence/channels.py:107-111](../../../../src/quotation_app/persistence/channels.py) | Reviews go only to bindings whose subject has the `approver` role | Unchanged |
-| [persistence/channels.py:225-249](../../../../src/quotation_app/persistence/channels.py) | Enrollment fails if the code's channel differs or the account is already bound | Unchanged; error message stays generic |
-| [persistence/channels.py:303](../../../../src/quotation_app/persistence/channels.py) | Only **sent** references can be used | Good: a token is only valid once the provider accepted the message |
+| [ports/channels.py:153-166](../../../../src/sales_platform/ports/channels.py) | `ChannelBinding` = tenant, subject, channel, `connection_id` (string), `external_user_id` | `external_user_id` per provider: email address (lower-cased), WhatsApp `whatsapp:+E164`, SMS `+E164`, Telegram user ID |
+| [ports/channels.py:179-197](../../../../src/sales_platform/ports/channels.py) | `ApprovalNotifier.send_review(binding, packet, action_reference, expires_at)` | Phase 1 turns it into an outbox use; phase 5 needs the **provider message ID** of each sent review to resolve replies (C3) |
+| [application/notifications.py:19, 53-66](../../../../src/sales_platform/application/notifications.py) | References last 24 hours; one per (task, binding); stored before sending, marked sent after | 24 hours matches WhatsApp's window idea but not its rules: a review sent outside the window must use an approved template (§6.2) |
+| [application/notifications.py:54-57](../../../../src/sales_platform/application/notifications.py) | No notifier for a channel → warning and skip | With providers, "no provider" becomes a visible outbox `failed`, not a log line (phase 1) |
+| [persistence/channels.py:107-111](../../../../src/sales_platform/persistence/channels.py) | Reviews go only to bindings whose subject has the `approver` role | Unchanged |
+| [persistence/channels.py:225-249](../../../../src/sales_platform/persistence/channels.py) | Enrollment fails if the code's channel differs or the account is already bound | Unchanged; error message stays generic |
+| [persistence/channels.py:303](../../../../src/sales_platform/persistence/channels.py) | Only **sent** references can be used | Good: a token is only valid once the provider accepted the message |
 | [migrations/versions/0005_approvals.py:183-192](../../../../migrations/versions/0005_approvals.py) | `channel_enrollments` unique per **(tenant, code hash)** | Codes are not globally unique; platform-level routes must resolve the tenant first (C1) |
 | [0005_approvals.py:206-212](../../../../migrations/versions/0005_approvals.py) | One active binding per (tenant, channel, connection, external user) | Same person on WhatsApp and Telegram = two bindings; fine |
 | [0005_approvals.py:213-237](../../../../migrations/versions/0005_approvals.py) | `approval_action_refs`: token hash globally unique; FK to task and binding; `sent_at`, `consumed_at` | Reply correlation adds a link from outbound message to reference (C3, migration 0013) |
 | [0005_approvals.py:292-294, 302-305](../../../../migrations/versions/0005_approvals.py) | Column-level grants: API may only consume references; worker may only prepare/mark sent | AI classification runs in the **worker**; it then needs `UPDATE (consumed_at)` through `ApprovalService` — today only the API role decides. See W2 (decision runs in the worker job `process_inbound`, so the worker role needs the same grants as the API on decision tables; migration 0013) |
 
-### Inbound route today — [api/channels.py](../../../../src/quotation_app/api/channels.py)
+### Inbound route today — [api/channels.py](../../../../src/sales_platform/api/channels.py)
 | Line | Finding | Consequence |
 |---|---|---|
 | 195, 230-232 | 16 KB body limit | Real providers need per-provider limits (email with attachments: up to ~30 MB, see §6.1) |
@@ -158,18 +158,18 @@ Phase 1 moves several of these onto providers and the outbox; the findings say w
 | 199-209, 245-246 | **Tenant ID and connection ID come from the body** | Fixed by phase 1 (tenant from the connection). Phase 5 must keep it so for platform-level routes |
 | 256-263 | Rejections share one message; conflicts → 409 | Webhooks must answer **200** to providers even when we reject the action (otherwise providers retry or disable the webhook, e.g. Meta after 1 hour of failures). Only signature failures answer 401/403 |
 
-### AI model — [adapters/interpreters/factory.py](../../../../src/quotation_app/adapters/interpreters/factory.py), [langchain.py](../../../../src/quotation_app/adapters/interpreters/langchain.py)
+### AI model — [adapters/interpreters/factory.py](../../../../src/sales_platform/adapters/interpreters/factory.py), [langchain.py](../../../../src/sales_platform/adapters/interpreters/langchain.py)
 | Line | Finding | Consequence |
 |---|---|---|
 | factory.py:20-44 | Generic: `init_chat_model(name, model_provider=provider, temperature=0, api_key, **options)`; no model → rules | Extract a `build_chat_model(model, api_key, options) -> BaseChatModel | None` and use it for both the enquiry reader and the reply classifier. No provider names, no new settings |
 | langchain.py:46-51, 77-79 | Untrusted-content rules and tag containment | Reuse for manager replies (manager text is also data, never instructions) |
 | langchain.py:85-90, 132-143 | Strict Pydantic output, parse errors → `InterpretationRejected` | Same pattern for `_ReplyIntent` (`extra="forbid"`) |
-| [config.py:28-32](../../../../src/quotation_app/config.py) | `model`, `model_api_key`, `model_options` | Reused as is |
+| [config.py:28-32](../../../../src/sales_platform/config.py) | `model`, `model_api_key`, `model_options` | Reused as is |
 
 ### Wiring
-- [worker.py:73-77](../../../../src/quotation_app/worker.py): notifier map has only `simulated`. Phase 1 replaces it with the registry.
-- [api/portal.py:192-196, 594-610](../../../../src/quotation_app/api/portal.py): enrollment API takes `ApprovalChannel`. Phase 1 changes it to a connection reference; phase 5 shows per-provider instructions from the provider (`enrollment_hint`).
-- [domain/tenancy.py:25-33](../../../../src/quotation_app/domain/tenancy.py): no `integrations:manage` yet (phase 1 adds it).
+- [worker.py:73-77](../../../../src/sales_platform/worker.py): notifier map has only `simulated`. Phase 1 replaces it with the registry.
+- [api/portal.py:192-196, 594-610](../../../../src/sales_platform/api/portal.py): enrollment API takes `ApprovalChannel`. Phase 1 changes it to a connection reference; phase 5 shows per-provider instructions from the provider (`enrollment_hint`).
+- [domain/tenancy.py:25-33](../../../../src/sales_platform/domain/tenancy.py): no `integrations:manage` yet (phase 1 adds it).
 
 ## 5. Proposed changes to shared contracts
 **Merged (2026-10-26):** these proposals are now part of [00-shared-contracts.md](00-shared-contracts.md) revision 2; where they differed, the contracts file wins (e.g. one name, `catalogue_reader`, for the catalogue factory method). Points needing the user's decision are listed there in §8.
@@ -192,7 +192,7 @@ Migration **`0013_provider_state`** therefore **is needed** (contracts §4 allow
 
 ## 6. Per-provider specifications
 Common to all six:
-- **Package:** `src/quotation_app/adapters/providers/<key>/` with `provider.py` (the class), `client.py` (thin HTTP client, the only place with the SDK or HTTP calls), `config.py` (config and platform config models), `mapping.py` (pure parsing/mapping, easy to unit test), `templates/` where needed. Registered in `pyproject.toml [project.entry-points."quotation_app.providers"]`.
+- **Package:** `src/sales_platform/adapters/providers/<key>/` with `provider.py` (the class), `client.py` (thin HTTP client, the only place with the SDK or HTTP calls), `config.py` (config and platform config models), `mapping.py` (pure parsing/mapping, easy to unit test), `templates/` where needed. Registered in `pyproject.toml [project.entry-points."sales_platform.providers"]`.
 - **Dependencies:** `twilio` (official SDK) only inside the Twilio packages; SendGrid, Telegram and Meta through `httpx` (already a dev dependency; promote to main) to avoid three more SDKs. Versions ≥ 14 days old.
 - **Webhook answers:** valid signature → always 200 quickly (store and queue). Bad signature → 403 and nothing stored.
 - **Dedupe key:** (tenant, connection, provider event ID, event type) in `inbox_events` (contracts §4, 0008).
@@ -332,12 +332,12 @@ Same structure as Messenger, with these differences ([Instagram messaging API](h
 
 ## 7. Manager approval by message (shared, all providers)
 ### 7.1 Three routes, one service
-1. **Button** → `ManagerAction(decision, reference, action)` → `ChannelActionService.handle` ([channel_actions.py:106-137](../../../../src/quotation_app/application/channel_actions.py)). Approve decides at once; Reject/Change ask for a reason first (§7.3).
+1. **Button** → `ManagerAction(decision, reference, action)` → `ChannelActionService.handle` ([channel_actions.py:106-137](../../../../src/sales_platform/application/channel_actions.py)). Approve decides at once; Reject/Change ask for a reason first (§7.3).
 2. **Written reply** → `ManagerReply` → job `classify_manager_reply` → AI → if clear, the same `handle` path with the action and the reply text as reason.
 3. **Signed link** → portal page `/approve/{token}` (needs sign-in, P5-14) showing the exact version; POST with CSRF → `ApprovalService.decide` (portal path, transport `portal`). The link token is the action reference's sibling: single use, 24 h, bound to task + version hash + the intended subject; a different signed-in user gets "not for you".
 
 ### 7.2 AI reply classification (D10)
-**Where:** `application/manager_replies.py` (`ManagerReplyService`), port `ports/reply_classification.py` (`ReplyClassifier`), adapter `adapters/interpreters/reply_classifier.py` (`LangChainReplyClassifier`) and `adapters/interpreters/reply_rules.py` (`ExactCommandClassifier`, P5-5). Factory: `build_reply_classifier(model, api_key, options)` beside `build_interpreter`, both using the extracted `build_chat_model` — **no new settings**, the same `QUOTATION_MODEL`.
+**Where:** `application/manager_replies.py` (`ManagerReplyService`), port `ports/reply_classification.py` (`ReplyClassifier`), adapter `adapters/interpreters/reply_classifier.py` (`LangChainReplyClassifier`) and `adapters/interpreters/reply_rules.py` (`ExactCommandClassifier`, P5-5). Factory: `build_reply_classifier(model, api_key, options)` beside `build_interpreter`, both using the extracted `build_chat_model` — **no new settings**, the same `SALES_MODEL`.
 
 ```python
 # ports/reply_classification.py (standard library only)
@@ -368,7 +368,7 @@ class ReplyClassifier(Protocol):
 | 2 | `reply_to_provider_message_id` maps (C3) to one review message → one action reference → one task and version; the binding of that reference equals the sender's binding. No reply-to (or SMS without a Q-number, P5-7) → answer "Please reply to the approval message" and stop | 2 |
 | 3 | Reference not expired/consumed; task still pending and version current; otherwise answer with the recorded state ("Q-… was already approved by …" / "Q-… changed; you'll get version 3") | 5 |
 | 4 | Clean text: new-reply part only, max 1000 chars, no quoted history; empty → unclear | 2 |
-| 5 | Classify. The model sees only: fixed instructions, the quotation number and version, and the reply inside `<manager_reply>` tags (containment as in [langchain.py:77-79](../../../../src/quotation_app/adapters/interpreters/langchain.py)). Never prices, customer data, tokens or IDs (P5-6) | — |
+| 5 | Classify. The model sees only: fixed instructions, the quotation number and version, and the reply inside `<manager_reply>` tags (containment as in [langchain.py:77-79](../../../../src/sales_platform/adapters/interpreters/langchain.py)). Never prices, customer data, tokens or IDs (P5-6) | — |
 | 6 | Deterministic guards on the AI answer: `reason_quote` must be a verbatim substring of the reply; **conditional or mixed** wording ("approve if…", "ok but…", "approve and also…") → never APPROVE: REVISE if a change is asked, else UNCLEAR; a question mark with no clear verb → UNCLEAR; reply mentions another quotation number → UNCLEAR | 3 |
 | 7 | UNCLEAR → send "Do you want to approve, reject or request a revision of Q-… version N? Reply APPROVE, REJECT <reason> or CHANGE <what>." (template `approval_clarify`, a new outbound linked to the **same** reference, so a reply to it works) | 3 |
 | 8 | REJECT/REVISE without a reason → `approval_reason_prompts` row + "What is the reason?" | (DecisionCommand needs a reason) |
@@ -409,7 +409,7 @@ Portal "Link my account" shows the provider's `enrollment_hint` (text from the p
 | S11 | India: Twilio sender ID team contact for DLT submissions (P5-4) | India SMS | weeks per business | — |
 | S12 | Privacy policy and terms pages (Meta App Review and 10DLC both ask) | Meta, SMS | days | URLs in platform config |
 
-Configured once with an operator-only command `python -m quotation_app.ops platform-config set <provider_key>` that validates against `platform_config_model` and writes to the SecretStore platform namespace (C5). Never in `.env` for production; never shown in the business portal.
+Configured once with an operator-only command `python -m sales_platform.ops platform-config set <provider_key>` that validates against `platform_config_model` and writes to the SecretStore platform namespace (C5). Never in `.env` for production; never shown in the business portal.
 
 ## 9. Ordered work items
 Sizes: S ≤ 2 days, M ≈ 1 week, L ≈ 2 weeks (rough, for planning only).
@@ -432,7 +432,7 @@ Sizes: S ≤ 2 days, M ≈ 1 week, L ≈ 2 weeks (rough, for planning only).
 
 **Dependency order:** W0 → W1 → W2 + W3 (parallel) → W4 → W5 → W6 → W7 → W8 → W9; W10 grows with each provider; W11/W12 per provider. Each provider is shippable on its own (feature-flagged by simply not installing/registering its package).
 
-**Config:** no new `QUOTATION_*` provider settings. New generic settings only: `QUOTATION_PUBLIC_BASE_URL` (webhook and media URLs), `QUOTATION_MEDIA_LINK_LIFETIME` (default 15 minutes), `QUOTATION_PROVIDERS_ENABLED` (optional allow-list of provider keys per environment; empty = all installed). Company-level provider values live in the SecretStore platform namespace (C5).
+**Config:** no new `QUOTATION_*` provider settings. New generic settings only: `SALES_PUBLIC_BASE_URL` (webhook and media URLs), `QUOTATION_MEDIA_LINK_LIFETIME` (default 15 minutes), `QUOTATION_PROVIDERS_ENABLED` (optional allow-list of provider keys per environment; empty = all installed). Company-level provider values live in the SecretStore platform namespace (C5).
 
 **Jobs used:** `provision_connection` (Enable, resume), `poll_connection` (WhatsApp sender status, 10DLC status, Instagram token refresh, Telegram connection health daily), `send_message`, `process_inbound`, `classify_manager_reply` (C8).
 
@@ -493,7 +493,7 @@ All tests in the mirrored `tests/` tree; synthetic data only.
 | India SMS is not one-click and is send-only | Business expectations | Card says so plainly (P5-4) |
 | Pricing changes (Meta Oct 2026, carrier fees) | Cost surprises | Costs shown as "approximately", linked to provider pages, checked at release |
 | Webhook outages | Meta unsubscribes after 1 h | Health check job + alert; re-subscribe in `test` |
-| Signature URL mismatch behind proxies (Twilio) | All Twilio webhooks refused | `QUOTATION_PUBLIC_BASE_URL` used for verification; fixture tests with ports/trailing slashes |
+| Signature URL mismatch behind proxies (Twilio) | All Twilio webhooks refused | `SALES_PUBLIC_BASE_URL` used for verification; fixture tests with ports/trailing slashes |
 
 ## 15. Definition of done (per provider and for the phase)
 - Contract tests, fixtures, spoof/replay tests and PostgreSQL isolation tests pass; all earlier tests green; mypy strict and ruff clean; architecture test allows the SDK only inside its package.

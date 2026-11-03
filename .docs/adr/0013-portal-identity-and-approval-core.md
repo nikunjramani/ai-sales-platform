@@ -12,7 +12,7 @@ M4 needs people (managers, sales operators) to sign in, review exact quotation c
 
 ## Decision
 **Identity and sessions**
-- Identity providers only prove who someone is and return a `VerifiedIdentity` ([ports/identity.py](../../src/quotation_app/ports/identity.py)). The dev provider lets you pick a stored synthetic member without a password. Settings refuse it in production. Adding OIDC means one adapter (authorization code + PKCE, ID-token validation) that produces a `VerifiedIdentity`; nothing else changes.
+- Identity providers only prove who someone is and return a `VerifiedIdentity` ([ports/identity.py](../../src/sales_platform/ports/identity.py)). The dev provider lets you pick a stored synthetic member without a password. Settings refuse it in production. Adding OIDC means one adapter (authorization code + PKCE, ID-token validation) that produces a `VerifiedIdentity`; nothing else changes.
 - The API issues its own server-side session (backend-for-frontend pattern). The random token lives only in an `HttpOnly; SameSite=Strict; Path=/api` cookie (Secure in production), and only its SHA-256 hash is stored. The React app never holds tokens.
 - State-changing requests must also send `X-CSRF-Token`, derived from the session token (SHA-256), which other sites cannot read.
 - The tenant in a URL is only a request: stored membership is re-resolved on every request, and non-members get 404.

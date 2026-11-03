@@ -8,9 +8,9 @@ from uuid import UUID, uuid4
 import pytest
 from pypdf import PdfReader
 
-from quotation_app.domain.documents import DocumentIntegrityError, DocumentNotAvailable
-from quotation_app.domain.quotations import QuotationNotFound
-from quotation_app.domain.tenancy import PermissionDenied, Role, TenantContext
+from sales_platform.domain.documents import DocumentIntegrityError, DocumentNotAvailable
+from sales_platform.domain.quotations import QuotationNotFound
+from sales_platform.domain.tenancy import PermissionDenied, Role, TenantContext
 
 FAN = ("IND-FAN-450", "2", "each")
 MANAGER = "manager@industrial.example"
@@ -117,8 +117,8 @@ def test_the_logo_is_added_only_when_stored_and_unchanged(
     import hashlib
     from dataclasses import replace as copy
 
-    from quotation_app.application.documents import with_logo
-    from quotation_app.domain.documents import DocumentSource, SellerDetails
+    from sales_platform.application.documents import with_logo
+    from sales_platform.domain.documents import DocumentSource, SellerDetails
 
     png = make_image("PNG", 40, 20)
     digest = hashlib.sha256(png).hexdigest()

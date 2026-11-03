@@ -17,22 +17,22 @@ from fastapi.testclient import TestClient
 from pydantic import SecretStr
 from sqlalchemy import Engine, text
 
-from quotation_app.adapters.erp.simulated import SimulatedErp, demo_catalogues
-from quotation_app.adapters.interpreters.rules import RulesInterpreter
-from quotation_app.adapters.providers.simulated.signing import SIGNATURE_HEADER, hook_token, sign
-from quotation_app.adapters.secrets.local import new_key
-from quotation_app.api.app import create_app
-from quotation_app.application.jobs import JobRunner
-from quotation_app.composition import build_job_handlers, build_runtime
-from quotation_app.config import Settings
-from quotation_app.domain.manager_replies import ReplyClassification, ReplyIntent
-from quotation_app.domain.tenancy import Role
-from quotation_app.persistence.connections import SqlConnectionStore
-from quotation_app.persistence.jobs import SqlJobQueue
-from quotation_app.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT, seed_demo_tenants
-from quotation_app.persistence.tenancy import tenant_transaction
-from quotation_app.persistence.workflow import open_checkpointer
-from quotation_app.ports.reply_classification import ReplyClassifier
+from sales_platform.adapters.erp.simulated import SimulatedErp, demo_catalogues
+from sales_platform.adapters.interpreters.rules import RulesInterpreter
+from sales_platform.adapters.providers.simulated.signing import SIGNATURE_HEADER, hook_token, sign
+from sales_platform.adapters.secrets.local import new_key
+from sales_platform.api.app import create_app
+from sales_platform.application.jobs import JobRunner
+from sales_platform.composition import build_job_handlers, build_runtime
+from sales_platform.config import Settings
+from sales_platform.domain.manager_replies import ReplyClassification, ReplyIntent
+from sales_platform.domain.tenancy import Role
+from sales_platform.persistence.connections import SqlConnectionStore
+from sales_platform.persistence.jobs import SqlJobQueue
+from sales_platform.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT, seed_demo_tenants
+from sales_platform.persistence.tenancy import tenant_transaction
+from sales_platform.persistence.workflow import open_checkpointer
+from sales_platform.ports.reply_classification import ReplyClassifier
 from tests.integration.conftest import ApiKeyFactory
 from tests.integration.workflows.test_quotation import (
     ENQUIRY,

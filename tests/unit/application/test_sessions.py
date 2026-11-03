@@ -5,9 +5,9 @@ from typing import Any
 
 import pytest
 
-from quotation_app.application.api_keys import AuthenticationFailed, hash_secret
-from quotation_app.application.sessions import SessionService, csrf_token_for
-from quotation_app.ports.identity import VerifiedIdentity
+from sales_platform.application.api_keys import AuthenticationFailed, hash_secret
+from sales_platform.application.sessions import SessionService, csrf_token_for
+from sales_platform.ports.identity import VerifiedIdentity
 
 
 @pytest.fixture

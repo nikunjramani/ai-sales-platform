@@ -11,7 +11,7 @@ export function LoginPage() {
   if (session.data) return <Navigate to="/" replace />;
   return (
     <main className="narrow">
-      <h1>Quotation Portal</h1>
+      <h1>Sales Portal</h1>
       <LoginForm onSignedIn={() => navigate("/", { replace: true })} />
     </main>
   );

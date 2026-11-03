@@ -13,16 +13,16 @@ from uuid import UUID, uuid4
 import httpx
 import pytest
 
-from quotation_app.adapters.providers.telegram.client import TelegramBusy
-from quotation_app.adapters.providers.telegram.mapping import link_key
-from quotation_app.adapters.providers.telegram.provider import (
+from sales_platform.adapters.providers.telegram.client import TelegramBusy
+from sales_platform.adapters.providers.telegram.mapping import link_key
+from sales_platform.adapters.providers.telegram.provider import (
     EXPIRED_HINT,
     REPLY_HINT,
     TelegramProvider,
 )
-from quotation_app.adapters.secrets.memory import InMemorySecretStore
-from quotation_app.domain.connections import Connection, ConnectionStatus, Purpose
-from quotation_app.domain.intake import (
+from sales_platform.adapters.secrets.memory import InMemorySecretStore
+from sales_platform.domain.connections import Connection, ConnectionStatus, Purpose
+from sales_platform.domain.intake import (
     ConnectionUpdate,
     CustomerAction,
     CustomerMessage,
@@ -30,7 +30,7 @@ from quotation_app.domain.intake import (
     ManagerAction,
     ManagerReply,
 )
-from quotation_app.ports.providers import (
+from sales_platform.ports.providers import (
     Attachment,
     InboundRejected,
     InboundRequest,
@@ -349,10 +349,10 @@ def test_enable_link_and_first_customer_message_through_the_core(
     provider: TelegramProvider, secrets: InMemorySecretStore, now: datetime
 ) -> None:
     """The generic platform route and lifecycle with this package: no Telegram in the core."""
-    from quotation_app.application.inbound import InboundService
-    from quotation_app.application.lifecycle import ConnectionLifecycle
-    from quotation_app.application.providers import ProviderRegistry
-    from quotation_app.domain.tenancy import Role, TenantContext
+    from sales_platform.application.inbound import InboundService
+    from sales_platform.application.lifecycle import ConnectionLifecycle
+    from sales_platform.application.providers import ProviderRegistry
+    from sales_platform.domain.tenancy import Role, TenantContext
     from tests.unit.conftest import Job, MemoryConnections, MemoryInbox
     from tests.unit.one_click import MemoryLifecycle
 

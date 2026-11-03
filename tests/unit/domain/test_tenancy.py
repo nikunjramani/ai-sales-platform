@@ -3,7 +3,7 @@ from uuid import UUID
 
 import pytest
 
-from quotation_app.domain.tenancy import (
+from sales_platform.domain.tenancy import (
     PEOPLE_ROLES,
     Permission,
     PermissionDenied,

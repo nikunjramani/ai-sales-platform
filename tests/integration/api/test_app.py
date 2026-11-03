@@ -1,8 +1,8 @@
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 
-from quotation_app.api.app import create_app
-from quotation_app.config import Settings
+from sales_platform.api.app import create_app
+from sales_platform.config import Settings
 
 
 def test_readiness_with_real_database(

@@ -4,8 +4,8 @@ import pytest
 from sqlalchemy import Engine, text
 from sqlalchemy.exc import ProgrammingError
 
-from quotation_app.config import Settings
-from quotation_app.persistence.seed import DEMO_TENANTS, seed_demo_tenants
+from sales_platform.config import Settings
+from sales_platform.persistence.seed import DEMO_TENANTS, seed_demo_tenants
 
 
 def test_seed_is_idempotent_and_tenants_are_isolated(

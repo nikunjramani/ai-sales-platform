@@ -2,7 +2,7 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
-// The portal is served under /portal/ by the API (QUOTATION_PORTAL_DIST_DIR) or by the Vite dev
+// The portal is served under /portal/ by the API (SALES_PORTAL_DIST_DIR) or by the Vite dev
 // server, which forwards /api to the local API so cookies stay same-origin.
 export default defineConfig({
   base: "/portal/",

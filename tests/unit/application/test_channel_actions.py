@@ -6,18 +6,18 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.application.approvals import DecisionResult
-from quotation_app.application.channel_actions import (
+from sales_platform.application.approvals import DecisionResult
+from sales_platform.application.channel_actions import (
     ChannelActionRejected,
     ChannelEvent,
     ChannelEventKind,
 )
-from quotation_app.application.notifications import REFERENCE_LIFETIME
-from quotation_app.domain.jobs import JobKind
-from quotation_app.domain.quotations import ApprovalAction, DecisionConflict, QuotationStatus
-from quotation_app.domain.tenancy import PermissionDenied, Role
-from quotation_app.ports.channels import ChannelBinding
-from quotation_app.ports.jobs import ClaimedJob
+from sales_platform.application.notifications import REFERENCE_LIFETIME
+from sales_platform.domain.jobs import JobKind
+from sales_platform.domain.quotations import ApprovalAction, DecisionConflict, QuotationStatus
+from sales_platform.domain.tenancy import PermissionDenied, Role
+from sales_platform.ports.channels import ChannelBinding
+from sales_platform.ports.jobs import ClaimedJob
 
 MANAGER = "manager@industrial.example"
 CONNECTION = "simulated-local"

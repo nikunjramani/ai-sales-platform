@@ -36,18 +36,18 @@ def _wanted(existing: dict[str, str]) -> dict[str, str]:
         "POSTGRES_OWNER_PASSWORD": owner,
         "POSTGRES_APP_PASSWORD": app,
         "POSTGRES_WORKER_PASSWORD": worker,
-        "QUOTATION_ENVIRONMENT": "development",
-        "QUOTATION_DATABASE_URL": f"postgresql+psycopg://quotation_app:{app}{DATABASE}",
-        "QUOTATION_MIGRATION_DATABASE_URL": f"postgresql+psycopg://quotation_owner:{owner}{DATABASE}",
-        "QUOTATION_WORKER_DATABASE_URL": f"postgresql+psycopg://quotation_worker:{worker}{DATABASE}",
+        "SALES_ENVIRONMENT": "development",
+        "SALES_DATABASE_URL": f"postgresql+psycopg://quotation_app:{app}{DATABASE}",
+        "SALES_MIGRATION_DATABASE_URL": f"postgresql+psycopg://quotation_owner:{owner}{DATABASE}",
+        "SALES_WORKER_DATABASE_URL": f"postgresql+psycopg://quotation_worker:{worker}{DATABASE}",
         # Signs simulated manager-channel events (M4); development only.
-        "QUOTATION_SIMULATED_CHANNEL_SECRET": secret("QUOTATION_SIMULATED_CHANNEL_SECRET"),
+        "SALES_SIMULATED_CHANNEL_SECRET": secret("SALES_SIMULATED_CHANNEL_SECRET"),
         # Encrypts provider secrets in the local secret store (phase 1, ADR 0018); 32 bytes.
-        "QUOTATION_SECRET_STORE_KEY": existing.get("QUOTATION_SECRET_STORE_KEY")
+        "SALES_SECRET_STORE_KEY": existing.get("SALES_SECRET_STORE_KEY")
         or urlsafe_b64encode(token_bytes(32)).decode("ascii"),
         # Password of the seeded demo people (phase 2, Q24); development only, never in Git.
-        "QUOTATION_DEMO_PASSWORD": secret("QUOTATION_DEMO_PASSWORD"),
-        "QUOTATION_CHAT_IP_KEY": secret("QUOTATION_CHAT_IP_KEY"),
+        "SALES_DEMO_PASSWORD": secret("SALES_DEMO_PASSWORD"),
+        "SALES_CHAT_IP_KEY": secret("SALES_CHAT_IP_KEY"),
     }
 
 

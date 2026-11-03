@@ -9,17 +9,17 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from quotation_app.adapters.identity.dev import DevIdentityProvider
-from quotation_app.api.auth import CSRF_HEADER, PortalAuth, build_auth_router
-from quotation_app.api.connections import build_connection_router
-from quotation_app.api.portal import build_portal_router
-from quotation_app.application.channel_actions import ChannelEvent, ChannelEventKind
-from quotation_app.application.connections import ConnectionService
-from quotation_app.application.intake import EnquiryListService
-from quotation_app.application.sessions import SessionService
-from quotation_app.application.tenancy import TenantContextResolver
-from quotation_app.domain.connections import Purpose
-from quotation_app.domain.tenancy import Role
+from sales_platform.adapters.identity.dev import DevIdentityProvider
+from sales_platform.api.auth import CSRF_HEADER, PortalAuth, build_auth_router
+from sales_platform.api.connections import build_connection_router
+from sales_platform.api.portal import build_portal_router
+from sales_platform.application.channel_actions import ChannelEvent, ChannelEventKind
+from sales_platform.application.connections import ConnectionService
+from sales_platform.application.intake import EnquiryListService
+from sales_platform.application.sessions import SessionService
+from sales_platform.application.tenancy import TenantContextResolver
+from sales_platform.domain.connections import Purpose
+from sales_platform.domain.tenancy import Role
 
 ADMIN = "admin@industrial.example"
 MANAGER = "manager@industrial.example"

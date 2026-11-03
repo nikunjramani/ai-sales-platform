@@ -1,6 +1,6 @@
 """Shared test configuration and fixtures for every test folder.
 
-Layout: tests/unit mirrors src/quotation_app and runs offline. Every test under
+Layout: tests/unit mirrors src/sales_platform and runs offline. Every test under
 tests/integration is marked `integration` automatically and runs only with --run-integration
 plus explicit database URLs (see tests/integration/conftest.py).
 """
@@ -13,21 +13,21 @@ from uuid import NAMESPACE_URL, UUID, uuid5
 
 import pytest
 
-from quotation_app.adapters.erp.simulated import SimulatedErp, demo_catalogues
-from quotation_app.adapters.providers.api import ApiProvider
-from quotation_app.application.providers import ProviderRegistry
-from quotation_app.domain.attachments import AttachmentStatus
-from quotation_app.domain.connections import Connection, ConnectionStatus, Purpose
-from quotation_app.domain.conversations import OpenEnquiry
-from quotation_app.domain.intake import EnquiryStatus, InboundEnvelope
-from quotation_app.domain.money import RoundingMode
-from quotation_app.domain.pricing import PricingPolicy
-from quotation_app.domain.tenancy import Role, TenantContext
-from quotation_app.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
-from quotation_app.ports.api_keys import ApiKeyRecord
-from quotation_app.ports.intake import AttachmentView, EnquiryRouter, EnquiryView, Receipt
-from quotation_app.ports.storage import ObjectNotFound
-from quotation_app.ports.tenancy import PricingPolicyNotConfigured
+from sales_platform.adapters.erp.simulated import SimulatedErp, demo_catalogues
+from sales_platform.adapters.providers.api import ApiProvider
+from sales_platform.application.providers import ProviderRegistry
+from sales_platform.domain.attachments import AttachmentStatus
+from sales_platform.domain.connections import Connection, ConnectionStatus, Purpose
+from sales_platform.domain.conversations import OpenEnquiry
+from sales_platform.domain.intake import EnquiryStatus, InboundEnvelope
+from sales_platform.domain.money import RoundingMode
+from sales_platform.domain.pricing import PricingPolicy
+from sales_platform.domain.tenancy import Role, TenantContext
+from sales_platform.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
+from sales_platform.ports.api_keys import ApiKeyRecord
+from sales_platform.ports.intake import AttachmentView, EnquiryRouter, EnquiryView, Receipt
+from sales_platform.ports.storage import ObjectNotFound
+from sales_platform.ports.tenancy import PricingPolicyNotConfigured
 
 INTEGRATION_DIR = Path(__file__).parent / "integration"
 

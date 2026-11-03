@@ -19,20 +19,20 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.adapters.erp.simulated import demo_catalogue
-from quotation_app.application.inbound import InboundService
-from quotation_app.application.providers import ProviderRegistry
-from quotation_app.domain.connections import (
+from sales_platform.adapters.erp.simulated import demo_catalogue
+from sales_platform.application.inbound import InboundService
+from sales_platform.application.providers import ProviderRegistry
+from sales_platform.domain.connections import (
     Capabilities,
     Connection,
     ConnectionStatus,
     DeliveryMode,
     Purpose,
 )
-from quotation_app.domain.intake import InboundEvent, ManagerAction
-from quotation_app.domain.tenancy import Role, TenantContext
-from quotation_app.ports.erp import ErpReader
-from quotation_app.ports.providers import (
+from sales_platform.domain.intake import InboundEvent, ManagerAction
+from sales_platform.domain.tenancy import Role, TenantContext
+from sales_platform.ports.erp import ErpReader
+from sales_platform.ports.providers import (
     InboundRejected,
     InboundRequest,
     OperationUnsupported,
@@ -44,7 +44,7 @@ from quotation_app.ports.providers import (
     SendReceipt,
     TestResult,
 )
-from quotation_app.ports.secrets import SecretNotFound
+from sales_platform.ports.secrets import SecretNotFound
 from tests.support.catalogue_store import InMemoryCatalogueStore
 
 NOW = datetime(2026, 10, 27, tzinfo=UTC)
@@ -234,7 +234,7 @@ def provider(request: pytest.FixtureRequest) -> Provider:
 
 
 def test_every_installed_provider_has_a_contract_sample() -> None:
-    names = {entry.name for entry in entry_points(group="quotation_app.providers")}
+    names = {entry.name for entry in entry_points(group="sales_platform.providers")}
     assert names <= set(SAMPLES), f"add contract samples for {sorted(names - set(SAMPLES))}"
 
 

@@ -1,6 +1,6 @@
 # Two-window demo
 A simple page for demos, kept outside the main code on purpose (no portal structure, no tests).
-Development only; it refuses to start when `QUOTATION_ENVIRONMENT=production`.
+Development only; it refuses to start when `SALES_ENVIRONMENT=production`.
 
 - **Left, website chat (phase 4):** the demo business's real hosted chat page (`/chat/<handle>`)
   with the real widget: start a chat with a name and an email or phone, ask, answer our
@@ -30,7 +30,7 @@ page. The stop button ends all of them (the task "dev: stop all" also frees port
   `var/demo/state.json` (git-ignored); the browser never sees it.
 - Website chat: enables the demo business's chat once (like the portal's Enable button) with
   this page (`http://127.0.0.1:8001`) as an allowed website, and keeps its address in the state
-  file. `run_demo.py` starts the API with `QUOTATION_PORTAL_DIST_DIR=portal/dist`, so it serves
+  file. `run_demo.py` starts the API with `SALES_PORTAL_DIST_DIR=portal/dist`, so it serves
   `/chat/widget.js`.
 - Manager: links the account `demo-manager-phone` to `manager@industrial.example` (dev sign-in,
   linking code, signed enroll event), reads review messages from the simulated channel outbox

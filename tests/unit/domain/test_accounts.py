@@ -3,7 +3,7 @@ from uuid import uuid4
 
 import pytest
 
-from quotation_app.domain.accounts import (
+from sales_platform.domain.accounts import (
     PASSWORD_POLICY,
     REQUIRED_FOR_GO_LIVE,
     TOKEN_LIFETIME,
@@ -24,7 +24,7 @@ from quotation_app.domain.accounts import (
     user_subject,
     validate_people_roles,
 )
-from quotation_app.domain.tenancy import Role
+from sales_platform.domain.tenancy import Role
 
 NOW = datetime(2026, 10, 27, 9, 0, tzinfo=UTC)
 

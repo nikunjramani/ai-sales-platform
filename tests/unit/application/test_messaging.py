@@ -6,10 +6,10 @@ from uuid import UUID
 
 import pytest
 
-from quotation_app.application.channel_actions import ChannelEvent, ChannelEventKind
-from quotation_app.domain.connections import ConnectionStatus
-from quotation_app.domain.messages import MessageStatus, TemplateKey
-from quotation_app.ports.providers import SendRejected, SendUncertain
+from sales_platform.application.channel_actions import ChannelEvent, ChannelEventKind
+from sales_platform.domain.connections import ConnectionStatus
+from sales_platform.domain.messages import MessageStatus, TemplateKey
+from sales_platform.ports.providers import SendRejected, SendUncertain
 
 MANAGER = "manager@industrial.example"
 

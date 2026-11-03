@@ -7,9 +7,9 @@ import pytest
 from sqlalchemy import Engine, text
 from sqlalchemy.exc import ProgrammingError
 
-from quotation_app.persistence.jobs import SqlJobQueue, job_status
-from quotation_app.persistence.tenancy import tenant_transaction
-from quotation_app.ports.jobs import LeaseLost
+from sales_platform.persistence.jobs import SqlJobQueue, job_status
+from sales_platform.persistence.tenancy import tenant_transaction
+from sales_platform.ports.jobs import LeaseLost
 
 LEASE = timedelta(seconds=30)
 

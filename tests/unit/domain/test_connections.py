@@ -5,7 +5,7 @@ from uuid import UUID
 
 import pytest
 
-from quotation_app.domain.connections import (
+from sales_platform.domain.connections import (
     Capabilities,
     Connection,
     ConnectionStatus,

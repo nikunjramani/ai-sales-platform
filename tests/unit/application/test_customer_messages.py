@@ -8,24 +8,24 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.application.customer_messages import (
+from sales_platform.application.customer_messages import (
     OPTED_OUT_REASON,
     CustomerConsentHook,
     CustomerMessenger,
 )
-from quotation_app.application.messaging import OutboundService
-from quotation_app.application.providers import ProviderRegistry
-from quotation_app.domain.connections import (
+from sales_platform.application.messaging import OutboundService
+from sales_platform.application.providers import ProviderRegistry
+from sales_platform.domain.connections import (
     Capabilities,
     Connection,
     ConnectionStatus,
     DeliveryMode,
     Purpose,
 )
-from quotation_app.domain.contacts import ConsentStatus
-from quotation_app.domain.messages import MessageStatus, OutboundMessage, TemplateKey
-from quotation_app.ports.conversations import CustomerTarget
-from quotation_app.ports.messages import NewMessage
+from sales_platform.domain.contacts import ConsentStatus
+from sales_platform.domain.messages import MessageStatus, OutboundMessage, TemplateKey
+from sales_platform.ports.conversations import CustomerTarget
+from sales_platform.ports.messages import NewMessage
 
 TENANT = uuid4()
 NOW = datetime(2026, 10, 28, tzinfo=UTC)
@@ -181,7 +181,7 @@ def test_opted_out_customers_only_get_the_confirmation(
 def test_the_consent_hook_hands_over_to_the_template_hook(world: World) -> None:
     class Inner:
         def before_send(self, message: OutboundMessage) -> Any:
-            from quotation_app.ports.messages import SendPreparation
+            from sales_platform.ports.messages import SendPreparation
 
             return SendPreparation(actions=("accept", "decline"))
 
@@ -194,7 +194,7 @@ def test_the_consent_hook_hands_over_to_the_template_hook(world: World) -> None:
 
 
 def test_every_recorded_answer_has_a_customer_message() -> None:
-    from quotation_app.application.acceptance import CUSTOMER_TEMPLATE_FOR
-    from quotation_app.domain.acceptance import ResponseOutcome
+    from sales_platform.application.acceptance import CUSTOMER_TEMPLATE_FOR
+    from sales_platform.domain.acceptance import ResponseOutcome
 
     assert set(CUSTOMER_TEMPLATE_FOR) == set(ResponseOutcome)

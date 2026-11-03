@@ -704,7 +704,7 @@ Existing `evals/enquiry_extraction.jsonl` must stay green for `rules` (unit test
 - `widget/`: start form requires email or phone; honeypot; message list uses text only (an HTML string shows as text); quotation card Accept asks to confirm, then posts once; poller slows when hidden and backs off on 429; works when `localStorage` throws; no import from `src/features` (architecture test); bundle size budget.
 
 ### 9.6 Live run (end of phase)
-1. `uv run python demo/run_demo.py` with `QUOTATION_MODEL=google_genai:gemini-3.5-flash-lite` (synthetic data only, ADR 0017).
+1. `uv run python demo/run_demo.py` with `SALES_MODEL=google_genai:gemini-3.5-flash-lite` (synthetic data only, ADR 0017).
 2. In the website chat pane: start a session (name + email), send "can you get cables price?" → the chat shows "How many metre of 2-core power cable do you need?".
 3. Send "10 meter?" → no new question; the portal shows **one** enquiry with two messages, round 2 `ready_for_quotation`.
 4. Manager approves on the simulated phone → the chat shows the quotation card (total, valid until, PDF download, Accept/Decline).

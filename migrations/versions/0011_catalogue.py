@@ -11,7 +11,7 @@
   evidence and the acceptance comparison store prices as text).
 - Forced tenant RLS on all five tables. The API role reads and writes (column-level UPDATE on
   products and categories only); the worker only reads.
-- create_business gains the default catalogue source (QUOTATION_DEFAULT_CATALOGUE_PROVIDER),
+- create_business gains the default catalogue source (SALES_DEFAULT_CATALOGUE_PROVIDER),
   created with the business. Businesses without an active catalogue connection get one to the
   local catalogue (user answer, 2026-10-28); the demo businesses keep the simulated ERP.
 

@@ -6,9 +6,9 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.domain.jobs import JobKind
-from quotation_app.domain.pricing import PricingRejected, RequestedLine
-from quotation_app.domain.quotations import (
+from sales_platform.domain.jobs import JobKind
+from sales_platform.domain.pricing import PricingRejected, RequestedLine
+from sales_platform.domain.quotations import (
     ApprovalAction,
     DecisionConflict,
     QuotationNotFound,
@@ -19,7 +19,7 @@ from quotation_app.domain.quotations import (
     StaleVersion,
     TaskNotFound,
 )
-from quotation_app.domain.tenancy import AccessDenied, PermissionDenied, Role
+from sales_platform.domain.tenancy import AccessDenied, PermissionDenied, Role
 
 FAN = ("IND-FAN-450", "2", "each")
 MANAGER = "manager@industrial.example"

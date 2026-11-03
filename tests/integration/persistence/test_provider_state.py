@@ -7,28 +7,28 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy import Engine, text
 
-from quotation_app.adapters.secrets.memory import InMemorySecretStore
-from quotation_app.adapters.storage.local import LocalObjectStorage
-from quotation_app.application.conversations import default_router
-from quotation_app.application.customer_inbox import CustomerInbox
-from quotation_app.application.providers import ProviderRegistry
-from quotation_app.domain.accounts import RateRule
-from quotation_app.domain.chat import ChatLimits
-from quotation_app.domain.connections import ConnectionStatus
-from quotation_app.domain.intake import CustomerMessage
-from quotation_app.persistence.accounts import SqlBusinessStore
-from quotation_app.persistence.connections import SqlConnectionStore
-from quotation_app.persistence.conversations import SqlStaffMessages
-from quotation_app.persistence.inbound import SqlInboundStore
-from quotation_app.persistence.intake import SqlIntakeStore
-from quotation_app.persistence.provider_state import (
+from sales_platform.adapters.secrets.memory import InMemorySecretStore
+from sales_platform.adapters.storage.local import LocalObjectStorage
+from sales_platform.application.conversations import default_router
+from sales_platform.application.customer_inbox import CustomerInbox
+from sales_platform.application.providers import ProviderRegistry
+from sales_platform.domain.accounts import RateRule
+from sales_platform.domain.chat import ChatLimits
+from sales_platform.domain.connections import ConnectionStatus
+from sales_platform.domain.intake import CustomerMessage
+from sales_platform.persistence.accounts import SqlBusinessStore
+from sales_platform.persistence.connections import SqlConnectionStore
+from sales_platform.persistence.conversations import SqlStaffMessages
+from sales_platform.persistence.inbound import SqlInboundStore
+from sales_platform.persistence.intake import SqlIntakeStore
+from sales_platform.persistence.provider_state import (
     SqlConnectionLifecycle,
     SqlRouteLookup,
     SqlRouteWriter,
 )
-from quotation_app.persistence.rate_limits import SqlRateLimiter
-from quotation_app.persistence.tenancy import tenant_transaction
-from quotation_app.ports.connections import ConnectionChange, RouteTaken
+from sales_platform.persistence.rate_limits import SqlRateLimiter
+from sales_platform.persistence.tenancy import tenant_transaction
+from sales_platform.ports.connections import ConnectionChange, RouteTaken
 from tests.unit.one_click import TOOL, OneClickTool
 
 NOW = datetime(2026, 10, 29, 10, 0, tzinfo=UTC)

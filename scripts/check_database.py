@@ -12,7 +12,7 @@ import sys
 
 from sqlalchemy.engine import make_url
 
-from quotation_app.config import Settings
+from sales_platform.config import Settings
 
 DEV_DATABASE = "quotation_dev"
 TEST_DATABASE = "quotation_test"
@@ -48,7 +48,7 @@ def main() -> None:
         environment = {**os.environ, **overrides}
         subprocess.run([sys.executable, "-m", *command], check=True, env=environment)
 
-    on_test_db = {"QUOTATION_MIGRATION_DATABASE_URL": test_urls["owner"]}
+    on_test_db = {"SALES_MIGRATION_DATABASE_URL": test_urls["owner"]}
     test_env = {
         "TEST_DATABASE_URL": test_urls["runtime"],
         "TEST_MIGRATION_DATABASE_URL": test_urls["owner"],

@@ -4,7 +4,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.domain.orders import (
+from sales_platform.domain.orders import (
     FINAL_STATUSES,
     LOCAL_TRANSITIONS,
     Fulfilment,
@@ -23,7 +23,7 @@ from quotation_app.domain.orders import (
     order_status_command,
     stock_shortfall,
 )
-from quotation_app.ports.erp import ErpOrderState
+from sales_platform.ports.erp import ErpOrderState
 
 NOW = datetime(2026, 10, 29, tzinfo=UTC)
 ORDER_ID = UUID("1a2b3c4d-0000-4000-8000-000000000001")

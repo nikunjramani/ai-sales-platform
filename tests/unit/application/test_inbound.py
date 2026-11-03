@@ -11,14 +11,14 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.adapters.providers.simulated import SimulatedProvider
-from quotation_app.adapters.providers.simulated.signing import SIGNATURE_HEADER, sign
-from quotation_app.application.inbound import EventTooLarge, HookNotFound, InboundService
-from quotation_app.application.providers import ProviderRegistry
-from quotation_app.domain.connections import Connection, ConnectionStatus, Purpose
-from quotation_app.domain.intake import ConsentChange, InboundEvent, ManagerAction
-from quotation_app.ports.providers import InboundRejected, InboundRequest, InvalidInbound
-from quotation_app.ports.secrets import SecretNotFound
+from sales_platform.adapters.providers.simulated import SimulatedProvider
+from sales_platform.adapters.providers.simulated.signing import SIGNATURE_HEADER, sign
+from sales_platform.application.inbound import EventTooLarge, HookNotFound, InboundService
+from sales_platform.application.providers import ProviderRegistry
+from sales_platform.domain.connections import Connection, ConnectionStatus, Purpose
+from sales_platform.domain.intake import ConsentChange, InboundEvent, ManagerAction
+from sales_platform.ports.providers import InboundRejected, InboundRequest, InvalidInbound
+from sales_platform.ports.secrets import SecretNotFound
 
 SECRET = "unit-signing-secret"
 TOKEN = "unit-hook-token"

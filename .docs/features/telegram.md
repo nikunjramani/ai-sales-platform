@@ -1,5 +1,5 @@
 # Telegram (phase 5)
-Decision: [ADR 0022](../adr/0022-one-click-providers-and-approval-by-message.md). Package: [adapters/providers/telegram/](../../src/quotation_app/adapters/providers/telegram/provider.py). **Not live-verified:** phase 5 had no accounts. Updates are taken from the Bot API documentation ([fixtures](../../tests/data/providers/telegram/updates.json)), and the first live run must confirm the points marked "verify" in the [phase 5 plan](../plan/platform/implementation/phase-5-one-click-providers.md#64-telegram--our-bot-behind-the-businesss-own-account).
+Decision: [ADR 0022](../adr/0022-one-click-providers-and-approval-by-message.md). Package: [adapters/providers/telegram/](../../src/sales_platform/adapters/providers/telegram/provider.py). **Not live-verified:** phase 5 had no accounts. Updates are taken from the Bot API documentation ([fixtures](../../tests/data/providers/telegram/updates.json)), and the first live run must confirm the points marked "verify" in the [phase 5 plan](../plan/platform/implementation/phase-5-one-click-providers.md#64-telegram--our-bot-behind-the-businesss-own-account).
 
 ## In short
 - **Customers** write to the business's **own** Telegram account. Our one bot is connected to it as a Telegram Business chatbot and answers there.
@@ -37,7 +37,7 @@ If replies are switched off, or the bot is removed in Telegram, the connection s
 4. **Writing without replying** to a message gets a hint: reply to the approval message, or use its buttons.
 
 ## Operator setup (once)
-See [provider setup](../operations/provider-setup.md#telegram): create the bot with BotFather, store its settings with `python -m quotation_app.ops platform-config set telegram`, then `python -m quotation_app.ops platform-setup telegram` (sets the webhook).
+See [provider setup](../operations/provider-setup.md#telegram): create the bot with BotFather, store its settings with `python -m sales_platform.ops platform-config set telegram`, then `python -m sales_platform.ops platform-setup telegram` (sets the webhook).
 
 ## Disable
 Connections → Telegram → Disable… (type the name). Our routes are removed at once. **The business must still remove our bot** in Settings → Telegram Business → Chatbots: we cannot do that for them.

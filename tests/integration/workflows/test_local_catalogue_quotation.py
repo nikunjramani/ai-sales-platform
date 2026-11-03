@@ -12,16 +12,16 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 
-from quotation_app.adapters.interpreters.rules import RulesInterpreter
-from quotation_app.api.app import create_app
-from quotation_app.api.auth import CSRF_HEADER
-from quotation_app.application.jobs import JobRunner
-from quotation_app.composition import build_job_handlers, build_runtime
-from quotation_app.config import Settings
-from quotation_app.domain.tenancy import Role
-from quotation_app.persistence.jobs import SqlJobQueue
-from quotation_app.persistence.seed import LOCAL_TENANT
-from quotation_app.persistence.workflow import open_checkpointer
+from sales_platform.adapters.interpreters.rules import RulesInterpreter
+from sales_platform.api.app import create_app
+from sales_platform.api.auth import CSRF_HEADER
+from sales_platform.application.jobs import JobRunner
+from sales_platform.composition import build_job_handlers, build_runtime
+from sales_platform.config import Settings
+from sales_platform.domain.tenancy import Role
+from sales_platform.persistence.jobs import SqlJobQueue
+from sales_platform.persistence.seed import LOCAL_TENANT
+from sales_platform.persistence.workflow import open_checkpointer
 
 pytestmark = pytest.mark.integration
 

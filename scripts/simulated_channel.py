@@ -5,7 +5,7 @@
   decide --user U --task TASK --action A   approve / reject / request_revision from account U
          [--reason TEXT]
 
-Events are signed with QUOTATION_SIMULATED_CHANNEL_SECRET from .env, exactly as the API checks
+Events are signed with SALES_SIMULATED_CHANNEL_SECRET from .env, exactly as the API checks
 them, and sent to the running API (default http://127.0.0.1:8000). Action references are read
 from the outbox file and never printed.
 
@@ -24,12 +24,12 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
 
-from quotation_app.adapters.providers.simulated import DEFAULT_CONNECTION_ID, PROVIDER_KEY
-from quotation_app.adapters.providers.simulated.signing import SIGNATURE_HEADER, hook_token, sign
-from quotation_app.config import Settings
-from quotation_app.persistence.connections import SqlConnectionStore
-from quotation_app.persistence.database import build_engine
-from quotation_app.persistence.seed import INDUSTRIAL_TENANT
+from sales_platform.adapters.providers.simulated import DEFAULT_CONNECTION_ID, PROVIDER_KEY
+from sales_platform.adapters.providers.simulated.signing import SIGNATURE_HEADER, hook_token, sign
+from sales_platform.config import Settings
+from sales_platform.persistence.connections import SqlConnectionStore
+from sales_platform.persistence.database import build_engine
+from sales_platform.persistence.seed import INDUSTRIAL_TENANT
 
 
 def _outbox(settings: Settings) -> Path:
@@ -112,7 +112,7 @@ def main() -> None:
 
     if settings.simulated_channel_secret is None:
         raise SystemExit(
-            "QUOTATION_SIMULATED_CHANNEL_SECRET is not set; run init_local_env.py --add-missing"
+            "SALES_SIMULATED_CHANNEL_SECRET is not set; run init_local_env.py --add-missing"
         )
     secret = settings.simulated_channel_secret.get_secret_value()
     event: dict[str, Any] = {"event_id": f"cli-{uuid4()}", "external_user_id": arguments.user}

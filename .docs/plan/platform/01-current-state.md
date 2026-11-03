@@ -1,5 +1,5 @@
 # 1. Current state (code review, 2026-10-23)
-The core business flow works end to end through APIs (M0-M6): enquiry → AI/rules reading → product matching → questions → pricing → manager approval → PDF → customer accept/decline. Everything *around* that core is fixed for two demo businesses. Paths are relative to `src/quotation_app/` unless stated.
+The core business flow works end to end through APIs (M0-M6): enquiry → AI/rules reading → product matching → questions → pricing → manager approval → PDF → customer accept/decline. Everything *around* that core is fixed for two demo businesses. Paths are relative to `src/sales_platform/` unless stated.
 
 ## What we can reuse as-is
 | Area | Reusable piece | Where |

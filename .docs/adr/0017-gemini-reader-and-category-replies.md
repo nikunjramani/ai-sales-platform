@@ -13,7 +13,7 @@ The user answered each open point on 2026-10-23 ([clarify-before-building](../..
 ## Decision
 | Topic | Decision (user, 2026-10-23) |
 |---|---|
-| AI reader | **Generic** (user, 2026-10-23: "it should be generic… not just a single one where we have to change code"): any LangChain chat model from settings, `QUOTATION_MODEL=<provider>:<model>`. No provider-specific code; the Ollama-specific code is removed. First model: Google Gemini **free tier**, small: `google_genai:gemini-3.5-flash-lite` (stable on Google's models page, checked 2026-10-23) |
+| AI reader | **Generic** (user, 2026-10-23: "it should be generic… not just a single one where we have to change code"): any LangChain chat model from settings, `SALES_MODEL=<provider>:<model>`. No provider-specific code; the Ollama-specific code is removed. First model: Google Gemini **free tier**, small: `google_genai:gemini-3.5-flash-lite` (stable on Google's models page, checked 2026-10-23) |
 | Data | Free-tier prompts **are used to improve Google's products** (Google pricing page): synthetic/demo data only. Move to a paid tier or another provider before real customer data |
 | AI unavailable, rate-limited or bad key | **Wait and retry:** the durable job retries with backoff and resumes from its checkpoint. There is no fallback to `rules` |
 | Product not in the catalogue | Say so and name the business's **categories** (from the ERP), e.g. "We could not find 'tata sierra car' in our catalogue. We supply: Cables, Exhaust fans, Fasteners, Pumps. Ask about a category to see its products, or share a product code." The same list is added when nothing was understood |
@@ -21,7 +21,7 @@ The user answered each open point on 2026-10-23 ([clarify-before-building](../..
 | Reply wording | Customer replies stay **fixed templates**; the AI only reads the enquiry. AI-written replies were offered and not chosen |
 
 ## Implementation
-- **Settings:** `QUOTATION_MODEL` (unset = free rules, no AI; otherwise `<provider>:<model>`), `QUOTATION_MODEL_API_KEY` (secret) and `QUOTATION_MODEL_OPTIONS` (JSON passed to the model as is: timeout, retries, base URL...).
+- **Settings:** `SALES_MODEL` (unset = free rules, no AI; otherwise `<provider>:<model>`), `SALES_MODEL_API_KEY` (secret) and `SALES_MODEL_OPTIONS` (JSON passed to the model as is: timeout, retries, base URL...).
 - **Factory:** LangChain's `init_chat_model(model, model_provider=provider, temperature=0, api_key=..., **options)`, wrapped in the existing `LangChainInterpreter`. Prompt-injection containment, strict schemas and verbatim-quote checks are unchanged. A provider whose package is missing gives a clear error at startup.
 - **Adding a provider** (OpenAI, Claude, Groq, Ollama...): add its LangChain package to the `ai` extra and set the three settings. No code change.
 - **Dependencies:** one optional extra `ai`: `langchain` 1.4.4 (for `init_chat_model`) and `langchain-google-genai` 4.4.0. `langchain-ollama` was removed. Transitive pins `google-genai<=2.29.0`, `google-auth<=2.61.0` and `pycparser<=3.1` keep every new package at least 14 days old.
@@ -48,5 +48,5 @@ The user answered each open point on 2026-10-23 ([clarify-before-building](../..
 - **Live (API and worker):**
   - "can you get price for tata cars" and "…2 tata sierra car" gave the category replies;
   - "2 x IND-FAN-450" was still ready for quotation;
-  - a worker configured only through settings (`QUOTATION_MODEL=google_genai:gemini-3.5-flash-lite`, invalid key) logged `Enquiry interpreter: google_genai:gemini-3.5-flash-lite` and `retry … (GoogleInvalidRequestError)`, with no key in the logs.
+  - a worker configured only through settings (`SALES_MODEL=google_genai:gemini-3.5-flash-lite`, invalid key) logged `Enquiry interpreter: google_genai:gemini-3.5-flash-lite` and `retry … (GoogleInvalidRequestError)`, with no key in the logs.
 - **Still to do:** a live Gemini evaluation with the user's key.

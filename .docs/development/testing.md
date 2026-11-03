@@ -3,7 +3,7 @@
 ```text
 tests/
   conftest.py          Shared options, fixtures and in-memory fakes for every test
-  unit/                Offline; folders mirror src/quotation_app
+  unit/                Offline; folders mirror src/sales_platform
     conftest.py        M4/M5 in-memory quotation/approval/channel/session/document store and harness
     domain/  application/  ports/  workflows/  api/  persistence/
     adapters/erp/  adapters/storage/  adapters/documents/  adapters/interpreters/
@@ -24,7 +24,7 @@ portal/
     features/<feature>/<layer>/...   e.g. features/quotations/ui/components/DecisionPanel.test.tsx
 ```
 Rules:
-- A unit test for `src/quotation_app/<path>/<module>.py` lives in `tests/unit/<path>/test_<module>.py`. Integration tests follow the same mirroring under `tests/integration/`.
+- A unit test for `src/sales_platform/<path>/<module>.py` lives in `tests/unit/<path>/test_<module>.py`. Integration tests follow the same mirroring under `tests/integration/`.
 - The same applies to the portal: a test for `portal/src/<path>/<Name>.tsx` lives in `portal/tests/<path>/<Name>.test.tsx`. Test files never sit next to UI code; Vitest only collects `portal/tests/**`.
 - `tests/` has no `__init__.py` files. Pytest runs with `--import-mode=importlib` and mypy with `explicit_package_bases`, so names such as `domain/test_pricing.py` and `application/test_pricing.py` can coexist.
 - Shared setup lives in fixtures, not copied helpers. Test modules never import `conftest.py`.
@@ -182,7 +182,7 @@ CI runs `check_database.py --cycle` on a fresh environment. Remote GitHub Action
   - `test_migrations_0015.py` (down to 0013 with phase 6/7 data);
   - `test_provider_state.py` (an order question is not an enquiry);
   - `tests/integration/workflows/test_orders.py` (automatic and staff creation, the customer's pull view, moves, a create race, compare-and-set steps, append-only history, grants, isolation).
-- **Sandbox (integration marker, needs `QUOTATION_TEST_ERPNEXT_*`):** `tests/unit/adapters/providers/erpnext/test_erpnext_sandbox.py` and the writer contract. See [provider setup](../operations/provider-setup.md#erpnext).
+- **Sandbox (integration marker, needs `SALES_TEST_ERPNEXT_*`):** `tests/unit/adapters/providers/erpnext/test_erpnext_sandbox.py` and the writer contract. See [provider setup](../operations/provider-setup.md#erpnext).
 
 ## Planned business suites
 - Domain unit tests: Decimal totals, rounding, quantity/unit validation, expiry, pricing policies, missing values.

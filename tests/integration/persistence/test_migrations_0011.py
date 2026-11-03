@@ -9,11 +9,11 @@ from uuid import UUID, uuid4
 import pytest
 from sqlalchemy import Engine, text
 
-from quotation_app.domain.catalogue_admin import ProductFields
-from quotation_app.domain.tenancy import Role, TenantContext
-from quotation_app.persistence.catalogue import SqlCatalogueStore
-from quotation_app.persistence.seed import INDUSTRIAL_TENANT, LOCAL_TENANT
-from quotation_app.persistence.tenancy import tenant_transaction
+from sales_platform.domain.catalogue_admin import ProductFields
+from sales_platform.domain.tenancy import Role, TenantContext
+from sales_platform.persistence.catalogue import SqlCatalogueStore
+from sales_platform.persistence.seed import INDUSTRIAL_TENANT, LOCAL_TENANT
+from sales_platform.persistence.tenancy import tenant_transaction
 
 pytestmark = [pytest.mark.integration, pytest.mark.usefixtures("fresh_accounts")]
 
@@ -26,9 +26,9 @@ _SOURCES = (
 def alembic(*arguments: str) -> None:
     environment = {
         **os.environ,
-        "QUOTATION_ENVIRONMENT": "test",
-        "QUOTATION_DATABASE_URL": os.environ["TEST_DATABASE_URL"],
-        "QUOTATION_MIGRATION_DATABASE_URL": os.environ["TEST_MIGRATION_DATABASE_URL"],
+        "SALES_ENVIRONMENT": "test",
+        "SALES_DATABASE_URL": os.environ["TEST_DATABASE_URL"],
+        "SALES_MIGRATION_DATABASE_URL": os.environ["TEST_MIGRATION_DATABASE_URL"],
     }
     subprocess.run([sys.executable, "-m", "alembic", *arguments], check=True, env=environment)
 

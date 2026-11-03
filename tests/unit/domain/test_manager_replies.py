@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from quotation_app.domain.manager_replies import (
+from sales_platform.domain.manager_replies import (
     MAX_REPLY_CHARACTERS,
     ReplyClassification,
     ReplyIntent,
