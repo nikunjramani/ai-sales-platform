@@ -26,6 +26,12 @@ class VerifiedIdentity:
         require_text(self.provider, "provider", 32)
 
 
+class IdentityProvider(Protocol):
+    """Proves who someone is (the dev login now, OIDC later); raises IdentityRejected."""
+
+    def verify(self, subject: str) -> VerifiedIdentity: ...
+
+
 @dataclass(frozen=True)
 class SessionRecord:
     session_id: UUID

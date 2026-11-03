@@ -1,7 +1,10 @@
-"""Composition root: builds the pluggable runtime parts and the worker's job handlers (ADR 0018).
+"""Composition root: builds the pluggable runtime parts, the shared core and the worker's job
+handlers (ADR 0018, ADR 0026 step 1).
 
 The API, the worker, scripts and tests all wire providers, stores and handlers through these
-functions, so adding a provider never means editing the API or the worker.
+functions, so adding a provider never means editing the API or the worker. `build_core` builds
+the services both processes use, once per process, so the API and the worker cannot wire them
+differently.
 """
 
 import threading
@@ -245,6 +248,82 @@ def build_catalogue(engine: Engine, runtime: Runtime) -> ErpReader:
     )
 
 
+@dataclass(frozen=True)
+class CoreServices:
+    """The stores and services both the API and the worker use, built once per process with
+    that process's own database role (`engine`). Nothing connects until it is used."""
+
+    connections: SqlConnectionStore
+    businesses: SqlBusinessStore
+    memberships: SqlMembershipReader
+    resolver: TenantContextResolver
+    catalogue: ErpReader
+    pricing: QuotationPricingService
+    response_store: SqlResponseStore
+    responses: QuotationResponseService
+    approvals: ApprovalService
+    channel_actions: ChannelActionService
+    lifecycle: ConnectionLifecycle
+    order_store: SqlOrderStore
+    destinations: OrderDestinations
+    orders: OrderService
+    notifications: SqlNotificationStore
+    deliveries: SqlDeliveryStore
+    inbox: SqlInboundStore
+    reply_store: SqlReplyStore
+    customer_actions: CustomerActionService
+    outbox: SqlMessageOutbox
+
+
+def build_core(
+    settings: Settings,
+    engine: Engine,
+    runtime: Runtime,
+    catalogue: ErpReader | None = None,
+) -> CoreServices:
+    """`catalogue` defaults to each business's own product source; tests may pass a fixed one."""
+    connections = SqlConnectionStore(engine)
+    reader = catalogue if catalogue is not None else build_catalogue(engine, runtime)
+    pricing = QuotationPricingService(reader, SqlPricingPolicyReader(engine))
+    response_store = SqlResponseStore(engine)
+    responses = QuotationResponseService(response_store, pricing)
+    memberships = SqlMembershipReader(engine)
+    resolver = TenantContextResolver(memberships)
+    approvals = ApprovalService(SqlApprovalStore(engine), resolver)
+    order_store = SqlOrderStore(engine)
+    destinations = OrderDestinations(connections, runtime.registry, runtime.secrets)
+    return CoreServices(
+        connections=connections,
+        businesses=SqlBusinessStore(engine, default_catalogue_source(settings, runtime.registry)),
+        memberships=memberships,
+        resolver=resolver,
+        catalogue=reader,
+        pricing=pricing,
+        response_store=response_store,
+        responses=responses,
+        approvals=approvals,
+        channel_actions=ChannelActionService(
+            SqlChannelStore(engine),
+            approvals,
+            connections,
+            runtime.registry,
+            secrets=runtime.secrets,
+        ),
+        lifecycle=ConnectionLifecycle(
+            connections, SqlConnectionLifecycle(engine), runtime.registry, runtime.secrets
+        ),
+        order_store=order_store,
+        destinations=destinations,
+        orders=OrderService(order_store, reader, destinations),
+        notifications=SqlNotificationStore(engine),
+        deliveries=SqlDeliveryStore(engine),
+        inbox=SqlInboundStore(engine),
+        reply_store=SqlReplyStore(engine),
+        customer_actions=CustomerActionService(SqlCustomerActionStore(engine), responses),
+        outbox=SqlMessageOutbox(engine),
+    )
+
+
 def build_job_handlers(
     settings: Settings,
     engine: Engine,
@@ -259,23 +338,22 @@ def build_job_handlers(
     `catalogue` defaults to each business's own source; tests may pass a fixed reader.
     `reply_classifier` reads managers' written replies (None: they are not read, P5-5).
     """
-    if catalogue is None:
-        catalogue = build_catalogue(engine, runtime)
+    core = build_core(settings, engine, runtime, catalogue)
     storage = LocalObjectStorage(settings.storage_dir)
-    connections = SqlConnectionStore(engine)
-    notifications = SqlNotificationStore(engine)
-    deliveries = SqlDeliveryStore(engine)
-    outbox = SqlMessageOutbox(engine)
+    connections = core.connections
+    notifications = core.notifications
+    deliveries = core.deliveries
+    outbox = core.outbox
     outbound = OutboundService(outbox)
-    pricing = QuotationPricingService(catalogue, SqlPricingPolicyReader(engine))
-    responses = SqlResponseStore(engine)
+    pricing = core.pricing
+    responses = core.response_store
     workflow_store = SqlWorkflowStore(engine)
     quotation_store = SqlQuotationWorkflowStore(engine)
     targets = SqlCustomerTargets(engine)
     customers = CustomerMessenger(targets, connections, runtime.registry, outbound)
     enquiry_graph = build_enquiry_graph(
         EnquiryWorkflowDeps(
-            workflow_store, storage, PdfAndTextReader(), interpreter, catalogue, customers
+            workflow_store, storage, PdfAndTextReader(), interpreter, core.catalogue, customers
         ),
         checkpointer,
     )
@@ -312,36 +390,25 @@ def build_job_handlers(
         ),
         quotation_store,
     )
-    approvals = ApprovalService(
-        SqlApprovalStore(engine), TenantContextResolver(SqlMembershipReader(engine))
-    )
-    statuses = SqlBusinessStore(engine)
-    channel_actions = ChannelActionService(
-        SqlChannelStore(engine),
-        approvals,
-        connections,
-        runtime.registry,
-        secrets=runtime.secrets,
-    )
+    statuses = core.businesses
+    channel_actions = core.channel_actions
     # Approval by message (D10, phase 5): buttons, written replies and confirmations.
-    reply_store = SqlReplyStore(engine)
+    reply_store = core.reply_store
     replies = ManagerReplyService(
         reply_store,
         channel_actions,
         outbound,
         connections,
-        SqlInboundStore(engine),
+        core.inbox,
         reply_classifier,
     )
     prompt_hook = ApprovalPromptHook(reply_store)
     send_hooks[TemplateKey.APPROVAL_CONFIRM] = prompt_hook
     send_hooks[TemplateKey.APPROVAL_REASON] = prompt_hook
-    lifecycle = ConnectionLifecycle(
-        connections, SqlConnectionLifecycle(engine), runtime.registry, runtime.secrets
-    )
+    lifecycle = core.lifecycle
     # Orders (phase 7): created after acceptance, written to the ERP, followed and announced.
-    orders = SqlOrderStore(engine)
-    destinations = OrderDestinations(connections, runtime.registry, runtime.secrets)
+    orders = core.order_store
+    destinations = core.destinations
     handlers: dict[JobKind, JobHandler] = {
         JobKind.PREPARE_ENQUIRY: EnquiryPreparationHandler(
             SqlPreparationStore(engine), storage, customers
@@ -365,9 +432,7 @@ def build_job_handlers(
             outbound,
             customers=customers,
         ),
-        JobKind.EXPIRE_QUOTATION: QuotationExpiryHandler(
-            QuotationResponseService(responses, pricing)
-        ),
+        JobKind.EXPIRE_QUOTATION: QuotationExpiryHandler(core.responses),
         JobKind.NOTIFY_RESPONSE: ResponseNotificationHandler(
             responses, notifications, connections, outbound, customers
         ),
@@ -387,18 +452,12 @@ def build_job_handlers(
             settings.mail_sender,
         ),
         JobKind.PROCESS_INBOUND: ProcessInboundHandler(
-            SqlInboundStore(engine),
+            core.inbox,
             routes_for(
                 channel_actions,
                 ConsentRoute(targets, customers),
                 staff=StaffMessageRoute(SqlStaffMessages(engine)),
-                customer_actions=CustomerActionRoute(
-                    targets,
-                    CustomerActionService(
-                        SqlCustomerActionStore(engine),
-                        QuotationResponseService(responses, pricing),
-                    ),
-                ),
+                customer_actions=CustomerActionRoute(targets, core.customer_actions),
                 setup=ConnectionUpdateRoute(lifecycle),
                 replies=replies,
                 orders=OrderStatusRoute(orders, targets, customers),
@@ -406,7 +465,7 @@ def build_job_handlers(
         ),
         JobKind.POLL_CONNECTION: lifecycle.poll,
         JobKind.CLASSIFY_MANAGER_REPLY: replies.classify,
-        JobKind.CREATE_ORDER: CreateOrderHandler(OrderService(orders, catalogue, destinations)),
+        JobKind.CREATE_ORDER: CreateOrderHandler(core.orders),
         JobKind.ERP_ORDER_OPERATION: ErpOrderOperationHandler(orders, destinations),
         JobKind.RECONCILE_ORDER_OPERATION: ReconcileOrderOperationHandler(orders, destinations),
         JobKind.REFRESH_ORDER_STATUS: RefreshOrderStatusHandler(orders, destinations),
