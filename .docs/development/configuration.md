@@ -1,5 +1,5 @@
 # Configuration reference
-Implemented in [Settings](../../src/sales_platform/config.py). Explicit constructor values override environment variables, which override the root `.env`.
+Implemented in [Settings](../../src/sales_platform/platform/config.py). Explicit constructor values override environment variables, which override the root `.env`.
 
 | Variable | Purpose |
 |---|---|

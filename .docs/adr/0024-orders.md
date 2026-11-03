@@ -60,7 +60,7 @@ Mechanics:
 - **Automatic resend after the window:** risks duplicate ERP orders when the ERP cannot refuse duplicates.
 
 ## Consequences
-- A second ERP that takes orders is a package implementing `ErpWriter` with `OrderCapabilities`; the core is unchanged.
+- A second ERP that takes orders is a package implementing `OrderWriter` with `OrderCapabilities`; the core is unchanged.
 - Businesses without an ERP keep orders with us (local), following ADR 0003's exception path.
 - Open: editable customer wording, per-status notice choices, payments, carriers and tracking numbers, partial delivery, PO numbers, who gets "needs attention" messages.
 

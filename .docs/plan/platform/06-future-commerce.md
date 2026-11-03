@@ -14,7 +14,7 @@
 ## Orders (roadmap M6b, decisions still open)
 - **Shape:** an `orders` table created from an **accepted** quotation version (one order per accepted version; a purchase-level guard across revisions), plus `order_events`, append-only.
 - **Status model:** `placed → confirmed → in_progress → ready → shipped → delivered`, plus `cancelled` and `on_hold`. Each change is an event with its source (ERP sync, staff in portal, our inventory, a carrier) and time.
-- **ERP write (when the source supports it):** a new optional port next to the reader, `ErpWriter`:
+- **ERP write (when the source supports it):** a new optional port next to the reader, `OrderWriter`:
   - `reserve_stock`
   - `release_reservation`
   - `create_sales_order`

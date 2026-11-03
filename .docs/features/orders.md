@@ -16,7 +16,7 @@
 | What | Where |
 |---|---|
 | Domain | `domain/orders.py` (`OrderStatus`, `LOCAL_TRANSITIONS`, `stock_shortfall`, `order_status_command`, `erp_status`) |
-| Writer port | `ports/erp.py` (`ErpWriter`, `SalesOrderRequest`, `ErpOrder`) |
+| Writer port | `ports/erp.py` (`OrderWriter`, `SalesOrderRequest`, `ErpOrder`) |
 | Store port and SQL store | `ports/orders.py`, `persistence/orders.py` (`SqlOrderStore`) |
 | Service, job handlers and route | `application/orders.py` (`OrderService`, `CreateOrderHandler`, `ErpOrderOperationHandler`, `ReconcileOrderOperationHandler`, `RefreshOrderStatusHandler`, `OrderNotificationHandler`, `OrderStatusRoute`, `OrderDestinations`) |
 | Writers | `adapters/providers/erpnext/orders.py`; simulated `adapters/erp/simulated_orders.py` |

@@ -5,8 +5,16 @@ from typing import Any
 from alembic import context
 from sqlalchemy import create_engine, pool
 
-from sales_platform.config import Settings
-from sales_platform.persistence.models import Base
+import sales_platform.accounts.persistence.tables  # noqa: F401  (registers its tables)
+import sales_platform.catalogue.persistence.tables  # noqa: F401  (registers its tables)
+import sales_platform.conversations.persistence.tables  # noqa: F401  (registers its tables)
+import sales_platform.customer_channels.persistence.tables  # noqa: F401  (registers its tables)
+import sales_platform.enquiries.persistence.tables  # noqa: F401  (registers its tables)
+import sales_platform.integrations.persistence.tables  # noqa: F401  (registers its tables)
+import sales_platform.orders.persistence.tables  # noqa: F401  (registers its tables)
+import sales_platform.quotations.persistence.tables  # noqa: F401  (registers its tables)
+from sales_platform.platform.config import Settings
+from sales_platform.platform.persistence.models import Base
 
 target_metadata = Base.metadata
 url = Settings().migration_url()

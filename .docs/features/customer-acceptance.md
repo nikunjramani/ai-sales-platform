@@ -22,12 +22,12 @@
 | `closed` | The manager rejected the revised version |
 
 ## Source files
-- **Domain:** [domain/acceptance.py](../../src/sales_platform/domain/acceptance.py) holds statuses, outcomes, `price_differences`, `valid_until`, `customer_status` and the errors.
-- **Ports:** [ports/acceptance.py](../../src/sales_platform/ports/acceptance.py) (`ResponseStore`). Notices to managers are outbox messages (template `response_notice`, one per response and account; phase 1, [connections](connections.md)).
-- **Application:** [application/acceptance.py](../../src/sales_platform/application/acceptance.py) holds `QuotationResponseService` (respond, withdraw, expire), `QuotationExpiryHandler` and `ResponseNotificationHandler`.
-- **Workflow:** the `await_customer` and `apply_customer` steps in [workflows/quotation.py](../../src/sales_platform/workflows/quotation.py).
-- **Persistence:** [persistence/acceptance.py](../../src/sales_platform/persistence/acceptance.py) and [0007_acceptance.py](../../migrations/versions/0007_acceptance.py). The expiry job is queued in [persistence/documents.py](../../src/sales_platform/persistence/documents.py).
-- **API:** [api/enquiries.py](../../src/sales_platform/api/enquiries.py) (customer) and [api/portal.py](../../src/sales_platform/api/portal.py) (staff).
+- **Domain:** [domain/acceptance.py](../../src/sales_platform/quotations/domain/acceptance.py) holds statuses, outcomes, `price_differences`, `valid_until`, `customer_status` and the errors.
+- **Ports:** [ports/acceptance.py](../../src/sales_platform/quotations/ports/acceptance.py) (`ResponseStore`). Notices to managers are outbox messages (template `response_notice`, one per response and account; phase 1, [connections](connections.md)).
+- **Application:** [application/acceptance.py](../../src/sales_platform/quotations/application/acceptance.py) holds `QuotationResponseService` (respond, withdraw, expire), `QuotationExpiryHandler` and `ResponseNotificationHandler`.
+- **Workflow:** the `await_customer` and `apply_customer` steps in [workflows/quotation.py](../../src/sales_platform/quotations/workflows/quotation.py).
+- **Persistence:** [persistence/acceptance.py](../../src/sales_platform/quotations/persistence/acceptance.py) and [0007_acceptance.py](../../migrations/versions/0001_baseline.sql). The expiry job is queued in [persistence/documents.py](../../src/sales_platform/quotations/persistence/documents.py).
+- **API:** [api/enquiries.py](../../src/sales_platform/customer_channels/api/enquiries.py) (customer) and [api/portal.py](../../src/sales_platform/quotations/api/portal.py) (staff).
 - **Portal:** `CustomerPanel`, `customerService.ts`, `useCustomerAnswer.ts` and new list filters.
 
 ## Flow

@@ -10,7 +10,7 @@ M3 turns enquiry text and attachments into structured requirements. The user wan
 - **One contract for models:** the workflow depends only on the `EnquiryInterpreter` port, which has two methods: `extract` and `choose_product`.
   - `rules`: a free, offline, deterministic interpreter and the default.
   - `ollama`: a free local model through a LangChain adapter.
-  - **Adding Claude, OpenAI or another provider:** add one LangChain chat model in [factory.py](../../src/sales_platform/adapters/interpreters/factory.py) and one setting value.
+  - **Adding Claude, OpenAI or another provider:** add one LangChain chat model in [factory.py](../../src/sales_platform/enquiries/adapters/interpreters/factory.py) and one setting value.
 - **Portable model output:** the LangChain adapter asks for JSON and validates it with strict Pydantic schemas (extra fields forbidden). This works with any chat model, with or without native tool calling.
   - Customer content is wrapped in tags declared as data, and attempts to close the tag are neutralised.
   - Invalid output becomes `InterpretationRejected` and goes to a person. Connection errors are retried.
@@ -25,7 +25,7 @@ M3 turns enquiry text and attachments into structured requirements. The user wan
   - A `workflow_runs` table (with tenant RLS) maps each enquiry to its thread.
 - **Checkpoint tables:** LangGraph's checkpoint schema is copied and frozen in migration 0004. Only the worker role may access these tables, which have no tenant column, and always through a tenant-scoped run row. A test fails if a library upgrade changes the schema.
 - **Documents:** PDF text via pypdf, bounded to 20 pages and 50,000 characters. Images and PDFs without a text layer are reported as unsupported, which sends the enquiry to review. There is no OCR.
-- **Evaluation:** [evals/enquiry_extraction.jsonl](../../evals/enquiry_extraction.jsonl) is run through the real graph by `scripts/evaluate_extraction.py` for any provider. The rules interpreter must pass it in unit tests.
+- **Evaluation:** evals/enquiry_extraction.jsonl (removed 2026-11-03, ADR 0026) is run through the real graph by `scripts/evaluate_extraction.py` for any provider. The rules interpreter must pass it in unit tests.
 
 ## Alternatives
 Native tool-calling structured output (not portable to every model); letting the model match products freely or write customer questions; storing document text in checkpoints; running LangGraph's `setup()` at runtime; a paid model now; OCR now.

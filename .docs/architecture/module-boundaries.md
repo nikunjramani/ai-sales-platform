@@ -1,5 +1,20 @@
 # Module boundaries and extension rules
-Status: M1-M3 implement domain, ports, application (tenancy, pricing, intake, preparation, job running), workflows (LangGraph enquiry extraction), the simulated ERP, local storage, document and interpreter adapters, with import rules enforced by [test_architecture.py](../../tests/unit/test_architecture.py). The API and worker are composition roots. Other modules are planned.
+Status: implemented as business modules (ADR 0026, 2026-11-03), enforced by [test_architecture.py](../../tests/unit/test_architecture.py). The modules and what each owns are in the [code map](../development/code-map.md#business-modules-adr-0026).
+
+## The rules (ADR 0026)
+1. **Module order:** `platform` → `integrations` → `accounts` → `catalogue` → `conversations` → `enquiries` → `quotations` → `orders` → `customer_channels`. A module imports only modules before it, so no two modules depend on each other.
+2. **Layers inside a module:** domain uses only domain; ports use domain and ports; application uses domain, ports and application; adapters, persistence and api follow the same table as before (frameworks only at the edges). An import of an earlier module must respect the same layer table.
+3. **Provider packages** (`providers/`) may use any module; nothing imports them except the wiring, by entry point. Provider names and HTTP clients stay inside them (named exceptions in the test).
+4. **When a lower module needs something from a higher one, the dependency is inverted:**
+   - inbound routes are registered by the wiring (`routes_for`);
+   - the outbox calls `OutboxListener` hooks (conversation thread, quotation deliveries) in its own transaction;
+   - the catalogue's delete guard calls `ProductInUse` checks (quotations: "was this SKU quoted?");
+   - plug-in contracts live with their module (`catalogue/ports/sources.py`, `orders/ports/writers.py`);
+   - the job runner retries any `platform` `ServiceError` (catalogue's `ErpError` is one).
+5. **One documented database-level read:** follow-up routing (`enquiries/persistence/follow_ups.py`) checks, inside its query, whether a quotation exists, by naming the quotations table read-only, without importing quotations' code.
+6. **Only the wiring builds SQL stores** (`composition.py`, `api_app.py`, `worker.py`, `seed.py`).
+
+Historical sections follow.
 
 ## What independent means
 Modules have explicit inputs, outputs and responsibilities, and can be tested with fake dependencies. They remain in one application initially. Independence does not mean every module needs its own server, database or AI agent.

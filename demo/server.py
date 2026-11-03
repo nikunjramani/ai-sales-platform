@@ -24,15 +24,18 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
-from sales_platform.adapters.providers.simulated import DEFAULT_CONNECTION_ID, PROVIDER_KEY
-from sales_platform.adapters.providers.simulated.signing import SIGNATURE_HEADER, hook_token, sign
-from sales_platform.application.api_keys import generate_api_key
-from sales_platform.config import Settings
-from sales_platform.domain.tenancy import Role
-from sales_platform.persistence.api_keys import insert_api_key
-from sales_platform.persistence.connections import SqlConnectionStore, SqlHostedChatAdmin
-from sales_platform.persistence.database import build_engine
-from sales_platform.persistence.seed import INDUSTRIAL_TENANT
+from sales_platform.accounts.application.api_keys import generate_api_key
+from sales_platform.accounts.persistence.api_keys import insert_api_key
+from sales_platform.integrations.persistence.connections import (
+    SqlConnectionStore,
+    SqlHostedChatAdmin,
+)
+from sales_platform.platform.config import Settings
+from sales_platform.platform.domain.tenancy import Role
+from sales_platform.platform.persistence.database import build_engine
+from sales_platform.providers.simulated import DEFAULT_CONNECTION_ID, PROVIDER_KEY
+from sales_platform.providers.simulated.signing import SIGNATURE_HEADER, hook_token, sign
+from sales_platform.seed import INDUSTRIAL_TENANT
 
 API = os.environ.get("DEMO_API", "http://127.0.0.1:8000")
 MANAGER = "manager@industrial.example"

@@ -6,7 +6,7 @@
       "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
-      "args": ["sales_platform.api.app:create_app", "--factory", "--host", "127.0.0.1", "--port", "8000"],
+      "args": ["sales_platform.api_app:create_app", "--factory", "--host", "127.0.0.1", "--port", "8000"],
       "cwd": "${workspaceFolder}",
       "python": "${workspaceFolder}/.venv/Scripts/python.exe",
       "env": { "SALES_PORTAL_DIST_DIR": "portal/dist" },

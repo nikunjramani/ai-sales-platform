@@ -13,8 +13,8 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sales_platform.adapters.erp.simulated import SimulatedCatalogue
-from sales_platform.domain.catalogue_admin import (
+from sales_platform.catalogue.adapters.erp.simulated import SimulatedCatalogue
+from sales_platform.catalogue.domain.catalogue_admin import (
     DEFAULT_LOCATION,
     LOCAL_PRICE_LIST,
     CatalogueProduct,
@@ -31,9 +31,8 @@ from sales_platform.domain.catalogue_admin import (
     field_changes,
     fields_as_dict,
 )
-from sales_platform.domain.catalogue_search import best_matches, product_terms
-from sales_platform.domain.tenancy import TenantContext
-from sales_platform.ports.catalogue_admin import (
+from sales_platform.catalogue.domain.catalogue_search import best_matches, product_terms
+from sales_platform.catalogue.ports.catalogue_admin import (
     AddedEntry,
     CatalogueCounts,
     CatalogueLimitReached,
@@ -49,6 +48,7 @@ from sales_platform.ports.catalogue_admin import (
     SkuAlreadyExists,
     VersionConflict,
 )
+from sales_platform.platform.domain.tenancy import TenantContext
 
 _EPOCH = datetime(2026, 1, 1, tzinfo=UTC)
 

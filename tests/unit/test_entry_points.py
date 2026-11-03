@@ -3,7 +3,7 @@
 from importlib.metadata import entry_points
 
 from sales_platform.composition import build_secret_store
-from sales_platform.config import Settings
+from sales_platform.platform.config import Settings
 
 
 def test_providers_are_registered() -> None:

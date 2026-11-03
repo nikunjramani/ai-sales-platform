@@ -24,12 +24,12 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID, uuid4
 
-from sales_platform.adapters.providers.simulated import DEFAULT_CONNECTION_ID, PROVIDER_KEY
-from sales_platform.adapters.providers.simulated.signing import SIGNATURE_HEADER, hook_token, sign
-from sales_platform.config import Settings
-from sales_platform.persistence.connections import SqlConnectionStore
-from sales_platform.persistence.database import build_engine
-from sales_platform.persistence.seed import INDUSTRIAL_TENANT
+from sales_platform.integrations.persistence.connections import SqlConnectionStore
+from sales_platform.platform.config import Settings
+from sales_platform.platform.persistence.database import build_engine
+from sales_platform.providers.simulated import DEFAULT_CONNECTION_ID, PROVIDER_KEY
+from sales_platform.providers.simulated.signing import SIGNATURE_HEADER, hook_token, sign
+from sales_platform.seed import INDUSTRIAL_TENANT
 
 
 def _outbox(settings: Settings) -> Path:

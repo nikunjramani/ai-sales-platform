@@ -13,10 +13,19 @@ from datetime import datetime, timedelta
 from typing import Any
 from uuid import UUID, uuid4
 
-from sales_platform.domain.connections import Capabilities, Connection, ConnectionStatus, Purpose
-from sales_platform.domain.intake import ConnectionUpdate, CustomerMessage, InboundEvent
-from sales_platform.ports.connections import ConnectionChange, RouteTaken
-from sales_platform.ports.providers import (
+from sales_platform.integrations.domain.connections import (
+    Capabilities,
+    Connection,
+    ConnectionStatus,
+    Purpose,
+)
+from sales_platform.integrations.domain.events import (
+    ConnectionUpdate,
+    CustomerMessage,
+    InboundEvent,
+)
+from sales_platform.integrations.ports.connections import ConnectionChange, RouteTaken
+from sales_platform.integrations.ports.providers import (
     FREE,
     CostNote,
     InboundRejected,
@@ -32,7 +41,7 @@ from sales_platform.ports.providers import (
     SendReceipt,
     TestResult,
 )
-from sales_platform.ports.secrets import SecretNotFound, SecretStore
+from sales_platform.platform.ports.secrets import SecretNotFound, SecretStore
 from tests.unit.conftest import MemoryConnections
 
 TOOL = "one_click_tool"

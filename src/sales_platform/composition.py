@@ -17,43 +17,57 @@ from uuid import UUID
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from sqlalchemy import Engine
 
-from sales_platform.adapters.documents.pdf import ReportLabQuotationRenderer
-from sales_platform.adapters.documents.text import PdfAndTextReader
-from sales_platform.adapters.storage.local import LocalObjectStorage
-from sales_platform.application.acceptance import (
-    QuotationExpiryHandler,
-    QuotationResponseService,
-    ResponseNotificationHandler,
+from sales_platform.accounts.application.accounts import AccountEmailHandler
+from sales_platform.accounts.persistence.accounts import SqlAccountEmailStore, SqlBusinessStore
+from sales_platform.accounts.ports.accounts import DefaultSource, Mailer, MailerEnvironment
+from sales_platform.catalogue.application.catalogue_sources import (
+    CatalogueSourceResolver,
+    TenantCatalogue,
 )
-from sales_platform.application.accounts import AccountEmailHandler
-from sales_platform.application.approvals import ApprovalService
-from sales_platform.application.catalogue_sources import CatalogueSourceResolver, TenantCatalogue
-from sales_platform.application.catalogue_sync import CatalogueSyncHandler
-from sales_platform.application.channel_actions import ChannelActionService
-from sales_platform.application.customer_actions import CustomerActionService, QuotationReadyHook
-from sales_platform.application.customer_messages import CustomerConsentHook, CustomerMessenger
-from sales_platform.application.delivery import QuotationDeliveryHandler, QuotationDocumentHook
-from sales_platform.application.inbound import (
+from sales_platform.catalogue.application.catalogue_sync import CatalogueSyncHandler
+from sales_platform.catalogue.persistence.catalogue import SqlCatalogueStore
+from sales_platform.catalogue.persistence.catalogue_sync import SqlCatalogueSync
+from sales_platform.catalogue.ports.erp import ProductSource
+from sales_platform.conversations.application.customer_messages import (
+    CustomerConsentHook,
+    CustomerMessenger,
+)
+from sales_platform.conversations.application.inbound_routes import ConsentRoute, StaffMessageRoute
+from sales_platform.conversations.persistence.outbox_thread import ConversationThreadListener
+from sales_platform.customer_channels.domain.chat import ChatLimits
+from sales_platform.enquiries.adapters.documents.text import PdfAndTextReader
+from sales_platform.enquiries.application.preparation import EnquiryPreparationHandler
+from sales_platform.enquiries.persistence.customer_targets import SqlCustomerTargets
+from sales_platform.enquiries.persistence.intake import SqlPreparationStore
+from sales_platform.enquiries.persistence.staff_messages import SqlStaffMessages
+from sales_platform.enquiries.persistence.workflow import SqlWorkflowStore
+from sales_platform.enquiries.ports.interpretation import EnquiryInterpreter
+from sales_platform.enquiries.ports.workflow import ReadingCap
+from sales_platform.enquiries.workflows.enquiry import (
+    EnquiryWorkflowDeps,
+    ExtractionJobHandler,
+    build_enquiry_graph,
+)
+from sales_platform.integrations.application.inbound import (
     ConnectionUpdateRoute,
-    ConsentRoute,
-    CustomerActionRoute,
     ProcessInboundHandler,
-    StaffMessageRoute,
     routes_for,
 )
-from sales_platform.application.jobs import JobHandler, PauseWhileSuspended
-from sales_platform.application.lifecycle import ConnectionLifecycle
-from sales_platform.application.manager_replies import (
-    ApprovalPromptHook,
-    ManagerReplyService,
+from sales_platform.integrations.application.lifecycle import ConnectionLifecycle
+from sales_platform.integrations.application.messaging import OutboundService, SendMessageHandler
+from sales_platform.integrations.application.providers import ProviderRegistry
+from sales_platform.integrations.domain.connections import DeliveryMode, Purpose
+from sales_platform.integrations.domain.messages import CUSTOMER_TEMPLATES, TemplateKey
+from sales_platform.integrations.persistence.connections import SqlConnectionStore
+from sales_platform.integrations.persistence.inbound import SqlInboundStore
+from sales_platform.integrations.persistence.messages import SqlMessageOutbox
+from sales_platform.integrations.persistence.provider_state import (
+    SqlConnectionLifecycle,
+    SqlRouteWriter,
 )
-from sales_platform.application.media import MediaLinkHook
-from sales_platform.application.messaging import OutboundService, SendMessageHandler
-from sales_platform.application.notifications import (
-    ApprovalNotificationHandler,
-    ApprovalRequestHook,
-)
-from sales_platform.application.orders import (
+from sales_platform.integrations.ports.messages import SendHook
+from sales_platform.integrations.ports.providers import ProviderEnvironment
+from sales_platform.orders.application.orders import (
     CreateOrderHandler,
     ErpOrderOperationHandler,
     OrderDestinations,
@@ -63,49 +77,61 @@ from sales_platform.application.orders import (
     ReconcileOrderOperationHandler,
     RefreshOrderStatusHandler,
 )
-from sales_platform.application.plugins import load_named
-from sales_platform.application.preparation import EnquiryPreparationHandler
-from sales_platform.application.pricing import QuotationPricingService
-from sales_platform.application.providers import ProviderRegistry
-from sales_platform.application.tenancy import TenantContextResolver
-from sales_platform.config import Settings
-from sales_platform.domain.chat import ChatLimits
-from sales_platform.domain.connections import DeliveryMode, Purpose
-from sales_platform.domain.jobs import JobKind
-from sales_platform.domain.messages import CUSTOMER_TEMPLATES, TemplateKey
-from sales_platform.persistence.acceptance import SqlResponseStore
-from sales_platform.persistence.accounts import SqlAccountEmailStore, SqlBusinessStore
-from sales_platform.persistence.catalogue import SqlCatalogueStore
-from sales_platform.persistence.catalogue_sync import SqlCatalogueSync
-from sales_platform.persistence.channels import SqlChannelStore, SqlNotificationStore
-from sales_platform.persistence.connections import SqlConnectionStore
-from sales_platform.persistence.conversations import SqlCustomerTargets, SqlStaffMessages
-from sales_platform.persistence.customer_actions import SqlCustomerActionStore
-from sales_platform.persistence.documents import SqlDeliveryStore
-from sales_platform.persistence.inbound import SqlInboundStore
-from sales_platform.persistence.intake import SqlPreparationStore
-from sales_platform.persistence.manager_replies import SqlReplyStore
-from sales_platform.persistence.media import SqlMediaLinks
-from sales_platform.persistence.messages import SqlMessageOutbox
-from sales_platform.persistence.orders import SqlOrderStore
-from sales_platform.persistence.provider_state import SqlConnectionLifecycle, SqlRouteWriter
-from sales_platform.persistence.quotations import SqlApprovalStore, SqlQuotationWorkflowStore
-from sales_platform.persistence.tenancy import SqlMembershipReader, SqlPricingPolicyReader
-from sales_platform.persistence.workflow import SqlWorkflowStore
-from sales_platform.ports.accounts import DefaultSource, Mailer, MailerEnvironment
-from sales_platform.ports.erp import ErpReader
-from sales_platform.ports.interpretation import EnquiryInterpreter
-from sales_platform.ports.messages import SendHook
-from sales_platform.ports.providers import ProviderEnvironment
-from sales_platform.ports.reply_classification import ReplyClassifier
-from sales_platform.ports.secrets import SecretStore, SecretStoreEnvironment
-from sales_platform.ports.workflow import ReadingCap
-from sales_platform.workflows.enquiry import (
-    EnquiryWorkflowDeps,
-    ExtractionJobHandler,
-    build_enquiry_graph,
+from sales_platform.orders.persistence.orders import SqlOrderStore
+from sales_platform.platform.adapters.storage.local import LocalObjectStorage
+from sales_platform.platform.application.jobs import JobHandler, PauseWhileSuspended
+from sales_platform.platform.application.plugins import load_named
+from sales_platform.platform.application.tenancy import TenantContextResolver
+from sales_platform.platform.config import Settings
+from sales_platform.platform.domain.jobs import JobKind
+from sales_platform.platform.persistence.tenancy import SqlMembershipReader
+from sales_platform.platform.ports.secrets import SecretStore, SecretStoreEnvironment
+from sales_platform.quotations.adapters.documents.pdf import ReportLabQuotationRenderer
+from sales_platform.quotations.application.acceptance import (
+    QuotationExpiryHandler,
+    QuotationResponseService,
+    ResponseNotificationHandler,
 )
-from sales_platform.workflows.quotation import (
+from sales_platform.quotations.application.approvals import ApprovalService
+from sales_platform.quotations.application.channel_actions import ChannelActionService
+from sales_platform.quotations.application.customer_actions import (
+    CustomerActionService,
+    QuotationReadyHook,
+)
+from sales_platform.quotations.application.delivery import (
+    QuotationDeliveryHandler,
+    QuotationDocumentHook,
+)
+from sales_platform.quotations.application.inbound_routes import (
+    CustomerActionRoute,
+    ManagerActionRoute,
+    ManagerReplyRoute,
+)
+from sales_platform.quotations.application.manager_replies import (
+    ApprovalPromptHook,
+    ManagerReplyService,
+)
+from sales_platform.quotations.application.media import MediaLinkHook
+from sales_platform.quotations.application.notifications import (
+    ApprovalNotificationHandler,
+    ApprovalRequestHook,
+)
+from sales_platform.quotations.application.pricing import QuotationPricingService
+from sales_platform.quotations.persistence.acceptance import SqlResponseStore
+from sales_platform.quotations.persistence.channels import SqlChannelStore, SqlNotificationStore
+from sales_platform.quotations.persistence.customer_actions import SqlCustomerActionStore
+from sales_platform.quotations.persistence.documents import SqlDeliveryStore
+from sales_platform.quotations.persistence.manager_replies import SqlReplyStore
+from sales_platform.quotations.persistence.media import SqlMediaLinks
+from sales_platform.quotations.persistence.outbox_deliveries import DeliveryOutboxListener
+from sales_platform.quotations.persistence.pricing_policy import SqlPricingPolicyReader
+from sales_platform.quotations.persistence.product_use import sku_was_quoted
+from sales_platform.quotations.persistence.quotations import (
+    SqlApprovalStore,
+    SqlQuotationWorkflowStore,
+)
+from sales_platform.quotations.ports.reply_classification import ReplyClassifier
+from sales_platform.quotations.workflows.quotation import (
     QuotationJobHandler,
     QuotationWorkflowDeps,
     build_quotation_graph,
@@ -192,7 +218,7 @@ def build_provider_registry(settings: Settings, engine: Engine | None = None) ->
         ProviderEnvironment(
             environment=settings.environment,
             storage_dir=settings.storage_dir,
-            catalogue_store=SqlCatalogueStore(engine) if engine is not None else None,
+            catalogue_store=build_catalogue_store(engine) if engine is not None else None,
         )
     )
 
@@ -241,11 +267,22 @@ def capped_providers(registry: ProviderRegistry) -> frozenset[str]:
     )
 
 
-def build_catalogue(engine: Engine, runtime: Runtime) -> ErpReader:
+def build_catalogue(engine: Engine, runtime: Runtime) -> ProductSource:
     """Every business's own product source, through its catalogue connection."""
     return TenantCatalogue(
         CatalogueSourceResolver(SqlConnectionStore(engine), runtime.registry, runtime.secrets)
     )
+
+
+def build_catalogue_store(engine: Engine) -> SqlCatalogueStore:
+    """Our product list, with the later modules that may still need a product (ADR 0026)."""
+    return SqlCatalogueStore(engine, (sku_was_quoted,))
+
+
+def build_outbox(engine: Engine) -> SqlMessageOutbox:
+    """The outbox with the modules that follow their messages (ADR 0026): the conversation
+    thread and quotation deliveries, updated in the outbox's own transaction."""
+    return SqlMessageOutbox(engine, (ConversationThreadListener(), DeliveryOutboxListener()))
 
 
 @dataclass(frozen=True)
@@ -257,7 +294,7 @@ class CoreServices:
     businesses: SqlBusinessStore
     memberships: SqlMembershipReader
     resolver: TenantContextResolver
-    catalogue: ErpReader
+    catalogue: ProductSource
     pricing: QuotationPricingService
     response_store: SqlResponseStore
     responses: QuotationResponseService
@@ -279,7 +316,7 @@ def build_core(
     settings: Settings,
     engine: Engine,
     runtime: Runtime,
-    catalogue: ErpReader | None = None,
+    catalogue: ProductSource | None = None,
 ) -> CoreServices:
     """`catalogue` defaults to each business's own product source; tests may pass a fixed one."""
     connections = SqlConnectionStore(engine)
@@ -320,7 +357,7 @@ def build_core(
         inbox=SqlInboundStore(engine),
         reply_store=SqlReplyStore(engine),
         customer_actions=CustomerActionService(SqlCustomerActionStore(engine), responses),
-        outbox=SqlMessageOutbox(engine),
+        outbox=build_outbox(engine),
     )
 
 
@@ -330,7 +367,7 @@ def build_job_handlers(
     runtime: Runtime,
     checkpointer: BaseCheckpointSaver[str],
     interpreter: EnquiryInterpreter,
-    catalogue: ErpReader | None = None,
+    catalogue: ProductSource | None = None,
     reply_classifier: ReplyClassifier | None = None,
 ) -> dict[JobKind, JobHandler]:
     """Every job the worker runs, wired to the worker-role engine.
@@ -454,12 +491,12 @@ def build_job_handlers(
         JobKind.PROCESS_INBOUND: ProcessInboundHandler(
             core.inbox,
             routes_for(
-                channel_actions,
+                ManagerActionRoute(channel_actions, replies),
                 ConsentRoute(targets, customers),
                 staff=StaffMessageRoute(SqlStaffMessages(engine)),
                 customer_actions=CustomerActionRoute(targets, core.customer_actions),
                 setup=ConnectionUpdateRoute(lifecycle),
-                replies=replies,
+                manager_replies=ManagerReplyRoute(replies),
                 orders=OrderStatusRoute(orders, targets, customers),
             ),
         ),

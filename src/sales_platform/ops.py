@@ -19,9 +19,9 @@ from typing import Any
 from pydantic import BaseModel, SecretStr, ValidationError
 
 from sales_platform.composition import build_runtime
-from sales_platform.config import Settings
-from sales_platform.ports.providers import OperationUnsupported, Provider
-from sales_platform.ports.secrets import SecretNotFound
+from sales_platform.integrations.ports.providers import OperationUnsupported, Provider
+from sales_platform.platform.config import Settings
+from sales_platform.platform.ports.secrets import SecretNotFound
 
 CONFIG = "config"
 

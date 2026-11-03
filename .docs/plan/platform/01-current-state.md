@@ -11,7 +11,7 @@ The core business flow works end to end through APIs (M0-M6): enquiry → AI/rul
 | Outbound | Delivery outbox with honest outcomes (`pending → sending → sent/available/failed/unknown`) | `application/delivery.py`, `persistence/documents.py` |
 | Jobs | Durable PostgreSQL job queue with retries and leases | `application/jobs.py`, `worker.py` |
 | AI reader | Generic: any LangChain model from settings (ADR 0017) | `adapters/interpreters/factory.py` |
-| Product data | `ErpReader` port (search, categories, products, prices, stock) + contract tests | `ports/erp.py`, `tests/unit/ports/test_erp_contract.py` |
+| Product data | `ProductSource` port (search, categories, products, prices, stock) + contract tests | `ports/erp.py`, `tests/unit/ports/test_erp_contract.py` |
 | Portal | Feature folders with enforced layers; generic `BindingList` | `portal/src/features/*` |
 
 ## What is hardcoded

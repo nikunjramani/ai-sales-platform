@@ -1,6 +1,6 @@
 # 0003: Existing ERP remains authoritative
 Date: 2026-10-22
-Status: accepted; partially implemented (M1: ErpReader port, simulated ERP, shared contract suite). Real sandbox adapter pending (M7). **Amended by [0020](0020-local-catalogue.md) (2026-10-28):** a business without an ERP keeps its products in our own catalogue, which is then its authoritative source; when an ERP is connected, the ERP is authoritative and our list is read-only.
+Status: accepted; partially implemented (M1: ProductSource port, simulated ERP, shared contract suite). Real sandbox adapter pending (M7). **Amended by [0020](0020-local-catalogue.md) (2026-10-28):** a business without an ERP keeps its products in our own catalogue, which is then its authoritative source; when an ERP is connected, the ERP is authoritative and our list is read-only.
 
 ## Context
 Businesses already manage stock and pricing elsewhere.

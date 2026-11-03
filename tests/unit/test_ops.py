@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from sales_platform import ops
-from sales_platform.adapters.secrets.local import new_key
+from sales_platform.platform.adapters.secrets.local import new_key
 
 
 @pytest.fixture(autouse=True)

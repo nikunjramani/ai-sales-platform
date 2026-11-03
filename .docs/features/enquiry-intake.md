@@ -14,11 +14,11 @@
 - **API key**: a password for a system, not a person. It belongs to one business and one role.
 
 ## Source files and entry points
-- **API:** `POST /api/v1/enquiries` and `GET /api/v1/enquiries/{id}` in [api/enquiries.py](../../src/sales_platform/api/enquiries.py), wired in [api/app.py](../../src/sales_platform/api/app.py).
-- **Worker:** `python -m sales_platform.worker` ([worker.py](../../src/sales_platform/worker.py)), which runs [JobRunner](../../src/sales_platform/application/jobs.py) with [EnquiryPreparationHandler](../../src/sales_platform/application/preparation.py).
-- **Use cases:** [application/intake.py](../../src/sales_platform/application/intake.py) and [application/api_keys.py](../../src/sales_platform/application/api_keys.py).
-- **Rules:** [domain/intake.py](../../src/sales_platform/domain/intake.py), [domain/attachments.py](../../src/sales_platform/domain/attachments.py) and [domain/jobs.py](../../src/sales_platform/domain/jobs.py).
-- **Storage and database:** [persistence/intake.py](../../src/sales_platform/persistence/intake.py), [persistence/jobs.py](../../src/sales_platform/persistence/jobs.py), [persistence/api_keys.py](../../src/sales_platform/persistence/api_keys.py), [adapters/storage/local.py](../../src/sales_platform/adapters/storage/local.py) and [migration 0003](../../migrations/versions/0003_intake.py).
+- **API:** `POST /api/v1/enquiries` and `GET /api/v1/enquiries/{id}` in [api/enquiries.py](../../src/sales_platform/customer_channels/api/enquiries.py), wired in [api/app.py](../../src/sales_platform/api_app.py).
+- **Worker:** `python -m sales_platform.worker` ([worker.py](../../src/sales_platform/worker.py)), which runs [JobRunner](../../src/sales_platform/platform/application/jobs.py) with [EnquiryPreparationHandler](../../src/sales_platform/enquiries/application/preparation.py).
+- **Use cases:** [application/intake.py](../../src/sales_platform/enquiries/application/intake.py) and [application/api_keys.py](../../src/sales_platform/accounts/application/api_keys.py).
+- **Rules:** [domain/intake.py](../../src/sales_platform/enquiries/domain/intake.py), [domain/attachments.py](../../src/sales_platform/enquiries/domain/attachments.py) and [domain/jobs.py](../../src/sales_platform/platform/domain/jobs.py).
+- **Storage and database:** [persistence/intake.py](../../src/sales_platform/enquiries/persistence/intake.py), [persistence/jobs.py](../../src/sales_platform/platform/persistence/jobs.py), [persistence/api_keys.py](../../src/sales_platform/accounts/persistence/api_keys.py), [adapters/storage/local.py](../../src/sales_platform/platform/adapters/storage/local.py) and [migration 0003](../../migrations/versions/0001_baseline.sql).
 - **Key management:** in the portal, **Settings -> API keys** (phase 2, [accounts and onboarding](accounts-and-onboarding.md)). A key sees only the enquiries and quotations it submitted itself (user answer P1-Q9); another key of the same business gets 404. A suspended business's keys get 403.
 
 ## Inputs and validation

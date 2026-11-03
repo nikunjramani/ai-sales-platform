@@ -13,26 +13,26 @@
 - **Action reference:** the hidden token behind a message's buttons. It works once, for one task, from that one account, for 24 hours.
 
 ## Source files
-- **Domain:** [domain/quotations.py](../../src/sales_platform/domain/quotations.py) holds statuses, `DecisionCommand`, `quotation_content`, `content_sha256`; the review wording is `render_template(TemplateKey.APPROVAL_REQUEST, ...)` in [domain/messages.py](../../src/sales_platform/domain/messages.py).
+- **Domain:** [domain/quotations.py](../../src/sales_platform/quotations/domain/quotations.py) holds statuses, `DecisionCommand`, `quotation_content`, `content_sha256`; the review wording is `render_template(TemplateKey.APPROVAL_REQUEST, ...)` in [domain/messages.py](../../src/sales_platform/integrations/domain/messages.py).
 - **Application:**
-  - [application/approvals.py](../../src/sales_platform/application/approvals.py) (`ApprovalService`)
-  - [application/quotations.py](../../src/sales_platform/application/quotations.py) (list, get, revise)
-  - [application/channel_actions.py](../../src/sales_platform/application/channel_actions.py) (enrollment, channel decisions)
-  - [application/notifications.py](../../src/sales_platform/application/notifications.py) (review delivery job)
-  - [application/sessions.py](../../src/sales_platform/application/sessions.py)
-- **Workflow:** [workflows/quotation.py](../../src/sales_platform/workflows/quotation.py) (graph and `QuotationJobHandler`).
+  - [application/approvals.py](../../src/sales_platform/quotations/application/approvals.py) (`ApprovalService`)
+  - [application/quotations.py](../../src/sales_platform/quotations/application/quotations.py) (list, get, revise)
+  - [application/channel_actions.py](../../src/sales_platform/quotations/application/channel_actions.py) (enrollment, channel decisions)
+  - [application/notifications.py](../../src/sales_platform/quotations/application/notifications.py) (review delivery job)
+  - [application/sessions.py](../../src/sales_platform/platform/application/sessions.py)
+- **Workflow:** [workflows/quotation.py](../../src/sales_platform/quotations/workflows/quotation.py) (graph and `QuotationJobHandler`).
 - **API:**
-  - [api/auth.py](../../src/sales_platform/api/auth.py) (sign-in and sessions)
-  - [api/portal.py](../../src/sales_platform/api/portal.py) (tenant routes)
-  - [api/channels.py](../../src/sales_platform/api/channels.py) (signed webhook)
+  - [api/auth.py](../../src/sales_platform/platform/api/auth.py) (sign-in and sessions)
+  - [api/portal.py](../../src/sales_platform/quotations/api/portal.py) (tenant routes)
+  - api/channels.py (removed in ADR 0026 step 2) (signed webhook)
 - **Persistence:**
-  - [persistence/quotations.py](../../src/sales_platform/persistence/quotations.py)
-  - [persistence/channels.py](../../src/sales_platform/persistence/channels.py)
-  - [persistence/sessions.py](../../src/sales_platform/persistence/sessions.py)
-  - [0005_approvals.py](../../migrations/versions/0005_approvals.py)
+  - [persistence/quotations.py](../../src/sales_platform/quotations/persistence/quotations.py)
+  - [persistence/channels.py](../../src/sales_platform/quotations/persistence/channels.py)
+  - [persistence/sessions.py](../../src/sales_platform/platform/persistence/sessions.py)
+  - [0005_approvals.py](../../migrations/versions/0001_baseline.sql)
 - **Adapters:**
-  - [adapters/identity/dev.py](../../src/sales_platform/adapters/identity/dev.py)
-  - [adapters/providers/simulated/](../../src/sales_platform/adapters/providers/simulated/provider.py) (phase 1: a provider; approval requests go through the outbox, the action token is created at send time; see [connections](connections.md))
+  - [adapters/identity/dev.py](../../src/sales_platform/platform/adapters/identity/dev.py)
+  - [adapters/providers/simulated/](../../src/sales_platform/providers/simulated/provider.py) (phase 1: a provider; approval requests go through the outbox, the action token is created at send time; see [connections](connections.md))
 - **Portal:** [portal/](../../portal/src/app/App.tsx) (React; see [portal architecture](../development/portal-architecture.md)).
 - **Dev helper:** [scripts/simulated_channel.py](../../scripts/simulated_channel.py).
 
@@ -105,13 +105,13 @@ These are names only; see [configuration](../development/configuration.md):
 
 ## Tests and example
 - **Unit tests:**
-  - [unit/workflows/test_quotation.py](../../tests/unit/workflows/test_quotation.py)
-  - [unit/application/test_approvals.py](../../tests/unit/application/test_approvals.py)
-  - [test_channel_actions.py](../../tests/unit/application/test_channel_actions.py)
-  - [test_sessions.py](../../tests/unit/application/test_sessions.py)
-  - [unit/api/test_portal.py](../../tests/unit/api/test_portal.py)
-  - [unit/domain/test_quotations.py](../../tests/unit/domain/test_quotations.py)
-- **PostgreSQL:** [integration/workflows/test_quotation.py](../../tests/integration/workflows/test_quotation.py).
+  - [unit/workflows/test_quotation.py](../../tests/unit/quotations/workflows/test_quotation.py)
+  - [unit/application/test_approvals.py](../../tests/unit/quotations/application/test_approvals.py)
+  - [test_channel_actions.py](../../tests/unit/quotations/application/test_channel_actions.py)
+  - [test_sessions.py](../../tests/unit/platform/application/test_sessions.py)
+  - [unit/api/test_portal.py](../../tests/unit/quotations/api/test_portal.py)
+  - [unit/domain/test_quotations.py](../../tests/unit/quotations/domain/test_quotations.py)
+- **PostgreSQL:** [integration/workflows/test_quotation.py](../../tests/integration/quotations/workflows/test_quotation.py).
 - **Portal:** `npm test` in portal/ (tests in [portal/tests/](../../portal/tests/features/quotations/ui/components/DecisionPanel.test.tsx)).
 - **Walkthrough:** in [setup](../development/setup.md#approvals-and-portal-m4).
 

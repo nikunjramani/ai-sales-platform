@@ -11,21 +11,21 @@
 - **Outcome unknown:** a provider may have received the document even though we got no answer, e.g. after a timeout. We then do not send it again automatically, because the customer could get two copies; a person checks.
 
 ## Source files
-- **Domain:** [domain/documents.py](../../src/sales_platform/domain/documents.py) holds statuses, `DocumentSource`, `delivery_recipient`, document IDs/keys and errors.
-- **Ports:** [ports/documents.py](../../src/sales_platform/ports/documents.py) defines `QuotationRenderer`, `DeliveryStore` and `DocumentReader`. Since phase 1 a delivery is carried out by one outbox message (`deliver_quotation` prepares the PDF and queues it, `send_message` hands it to the enquiry's connection) and mirrors its status; see [connections](connections.md).
+- **Domain:** [domain/documents.py](../../src/sales_platform/quotations/domain/documents.py) holds statuses, `DocumentSource`, `delivery_recipient`, document IDs/keys and errors.
+- **Ports:** [ports/documents.py](../../src/sales_platform/quotations/ports/documents.py) defines `QuotationRenderer`, `DeliveryStore` and `DocumentReader`. Since phase 1 a delivery is carried out by one outbox message (`deliver_quotation` prepares the PDF and queues it, `send_message` hands it to the enquiry's connection) and mirrors its status; see [connections](connections.md).
 - **Application:**
-  - [application/delivery.py](../../src/sales_platform/application/delivery.py) (`QuotationDeliveryHandler`, the `deliver_quotation` job)
-  - [application/documents.py](../../src/sales_platform/application/documents.py) (`QuotationDocumentService`: previews, approved files, customer downloads)
+  - [application/delivery.py](../../src/sales_platform/quotations/application/delivery.py) (`QuotationDeliveryHandler`, the `deliver_quotation` job)
+  - [application/documents.py](../../src/sales_platform/quotations/application/documents.py) (`QuotationDocumentService`: previews, approved files, customer downloads)
 - **Adapters:**
-  - [adapters/documents/pdf.py](../../src/sales_platform/adapters/documents/pdf.py) (ReportLab renderer)
-  - [adapters/providers/api/](../../src/sales_platform/adapters/providers/api/__init__.py) (API provider: pull)
-  - [adapters/storage/local.py](../../src/sales_platform/adapters/storage/local.py) (now also `documents/` keys)
-- **Workflow:** the `approved` step in [workflows/quotation.py](../../src/sales_platform/workflows/quotation.py) queues delivery.
-- **Persistence:** [persistence/documents.py](../../src/sales_platform/persistence/documents.py), [0006_documents.py](../../migrations/versions/0006_documents.py).
+  - [adapters/documents/pdf.py](../../src/sales_platform/quotations/adapters/documents/pdf.py) (ReportLab renderer)
+  - [adapters/providers/api/](../../src/sales_platform/providers/api/__init__.py) (API provider: pull)
+  - [adapters/storage/local.py](../../src/sales_platform/platform/adapters/storage/local.py) (now also `documents/` keys)
+- **Workflow:** the `approved` step in [workflows/quotation.py](../../src/sales_platform/quotations/workflows/quotation.py) queues delivery.
+- **Persistence:** [persistence/documents.py](../../src/sales_platform/quotations/persistence/documents.py), [0006_documents.py](../../migrations/versions/0001_baseline.sql).
 - **API:**
-  - [api/portal.py](../../src/sales_platform/api/portal.py) (preview, approved PDF, delivery status)
-  - [api/enquiries.py](../../src/sales_platform/api/enquiries.py) (customer view and PDF)
-  - [api/pdf.py](../../src/sales_platform/api/pdf.py) (download headers)
+  - [api/portal.py](../../src/sales_platform/quotations/api/portal.py) (preview, approved PDF, delivery status)
+  - [api/enquiries.py](../../src/sales_platform/customer_channels/api/enquiries.py) (customer view and PDF)
+  - [api/pdf.py](../../src/sales_platform/quotations/api/pdf.py) (download headers)
 - **Portal:** `DocumentPanel` and `DeliveryList` in `portal/src/features/quotations/ui/components/`, `deliveryService.ts` and `useQuotationDocuments.ts`.
 
 ## Flow

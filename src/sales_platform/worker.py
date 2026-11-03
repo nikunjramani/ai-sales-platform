@@ -10,16 +10,14 @@ import argparse
 import logging
 import time
 
-from sales_platform.adapters.interpreters.factory import (
-    build_interpreter,
-    build_reply_classifier,
-)
-from sales_platform.application.jobs import JobRunner
 from sales_platform.composition import build_job_handlers, build_runtime
-from sales_platform.config import Settings
-from sales_platform.persistence.database import build_engine
-from sales_platform.persistence.jobs import SqlJobQueue
-from sales_platform.persistence.workflow import open_checkpointer
+from sales_platform.enquiries.adapters.interpreters.factory import build_interpreter
+from sales_platform.enquiries.persistence.workflow import open_checkpointer
+from sales_platform.platform.application.jobs import JobRunner
+from sales_platform.platform.config import Settings
+from sales_platform.platform.persistence.database import build_engine
+from sales_platform.platform.persistence.jobs import SqlJobQueue
+from sales_platform.quotations.adapters.interpreters.reply_classifier import build_reply_classifier
 
 
 def main() -> None:

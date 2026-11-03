@@ -5,15 +5,17 @@ Requires a migrated, seeded local database. Reads only; nothing is stored or sen
 
 from decimal import Decimal
 
-from sales_platform.adapters.erp.simulated import SimulatedErp, demo_catalogues
-from sales_platform.application.pricing import QuotationPricingService
-from sales_platform.application.tenancy import TenantContextResolver
-from sales_platform.config import Settings
-from sales_platform.domain.pricing import PricedQuotation, RequestedLine
-from sales_platform.domain.tenancy import AccessDenied, PermissionDenied
-from sales_platform.persistence.database import build_engine
-from sales_platform.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
-from sales_platform.persistence.tenancy import SqlMembershipReader, SqlPricingPolicyReader
+from sales_platform.catalogue.adapters.erp.simulated import SimulatedErp, demo_catalogues
+from sales_platform.enquiries.domain.requirements import RequestedLine
+from sales_platform.platform.application.tenancy import TenantContextResolver
+from sales_platform.platform.config import Settings
+from sales_platform.platform.domain.tenancy import AccessDenied, PermissionDenied
+from sales_platform.platform.persistence.database import build_engine
+from sales_platform.platform.persistence.tenancy import SqlMembershipReader
+from sales_platform.quotations.application.pricing import QuotationPricingService
+from sales_platform.quotations.domain.pricing import PricedQuotation
+from sales_platform.quotations.persistence.pricing_policy import SqlPricingPolicyReader
+from sales_platform.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
 
 
 def main() -> None:

@@ -55,7 +55,7 @@ Binding names, tables, job kinds and migration numbers come from [00-shared-cont
 | In scope | Not in scope |
 |---|---|
 | Phase 6: one connector package for the pilot's system (live read, sync, or both), field/unit/currency/tax/warehouse mapping, capability declaration, credentials in `SecretStore`, contract tests against the vendor sandbox, mapping and status screens in the portal | A second ERP (it must be possible without code changes elsewhere, but is not built); spreadsheet import (D18 later); writing products **to** the ERP |
-| Phase 7: `ErpWriter` port (optional capability), order operations with intent-before-call, reconciliation, purchase-level duplicate guard, local orders without ERP, append-only order events, customer notifications via the outbox, "track my order" intent, portal screens, migration `0014_orders` | Payments, our own stock ledger, carrier integrations, partial delivery, returns/refunds, credit terms (all "later", questions in section 7) |
+| Phase 7: `OrderWriter` port (optional capability), order operations with intent-before-call, reconciliation, purchase-level duplicate guard, local orders without ERP, append-only order events, customer notifications via the outbox, "track my order" intent, portal screens, migration `0014_orders` | Payments, our own stock ledger, carrier integrations, partial delivery, returns/refunds, credit terms (all "later", questions in section 7) |
 | Forward-compatible shapes for payments, inventory and tracking | Any business rule not answered by the user |
 
 ## 3. Decisions used and open questions
@@ -65,7 +65,7 @@ Binding names, tables, job kinds and migration numbers come from [00-shared-cont
 | D19 | We store catalogue entered by the business; a connected ERP stays the authority | A synced catalogue is a **copy** (cache) of the ERP, marked read-only for synced fields; ADR 0003 amendment (phase 3) covers it |
 | D21 | **Open:** which ERP/shop the pilot uses | Blocks phase 6. Section 5.1 gives the comparison to help answer it |
 | D23 | Orders after platform phases (proposal) | Phase 7 comes after phases 1-6 |
-| ADR 0003 | ERP authoritative; unsupported writes need explicit exception paths | `ErpWriter` is optional; no writer means local order + staff path |
+| ADR 0003 | ERP authoritative; unsupported writes need explicit exception paths | `OrderWriter` is optional; no writer means local order + staff path |
 | ADR 0004 | Persist intents; at-least-once needs idempotency and reconciliation | Order operations are rows written before the remote call |
 | ADR 0010 | Decimal money, exact units, no guessed conversion | Mapping config never converts units or currency by guessing |
 | ADR 0015 | Honest outbox: `unknown` is never resent automatically | Same rule for ERP writes |
@@ -79,7 +79,7 @@ Open questions are listed per phase: [Phase 6 (5.6)](#56-questions-for-the-pilot
 | Area | Finding | Consequence for phases 6-7 |
 |---|---|---|
 | ERP errors | `ports/erp.py:19-28` defines `not_found, unsupported, unauthenticated, forbidden, rate_limited, temporary_unavailable, invalid_request, conflict, unknown_outcome`. `:31` only `rate_limited` and `temporary_unavailable` are retryable. `:40-42` docstring already says writes with `unknown_outcome` need reconciliation | Codes are ready for writes. `conflict` is the natural answer for "external reference already used" |
-| ERP read port | `ports/erp.py:45-70` `ErpReader`: `search_products`, `list_categories`, `get_products`, `get_prices`, `get_availability(warehouse=None)`. No writer protocol | Phase 7 adds `ErpWriter` as a **separate** protocol so read-only sources stay valid |
+| ERP read port | `ports/erp.py:45-70` `ProductSource`: `search_products`, `list_categories`, `get_products`, `get_prices`, `get_availability(warehouse=None)`. No writer protocol | Phase 7 adds `OrderWriter` as a **separate** protocol so read-only sources stay valid |
 | **Job retries ignore `retryable`** | `application/jobs.py:59-71` retries **every** non-`PermanentJobError` exception with backoff; nothing reads `ErpError.retryable` (only definition at `ports/erp.py:40`) | A write handler must **catch** `unknown_outcome` (and other non-retryable codes) itself and record the result, exactly like delivery does. Letting it escape would retry a write blindly. A test must prove this |
 | Honest unknown pattern | `application/delivery.py:94-102` a row left in `sending` becomes `unknown`; `:126-133` compare-and-set `pending -> sending`; `:152-160` uncertain answer -> `unknown`; `:161-170` other errors -> back to `pending` and re-raise for retry | Reused 1:1 for order operations (section 6.3) |
 | Simulated ERP | `adapters/erp/simulated.py:55-79`: per-tenant catalogues, `failures` injection per operation name (`:66`), `unsupported` when no catalogue (`:78`); `source = "simulated-erp"` (`:56`); one warehouse per tenant (`:37`) | Extend with a simulated writer that can fail **after** committing (chaos), for contract tests |
@@ -116,14 +116,14 @@ Facts below come from official documentation, **checked 2026-10-23** by search; 
 ### 5.2 Live read (C) or sync (D)
 | | C. Live read adapter | D. Sync into our catalogue tables |
 |---|---|---|
-| How | Implements `ErpReader` by calling the vendor on each request | A `sync_catalogue` job copies products/prices/stock into phase 3 tables with `source = <connection>`; `LocalCatalogue` serves reads |
+| How | Implements `ProductSource` by calling the vendor on each request | A `sync_catalogue` job copies products/prices/stock into phase 3 tables with `source = <connection>`; `LocalCatalogue` serves reads |
 | Freshness | Live | As of the last sync (stock marked stale by existing rules) |
 | Search quality | Vendor's search (often poor) | Our full-text + trigram search (phase 3) |
 | Rate limits | One enquiry = several calls; daily caps (Zoho) can run out | Predictable, scheduled |
 | Reachability | ERP must be reachable at quote time | Works if the ERP is down briefly |
 | Fits | Shopify, ERPNext, Odoo with good APIs | Tally (agent pushes), Zoho (daily caps), large catalogues |
 
-**Recommendation (technical, to confirm with the user):** a **hybrid** per connection, chosen by capability: sync for search and catalogue, **live re-check** of price and stock for the final lines (`get_prices`, `get_availability`) when the source supports it. The `ErpReader` contract is the same either way, so the core does not change. Which mode the pilot uses depends on 5.6 answers (freshness need, rate plan).
+**Recommendation (technical, to confirm with the user):** a **hybrid** per connection, chosen by capability: sync for search and catalogue, **live re-check** of price and stock for the final lines (`get_prices`, `get_availability`) when the source supports it. The `ProductSource` contract is the same either way, so the core does not change. Which mode the pilot uses depends on 5.6 answers (freshness need, rate plan).
 
 ### 5.3 Work items
 | # | Item | Notes |
@@ -134,7 +134,7 @@ Facts below come from official documentation, **checked 2026-10-23** by search; 
 | P6.3 | Mapping (domain, standard library): `CatalogueMapping` | SKU field; unit map (ERP unit code -> our unit text, **exact rename only, never a conversion**); currency must equal the tenant policy currency, otherwise prices are omitted (ADR 0010); tax basis flag (prices with or without tax; see 5.6); warehouse selection (one, list, or "sum of listed"); category field; active/inactive filter. Unmapped values are reported, not guessed |
 | P6.4 | Capability declaration | Generic `Capabilities` plus catalogue/order flags (section 9): `live_prices`, `live_stock`, `stock_semantics` (`on_hand`/`available`/`unknown`), `warehouses`, `webhooks`, later `create_order`, `reference_lookup`, `idempotency_key`, `reserve_stock` |
 | P6.5 | Credentials in `SecretStore`; `connections.secret_refs` holds references only | OAuth refresh handled inside the package; `test()` performs one harmless read |
-| P6.6 | Live adapter: implements `ErpReader`; vendor errors mapped to `ErpErrorCode` (401 -> `unauthenticated`, 403 -> `forbidden`, 429 -> `rate_limited`, 5xx/timeout on reads -> `temporary_unavailable`); timeouts set; results stamped with `source` and `fetched_at` | Unknown SKUs omitted, never zero |
+| P6.6 | Live adapter: implements `ProductSource`; vendor errors mapped to `ErpErrorCode` (401 -> `unauthenticated`, 403 -> `forbidden`, 429 -> `rate_limited`, 5xx/timeout on reads -> `temporary_unavailable`); timeouts set; results stamped with `source` and `fetched_at` | Unknown SKUs omitted, never zero |
 | P6.7 | Sync adapter (if chosen): `sync_catalogue` job, full then incremental (webhook or modified-since); synced rows read-only in the portal for mapped fields; sync run record (counts, errors, finished_at) | Needs a small table (section 9, migration numbering) |
 | P6.8 | Contract suite extension (section 8) and a sandbox parameter `pytest.param(..., marks=pytest.mark.integration)` | Sandbox credentials from environment, never committed |
 | P6.9 | Portal (`connections` feature): mapping form, "Test", sync status and last error, unmapped units/currencies list | Uses existing connection screens from phase 1/5 |
@@ -180,9 +180,9 @@ If the answer to Q1 is "staff confirm first", option A queues nothing automatica
 - `OrderEvent` (append-only): type (`created`, `status_changed`, `erp_write_succeeded`, `erp_write_unknown`, `reconciled`, `note`, `customer_notified`...), from/to status, source (`system`, `staff`, `erp`, later `carrier`, `inventory`, `payment`), actor, detail, occurred_at.
 - `OrderOperation` (the "order operation" entity of `data-model.md:80`): kind (`reserve_stock`, `create_sales_order`, `release_reservation`), idempotency key, external reference, connection, status (`pending`, `sending`, `succeeded`, `failed`, `unknown`, `needs_attention`), ERP IDs returned (order ID, reservation ID), attempts, last error, timestamps.
 
-### 6.3 ERP write: `ErpWriter` port (optional capability)
+### 6.3 ERP write: `OrderWriter` port (optional capability)
 ```python
-class ErpWriter(Protocol):  # ports/erp.py, next to ErpReader
+class OrderWriter(Protocol):  # ports/erp.py, next to ProductSource
     def reserve_stock(
         self, context, reference: str, lines: Sequence[OrderLineRequest]
     ) -> Reservation: ...
@@ -247,14 +247,14 @@ Grants: API role reads all, inserts orders/lines/events (staff actions); worker 
 |---|---|
 | P7.0 | Ask Q1-Q16 (clarify-before-building); record answers in an ADR and open-decisions; update this plan |
 | P7.1 | Domain: order, lines, events, status transitions, purchase key, operation states (standard library) + unit tests |
-| P7.2 | Ports: `OrderStore`, `ErpWriter`; simulated writer with fault injection (fail before send, fail after commit, slow lookup, conflict) |
+| P7.2 | Ports: `OrderStore`, `OrderWriter`; simulated writer with fault injection (fail before send, fail after commit, slow lookup, conflict) |
 | P7.3 | Migration `0014_orders` + PostgreSQL tests (RLS, grants, append-only, uniqueness races) |
 | P7.4 | `OrderService` (create from acceptance, staff create, status change, cancel per answers) + `create_order` hook (option A) |
 | P7.5 | `ErpOrderOperationHandler` (6.3 steps) and `ReconcileOrderOperationHandler` |
 | P7.6 | Templates and outbox wiring; API pull endpoint |
 | P7.7 | `IntentRouter` handler "track my order" + evaluation cases |
 | P7.8 | Portal `orders` feature |
-| P7.9 | Connector: implement `ErpWriter` in the phase 6 package if the spike showed reference lookup; otherwise local orders only |
+| P7.9 | Connector: implement `OrderWriter` in the phase 6 package if the spike showed reference lookup; otherwise local orders only |
 | P7.10 | Docs: feature doc, ADR, amend ADR 0003 consequence (orders kept by us when no ERP), runbook for `needs_attention`, handoff |
 
 ### 6.11 The question list (ask before phase 7 starts)
@@ -289,7 +289,7 @@ No tables or code for these now (06-future-commerce). Each section lists the sha
 
 ### 7.2 Our own inventory
 - **Grows from phase 3 tables:** `catalogue_stock` becomes a **projection** of a ledger. New: `warehouses`, `stock_movements` (append-only: receipt, sale, adjustment, transfer, reservation-release; quantity with unit, reason, actor, source document), `stock_reservations` (order, SKU, quantity, warehouse, expires_at, status).
-- **Same ports:** `LocalCatalogue` keeps implementing `ErpReader`, and a `LocalOrderWriter` implements `ErpWriter` (reserve = reservation row; create order = sale movements). Quotation and order code do not change.
+- **Same ports:** `LocalCatalogue` keeps implementing `ProductSource`, and a `LocalOrderWriter` implements `OrderWriter` (reserve = reservation row; create order = sale movements). Quotation and order code do not change.
 - **Concurrency:** reservations take a row lock per (warehouse, SKU) or use a serialisable check, so stock cannot go below zero unless the business allows it.
 - **Questions:** may stock go negative; how stock is counted (receipts from suppliers? adjustments by whom?); batch/serial numbers or expiry dates; multiple warehouses and transfers; reservation length; valuation/cost (probably not ours); migrating from an ERP to ours or back.
 
@@ -322,7 +322,7 @@ All tests in the mirrored `tests/` tree.
 These must be applied in [00-shared-contracts.md](00-shared-contracts.md) before phases 6/7 start.
 | # | Section | Proposal | Why |
 |---|---|---|---|
-| P1 | §3 Provider | Add optional factory methods `catalogue_source(conn, secrets) -> ErpReader` and `order_writer(conn, secrets) -> ErpWriter` (raise `OperationUnsupported` when not offered) | The Provider protocol only has messaging operations; catalogue/order providers need a way to hand out the port implementation |
+| P1 | §3 Provider | Add optional factory methods `catalogue_source(conn, secrets) -> ProductSource` and `order_writer(conn, secrets) -> OrderWriter` (raise `OperationUnsupported` when not offered) | The Provider protocol only has messaging operations; catalogue/order providers need a way to hand out the port implementation |
 | P2 | §1 Capabilities | Allow purpose-specific flags: `live_prices`, `live_stock`, `stock_semantics`, `warehouses`, `webhooks`, `create_order`, `reference_lookup`, `idempotency_key`, `reserve_stock` (sub-dataclass or extra field) | `integrations.md:51` requires declaring reference lookup/idempotency |
 | P3 | §4 Migrations | If phase 6 uses sync and needs a sync-run table/source columns: either add `source`, `external_id`, `synced_at` columns to phase 3's `0011_catalogue` now (cheap, recommended) and a sync-run table, **or** renumber to `0014_catalogue_sync` (phase 6) and `0015_orders` (phase 7). Live-only needs no migration and `0014_orders` stays | `0014` is reserved for orders; phase 6 has no number |
 | P4 | §5 Job kinds | Add `sync_catalogue` (phase 6, or reuse `poll_connection`), `create_order`, `erp_order_operation`, `reconcile_order_operation` (phase 7) | New background work |

@@ -26,7 +26,7 @@ Learning must explain the real architecture; it must not weaken release requirem
 | Row-level security (RLS) | Database filter that hides other businesses' rows | Even a buggy query cannot read another tenant |
 | Decimal | Exact base-10 number; floats are approximate | Money never drifts by fractions of a paisa |
 | Rounding mode | Tie-break rule for an exact half | half_up: 0.125 -> 0.13; half_even: 0.125 -> 0.12 |
-| Protocol | Python's way to describe a port: methods an adapter must have | Simulated and real ERPs both satisfy ErpReader |
+| Protocol | Python's way to describe a port: methods an adapter must have | Simulated and real ERPs both satisfy ProductSource |
 | Contract test | One suite every adapter must pass | A new ERP proves it omits unknown SKUs and respects tenants |
 | Idempotency key | Caller-chosen ID meaning "this exact request" | A retried POST returns the first enquiry, not a second one |
 | 202 Accepted | "Safely stored; work continues in the background" | Sent only after the database commit |

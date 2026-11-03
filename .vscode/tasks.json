@@ -39,7 +39,7 @@
       "label": "dev: seed",
       "detail": "Add the synthetic tenants and members if missing (existing rows unchanged)",
       "type": "shell",
-      "command": "uv run python -m sales_platform.persistence.seed",
+      "command": "uv run python -m sales_platform.seed",
       "options": { "cwd": "${workspaceFolder}" },
       "presentation": { "reveal": "silent", "panel": "shared" },
       "problemMatcher": []

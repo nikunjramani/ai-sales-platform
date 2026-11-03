@@ -25,7 +25,7 @@ The user answered each open point on 2026-10-23 ([clarify-before-building](../..
 - **Factory:** LangChain's `init_chat_model(model, model_provider=provider, temperature=0, api_key=..., **options)`, wrapped in the existing `LangChainInterpreter`. Prompt-injection containment, strict schemas and verbatim-quote checks are unchanged. A provider whose package is missing gives a clear error at startup.
 - **Adding a provider** (OpenAI, Claude, Groq, Ollama...): add its LangChain package to the `ai` extra and set the three settings. No code change.
 - **Dependencies:** one optional extra `ai`: `langchain` 1.4.4 (for `init_chat_model`) and `langchain-google-genai` 4.4.0. `langchain-ollama` was removed. Transitive pins `google-genai<=2.29.0`, `google-auth<=2.61.0` and `pycparser<=3.1` keep every new package at least 14 days old.
-- `Product.category` holds the ERP product group. `ErpReader.list_categories()` returns the tenant's sorted groups. ERP search also matches category words, so "fasteners" finds M8 bolts.
+- `Product.category` holds the ERP product group. `ProductSource.list_categories()` returns the tenant's sorted groups. ERP search also matches category words, so "fasteners" finds M8 bolts.
 - The workflow asks the ERP for categories only when the reply needs them. ERP errors there are retried like any other ERP read. Checkpoints from before categories still load, with the category treated as none.
 
 ## Alternatives offered and not chosen

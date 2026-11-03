@@ -1,5 +1,5 @@
 # 0026: Backend by business module, one shared wiring, and the `sales_platform` name
-**Date:** 2026-11-02. **Status:** accepted (user, 2026-11-03: "continue with the plan"); being implemented step by step. Builds on ADR 0001 (channel-independent core), 0009 (tooling and database roles), 0014 (the portal's feature structure) and 0018 (connector framework).
+**Date:** 2026-11-02. **Status:** implemented (2026-11-03). Steps 0-3 merged as PRs #13-#16; steps 4-14 in one PR at the user's request ("just create single pr for all"). Builds on ADR 0001 (channel-independent core), 0009 (tooling and database roles), 0014 (the portal's feature structure) and 0018 (connector framework).
 
 ## Context
 The backend started as a quotation tool. It now also runs accounts and onboarding, the catalogue and sync, enquiries and extraction, customer conversations and website chat, quotations with approval, delivery and acceptance, orders, and the integrations framework. A review on 2026-11-02 found:
@@ -11,7 +11,7 @@ The backend started as a quotation tool. It now also runs accounts and onboardin
 | 3 | The import-rule test does not cover `persistence` or `api` | `tests/unit/test_architecture.py`, `ALLOWED` has domain, ports, application, adapters and workflows only |
 | 4 | One table file for the whole system | `persistence/models.py`, 1,865 lines |
 | 5 | Leftovers | empty `adapters/channels/` and `adapters/delivery/`; the deprecated route in `api/channels.py` (its docstring says "removed in phase 4/5"); a 525-line in-memory catalogue double in `adapters/catalogue/memory.py` |
-| 6 | Names no longer fit | package `quotation_app`, portal "Quotation Portal"; the generic product-source and order-writer ports are `ErpReader` / `ErpWriter` even when the source is our own list |
+| 6 | Names no longer fit | package `quotation_app`, portal "Quotation Portal"; the generic product-source and order-writer ports are `ProductSource` / `OrderWriter` even when the source is our own list |
 
 Size at review: about 36,000 lines in `src/` (persistence 11.3k, application 7.3k, api 5.0k, adapters 4.7k, domain 4.3k, ports 3.3k, workflows 0.7k) and about 20,600 lines of tests (84 unit, 30 integration files).
 
@@ -88,7 +88,7 @@ The existing files move as follows. The list is indicative; each step checks it 
 | 4 | Database: one fresh baseline migration with `sales_*` role and database names, replacing 0001–0015; init scripts, `.env.example`, CI and a one-command "recreate local database" script (Q2). Done: the baseline is the pg_dump of the old head with the roles renamed, proven equal by comparing dumps; schema-rule tests kept in `test_schema_rules.py` | high (local data is recreated) |
 | 5 | Create `platform/` and move the shared core; split `models.py` so each module owns its tables (Alembic still sees one metadata) | medium |
 | 6–12 | Move one module per PR: accounts, integrations, catalogue, enquiries, conversations, quotations, orders. Turn on the module-boundary rule for each module as it lands | medium |
-| 13 | Interface names: `ErpReader` → `ProductSource`, `ErpWriter` → `OrderWriter` (with the catalogue/orders moves if simpler) | low |
+| 13 | Interface names: `ProductSource` → `ProductSource`, `OrderWriter` → `OrderWriter` (with the catalogue/orders moves if simpler) | low |
 | 14 | Repository: after the user renames it on GitHub, update links in docs and CI (Q3); docs (code map, module boundaries, execution flow, configuration, testing); this ADR becomes "implemented" | none |
 
 Verification for every step: Ruff, strict mypy, unit tests, PostgreSQL integration tests with `scripts/check_database.py --cycle`, the portal checks when it is touched, and CI. Behaviour is unchanged, so no test changes its expectations; only imports and paths.
@@ -133,3 +133,15 @@ Key moves that break the links:
 - Manager phone links and approval notices move to quotations.
 
 Delivery: one PR per module group, in the order above; the architecture test gains the module order and enforces it as each module lands. Behaviour does not change.
+
+## Implementation notes (2026-11-03)
+- **Result:** every file is in its module; the architecture test reports no import against the module order (59 at the start, all fixed). Unit tests 950 passed; ruff, strict mypy (393 files) clean.
+- **How the links were broken:** shared helpers to `platform` (`security.py`, `text.py`, rate-limit types, `ServiceError`, `PortalAuth`); inbound event types to `integrations/domain/events.py`; the outbox and its templates to `integrations`, with quotation texts in `quotations/domain/message_texts.py` and account emails in `accounts/domain/emails.py`; inbound routes to their modules; `OutboxListener` hooks for the conversation thread and quotation deliveries; plug-in contracts per module; follow-up routing, customer targets and the staff-message store to `enquiries`; media links and the reply classifier to `quotations`; the product delete guard as a `ProductInUse` check from quotations; the connection enrollment route to `quotations/api/enrollments.py` (same URL).
+- **Deviations, stated plainly:**
+  - No `__init__.py` facades with "public names": the rule enforced is the module order plus the layer rules. Re-export files for hundreds of names would add churn without stopping any cycle.
+  - One database-level read stays: follow-up routing checks whether a quotation exists by naming the quotations table (read-only, no import), because the alternatives either change behaviour or need a schema change.
+  - `ProviderEnvironment.catalogue_store` is typed `object | None` in integrations (providers cast it to catalogue's `CatalogueReadStore`).
+  - `models.py` is split: `platform/persistence/models.py` keeps `Base` and the platform tables; each module has `persistence/tables.py`.
+  - `ErpReader`/`ErpWriter` are now `ProductSource`/`OrderWriter` (still defined in `catalogue/ports/erp.py`).
+  - Tests mirror the modules (`tests/unit/<module>/...`).
+- **Q3 (repository rename):** waits for the user to rename the GitHub repository; links are updated after that.

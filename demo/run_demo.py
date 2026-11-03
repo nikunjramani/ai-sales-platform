@@ -36,7 +36,7 @@ def main() -> None:
     python = sys.executable
     print("Applying migrations and seed data...")
     subprocess.run([python, "-m", "alembic", "upgrade", "head"], cwd=ROOT, check=True)
-    subprocess.run([python, "-m", "sales_platform.persistence.seed"], cwd=ROOT, check=True)
+    subprocess.run([python, "-m", "sales_platform.seed"], cwd=ROOT, check=True)
 
     processes = []
     if not api_running():
@@ -46,7 +46,7 @@ def main() -> None:
                     python,
                     "-m",
                     "uvicorn",
-                    "sales_platform.api.app:create_app",
+                    "sales_platform.api_app:create_app",
                     "--factory",
                     "--host",
                     "127.0.0.1",
