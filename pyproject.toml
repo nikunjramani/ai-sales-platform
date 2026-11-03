@@ -29,21 +29,21 @@ dependencies = [
 # Pluggable parts are found by name through these entry points (ADR 0018). A new provider or
 # secret store is one package plus one entry point (here or in its own package); no core change.
 [project.entry-points."sales_platform.providers"]
-api = "sales_platform.adapters.providers.api:build"
-simulated = "sales_platform.adapters.providers.simulated:build"
-local_catalogue = "sales_platform.adapters.providers.local_catalogue:build"
-web_chat = "sales_platform.adapters.providers.web_chat:build"
-telegram = "sales_platform.adapters.providers.telegram:build"
-erpnext = "sales_platform.adapters.providers.erpnext:build"
+api = "sales_platform.providers.api:build"
+simulated = "sales_platform.providers.simulated:build"
+local_catalogue = "sales_platform.providers.local_catalogue:build"
+web_chat = "sales_platform.providers.web_chat:build"
+telegram = "sales_platform.providers.telegram:build"
+erpnext = "sales_platform.providers.erpnext:build"
 
 [project.entry-points."sales_platform.secret_stores"]
-local = "sales_platform.adapters.secrets.local:build"
-none = "sales_platform.adapters.secrets.none:build"
+local = "sales_platform.platform.adapters.secrets.local:build"
+none = "sales_platform.platform.adapters.secrets.none:build"
 
 # Account email senders (phase 2): `console` writes files for development. A real sender is one
 # more package with its own entry point (phase 5), chosen by SALES_MAILER.
 [project.entry-points."sales_platform.mailers"]
-console = "sales_platform.adapters.accounts.mail.console:build"
+console = "sales_platform.accounts.adapters.accounts.mail.console:build"
 
 [project.optional-dependencies]
 # AI enquiry reader: the generic model loader plus the provider packages in use. Any other

@@ -19,20 +19,20 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from sales_platform.adapters.erp.simulated import demo_catalogue
-from sales_platform.application.inbound import InboundService
-from sales_platform.application.providers import ProviderRegistry
-from sales_platform.domain.connections import (
+from sales_platform.catalogue.adapters.erp.simulated import demo_catalogue
+from sales_platform.catalogue.ports.erp import ProductSource
+from sales_platform.catalogue.ports.sources import product_source_of
+from sales_platform.integrations.application.inbound import InboundService
+from sales_platform.integrations.application.providers import ProviderRegistry
+from sales_platform.integrations.domain.connections import (
     Capabilities,
     Connection,
     ConnectionStatus,
     DeliveryMode,
     Purpose,
 )
-from sales_platform.domain.intake import InboundEvent, ManagerAction
-from sales_platform.domain.tenancy import Role, TenantContext
-from sales_platform.ports.erp import ErpReader
-from sales_platform.ports.providers import (
+from sales_platform.integrations.domain.events import InboundEvent, ManagerAction
+from sales_platform.integrations.ports.providers import (
     InboundRejected,
     InboundRequest,
     OperationUnsupported,
@@ -44,7 +44,8 @@ from sales_platform.ports.providers import (
     SendReceipt,
     TestResult,
 )
-from sales_platform.ports.secrets import SecretNotFound
+from sales_platform.platform.domain.tenancy import Role, TenantContext
+from sales_platform.platform.ports.secrets import SecretNotFound
 from tests.support.catalogue_store import InMemoryCatalogueStore
 
 NOW = datetime(2026, 10, 27, tzinfo=UTC)
@@ -99,7 +100,7 @@ class EchoProvider(ProviderDefaults):
     def send(self, conn: Connection, secrets: Any, message: RenderedMessage) -> SendReceipt:
         return SendReceipt(ReceiptKind.SENT, str(message.message_id))
 
-    def catalogue_reader(self, conn: Connection, secrets: Any) -> ErpReader:
+    def catalogue_reader(self, conn: Connection, secrets: Any) -> ProductSource:
         raise OperationUnsupported("Echo has no products")
 
 
@@ -299,9 +300,9 @@ def test_catalogue_reader_exists_exactly_for_catalogue_providers(provider: Provi
     conn = connection(provider)
     if Purpose.CATALOGUE not in provider.purposes:
         with pytest.raises(OperationUnsupported):
-            provider.catalogue_reader(conn, OneSecret())
+            product_source_of(provider).catalogue_reader(conn, OneSecret())
         return
-    reader = provider.catalogue_reader(conn, OneSecret())
+    reader = product_source_of(provider).catalogue_reader(conn, OneSecret())
     context = TenantContext(A, "contract", frozenset({Role.VIEWER}))
     assert list(reader.list_categories(context))  # a working reader (ERP contract suite: WI-10)
 

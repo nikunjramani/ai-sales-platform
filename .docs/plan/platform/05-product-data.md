@@ -6,7 +6,7 @@
 - nowhere written down.
 
 ## Design: one read contract, many sources
-The existing **`ErpReader` port** (renamed in the docs to **catalogue source**; the code name can stay) already holds everything the core needs:
+The existing **`ProductSource` port** (renamed in the docs to **catalogue source**; the code name can stay) already holds everything the core needs:
 - `search_products`
 - `list_categories`
 - `get_products`

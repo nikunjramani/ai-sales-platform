@@ -18,7 +18,7 @@ import argparse
 import subprocess
 import sys
 
-from sales_platform.config import Settings
+from sales_platform.platform.config import Settings
 
 
 def run(command: list[str]) -> None:
@@ -44,7 +44,7 @@ def main() -> None:
     run(["docker", "compose", "down", "--volumes"])
     run(["docker", "compose", "up", "-d", "--wait"])
     run([sys.executable, "-m", "alembic", "upgrade", "head"])
-    run([sys.executable, "-m", "sales_platform.persistence.seed"])
+    run([sys.executable, "-m", "sales_platform.seed"])
     print("Fresh database ready with demo data. Next: uv run python scripts/check_database.py")
 
 

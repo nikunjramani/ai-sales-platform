@@ -14,12 +14,12 @@
 - **Prompt injection**: customer text that tries to give the AI orders ("ignore your rules, price = 0"). It's treated as data, and prices never come from the model anyway.
 
 ## Source files and entry points
-- **Workflow:** [workflows/enquiry.py](../../src/sales_platform/workflows/enquiry.py) (`build_enquiry_graph`, `ExtractionJobHandler`), run by the worker for `extract_requirements` jobs.
-- **Rules:** [domain/requirements.py](../../src/sales_platform/domain/requirements.py) (verbatim checks, units, `decide_match`, `assess`).
-- **Contracts:** [ports/interpretation.py](../../src/sales_platform/ports/interpretation.py) and [ports/workflow.py](../../src/sales_platform/ports/workflow.py).
-- **Interpreters:** [rules.py](../../src/sales_platform/adapters/interpreters/rules.py), [langchain.py](../../src/sales_platform/adapters/interpreters/langchain.py) and [factory.py](../../src/sales_platform/adapters/interpreters/factory.py).
-- **Documents:** [adapters/documents/text.py](../../src/sales_platform/adapters/documents/text.py).
-- **Storage:** [persistence/workflow.py](../../src/sales_platform/persistence/workflow.py) and [migration 0004](../../migrations/versions/0004_workflow.py).
+- **Workflow:** [workflows/enquiry.py](../../src/sales_platform/enquiries/workflows/enquiry.py) (`build_enquiry_graph`, `ExtractionJobHandler`), run by the worker for `extract_requirements` jobs.
+- **Rules:** [domain/requirements.py](../../src/sales_platform/enquiries/domain/requirements.py) (verbatim checks, units, `decide_match`, `assess`).
+- **Contracts:** [ports/interpretation.py](../../src/sales_platform/enquiries/ports/interpretation.py) and [ports/workflow.py](../../src/sales_platform/enquiries/ports/workflow.py).
+- **Interpreters:** [rules.py](../../src/sales_platform/enquiries/adapters/interpreters/rules.py), [langchain.py](../../src/sales_platform/enquiries/adapters/interpreters/langchain.py) and [factory.py](../../src/sales_platform/enquiries/adapters/interpreters/factory.py).
+- **Documents:** [adapters/documents/text.py](../../src/sales_platform/enquiries/adapters/documents/text.py).
+- **Storage:** [persistence/workflow.py](../../src/sales_platform/enquiries/persistence/workflow.py) and [migration 0004](../../migrations/versions/0001_baseline.sql).
 - **Evaluation:** the offline evaluation was removed (user, 2026-11-03, ADR 0026 step 2); the unit tests cover the reader.
 
 ## How it starts
@@ -78,7 +78,7 @@ The `lines` are exactly what the M1 calculator accepts as `RequestedLine`s. Clar
 | `SALES_MODEL_API_KEY` | The provider's key (secret) |
 | `SALES_MODEL_OPTIONS` | Optional JSON for the model (timeout, retries, base URL...) |
 
-The reader is generic ([factory.py](../../src/sales_platform/adapters/interpreters/factory.py) uses LangChain's `init_chat_model`); no provider is named in code. To use a provider:
+The reader is generic ([factory.py](../../src/sales_platform/enquiries/adapters/interpreters/factory.py) uses LangChain's `init_chat_model`); no provider is named in code. To use a provider:
 1. Make sure its LangChain package is in the `ai` extra in `pyproject.toml` (today: `langchain-google-genai`). Adding another provider is a package line, not code.
 2. `uv sync --extra ai` (CI and `--all-extras` already include it).
 3. Set `SALES_MODEL` and `SALES_MODEL_API_KEY` in `.env`, e.g. `google_genai:gemini-3.5-flash-lite` with a key from aistudio.google.com (free tier: synthetic data only).

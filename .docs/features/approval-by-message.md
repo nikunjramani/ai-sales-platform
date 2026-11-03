@@ -1,5 +1,5 @@
 # Approval by message (D10, phase 5)
-Decision: [ADR 0022](../adr/0022-one-click-providers-and-approval-by-message.md); D10 safety rules in [07 decisions](../plan/platform/07-decisions-needed.md). Code: [application/manager_replies.py](../../src/sales_platform/application/manager_replies.py), [domain/manager_replies.py](../../src/sales_platform/domain/manager_replies.py), [application/approval_links.py](../../src/sales_platform/application/approval_links.py).
+Decision: [ADR 0022](../adr/0022-one-click-providers-and-approval-by-message.md); D10 safety rules in [07 decisions](../plan/platform/07-decisions-needed.md). Code: [application/manager_replies.py](../../src/sales_platform/quotations/application/manager_replies.py), [domain/manager_replies.py](../../src/sales_platform/quotations/domain/manager_replies.py), [application/approval_links.py](../../src/sales_platform/quotations/application/approval_links.py).
 
 ## Three ways to decide in a tool
 All three use the same approval core as the portal. It checks the approver role, no self-approval, one decision per request and the current version.

@@ -9,7 +9,7 @@ Until phase 3 every product, price and stock figure came from an ERP (in practic
 ## Decision
 | Topic | Decision |
 |---|---|
-| Source | Our own tables, served by `LocalCatalogue`, an `ErpReader`. To the quotation core it is just another product source: matching, pricing, approval and acceptance are unchanged. It is provider `local_catalogue` (purpose catalogue, capability `catalogue_editable`) |
+| Source | Our own tables, served by `LocalCatalogue`, an `ProductSource`. To the quotation core it is just another product source: matching, pricing, approval and acceptance are unchanged. It is provider `local_catalogue` (purpose catalogue, capability `catalogue_editable`) |
 | Authority | The business's selected catalogue source is authoritative. With our list, our rows are the truth; when an ERP is connected later, the ERP is, and our list becomes read-only (this amends 0003) |
 | Default | A new business gets our list as its source, created with the business (`SALES_DEFAULT_CATALOGUE_PROVIDER`, no provider name in code). Migration 0011 gives it to every business without an active source; the demo businesses keep the simulated ERP |
 | Products | SKU (fixed after creation, unique ignoring case), name (customers see it), unit (`each`, `metre`, `kg`, `box`: the units the reader understands), optional category and staff-only notes, minimum quantity and step (minimum a multiple of the step). The unit is locked once a price or stock count exists. 10,000 active products per business (Q1-Q4, Q13, Q16, Q17) |

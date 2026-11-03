@@ -12,7 +12,7 @@ import sys
 
 from sqlalchemy.engine import make_url
 
-from sales_platform.config import Settings
+from sales_platform.platform.config import Settings
 
 DEV_DATABASE = "sales_dev"
 TEST_DATABASE = "sales_test"

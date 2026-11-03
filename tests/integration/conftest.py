@@ -14,13 +14,13 @@ from pydantic import SecretStr
 from sqlalchemy import Engine, text
 from sqlalchemy.engine import make_url
 
-from sales_platform.adapters.storage.local import LocalObjectStorage
-from sales_platform.application.api_keys import generate_api_key
-from sales_platform.config import Settings
-from sales_platform.domain.tenancy import Role
-from sales_platform.persistence.api_keys import insert_api_key
-from sales_platform.persistence.database import build_engine
-from sales_platform.persistence.seed import seed_demo_tenants
+from sales_platform.accounts.application.api_keys import generate_api_key
+from sales_platform.accounts.persistence.api_keys import insert_api_key
+from sales_platform.platform.adapters.storage.local import LocalObjectStorage
+from sales_platform.platform.config import Settings
+from sales_platform.platform.domain.tenancy import Role
+from sales_platform.platform.persistence.database import build_engine
+from sales_platform.seed import seed_demo_tenants
 
 type ApiKeyFactory = Callable[[UUID, Role], str]
 

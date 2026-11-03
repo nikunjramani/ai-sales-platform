@@ -50,7 +50,7 @@ docker compose up -d --wait
 uv run python scripts/check_database.py
 
 # 5. Load fictional demo businesses, users and pricing policies
-uv run python -m sales_platform.persistence.seed
+uv run python -m sales_platform.seed
 
 # 6. See a priced quotation, a blocked request and access checks
 uv run python scripts/demo_quotation.py
@@ -63,7 +63,7 @@ Submitting an enquiry with the key is shown in the [setup guide](.docs/developme
 
 Run the API:
 ```powershell
-uv run uvicorn sales_platform.api.app:create_app --factory --host 127.0.0.1 --port 8000
+uv run uvicorn sales_platform.api_app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 Then open http://127.0.0.1:8000/docs. For the portal and approvals, see [approvals and portal](.docs/development/setup.md#approvals-and-portal-m4).
 
@@ -83,23 +83,26 @@ Integration tests never touch your development data: they need `--run-integratio
 
 ## Project layout
 ```text
-src/sales_platform/
-  domain/        Pure business rules: money, tenancy, catalogue facts, pricing
-  ports/         Contracts (interfaces) that adapters implement, e.g. ErpReader
-  application/   Use cases: tenant context, pricing, enquiry intake, job running
-  adapters/      Implementations of ports: simulated ERP, file storage, PDF reading, interpreters
-  workflows/     LangGraph workflows (enquiry extraction, quotation approval)
-  persistence/   Database models, tenant-scoped repositories, job queue, checkpoints, demo seed
-  api/           FastAPI app: health, enquiries, portal (auth, quotations, approvals), channel webhook
-  worker.py      Background job worker process
-  config.py      Validated settings from environment / .env
-migrations/      Alembic schema migrations
+src/sales_platform/   one application, nine business modules in a fixed order (ADR 0026)
+  platform/          tenancy, money, validation, jobs, storage, secrets, sign-in guard, settings
+  integrations/      connections, provider registry, webhooks, inbound events, the outbox
+  accounts/          users, businesses, members, invitations, API keys
+  catalogue/         products, prices, stock, product sources, sync
+  conversations/     contacts, threads, consent, customer messages
+  enquiries/         intake, attachments, extraction, follow-ups, enquiry workflow
+  quotations/        pricing, approvals, PDFs and delivery, acceptance, quotation workflow
+  orders/            orders, order writers, track my order
+  customer_channels/ website chat, customer inbox, customer API
+  providers/         plug-in packages: api, simulated, web_chat, telegram, erpnext, local_catalogue
+  (each module has domain/, ports/, application/, adapters/, persistence/, api/ as needed)
+  composition.py, api_app.py, worker.py, seed.py   the wiring
+migrations/      Alembic: one baseline (0001_baseline) plus later migrations
 portal/          React portal: src/app, src/shared, src/features/<feature>/<layer>; tests/ mirrors src
-evals/           Synthetic evaluation dataset for enquiry interpreters
+evals/           Synthetic manager-reply cases (scripts/evaluate_replies.py, needs a model)
 scripts/         Local helpers: credentials, database checks, pricing demo, API keys
 tests/
   conftest.py    Shared fixtures (tenants, contexts, policies, simulated ERP)
-  unit/          Offline tests; folders mirror src/sales_app
+  unit/          Offline tests; folders mirror the modules in src/sales_platform
   integration/   PostgreSQL tests; run with --run-integration
 infra/           PostgreSQL role bootstrap for Docker Compose
 .docs/           Architecture, plans, decisions (ADRs), guides and handoff

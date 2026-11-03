@@ -13,7 +13,7 @@ M1 needs commercial arithmetic that is exact and explainable, tenant context tha
 - Stock never blocks calculation, but each line reports one of five distinct statuses: available, insufficient, unavailable, unknown or stale.
 - `TenantContext` is built only by `TenantContextResolver` from an authenticated subject plus stored membership. Roles map to permissions in code; administrators do not approve unless also granted the approver role.
 - Repositories set a transaction-local tenant context, filter by tenant explicitly, and rely on forced RLS as a second guard. The runtime role has SELECT only on memberships and policies.
-- ERP access goes through the `ErpReader` protocol: unknown SKUs are omitted, results carry source and timezone-aware `fetched_at`, and failures raise normalized `ErpError` codes. A shared contract suite applies to every adapter.
+- ERP access goes through the `ProductSource` protocol: unknown SKUs are omitted, results carry source and timezone-aware `fetched_at`, and failures raise normalized `ErpError` codes. A shared contract suite applies to every adapter.
 
 ## Alternatives
 Float arithmetic; rounding only the grand total; tax per line; treating missing prices or stock as zero; guessing unit conversions; trusting a tenant ID from the request; letting the runtime role manage memberships; exception-free result objects for ERP failures.

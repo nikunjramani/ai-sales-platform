@@ -33,7 +33,7 @@ Verified workstation: Python 3.13.14, uv 0.13.1, Git, Docker Desktop 4.96.1 (eng
 ```powershell
 docker compose up -d --wait
 uv run python scripts/check_database.py
-uv run python -m sales_platform.persistence.seed
+uv run python -m sales_platform.seed
 uv run python scripts/demo_quotation.py
 ```
 
@@ -67,7 +67,7 @@ Add `--delete-volume quotation-local_quotation_pgdata` to delete the old data vo
 
 ## API
 ```powershell
-uv run uvicorn sales_platform.api.app:create_app --factory --host 127.0.0.1 --port 8000
+uv run uvicorn sales_platform.api_app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 Visit http://127.0.0.1:8000/docs, /health/live or /health/ready.
 - **Liveness** returns 200 when the application works.
@@ -110,7 +110,7 @@ Ready enquiries are now priced into a quotation version automatically. They wait
 
 **Run it.** Each command needs its own terminal:
 ```powershell
-uv run uvicorn sales_platform.api.app:create_app --factory --host 127.0.0.1 --port 8000
+uv run uvicorn sales_platform.api_app:create_app --factory --host 127.0.0.1 --port 8000
 uv run python -m sales_platform.worker
 cd portal; npm run dev          # http://localhost:5173/portal/ (forwards /api to port 8000)
 ```
@@ -203,7 +203,7 @@ Run once:
 uv sync --all-extras                                   # registers the providers and secret stores
 uv run python scripts/init_local_env.py --add-missing  # adds SALES_SECRET_STORE_KEY
 uv run alembic upgrade head
-uv run python -m sales_platform.persistence.seed        # demo connections (phone, catalogue, webhook)
+uv run python -m sales_platform.seed        # demo connections (phone, catalogue, webhook)
 ```
 The VS Code "Run all" task migrates and seeds for you; `uv sync` and the key are still manual.
 
@@ -213,7 +213,7 @@ After pulling phase 2, run once:
 uv sync --all-extras                                   # argon2-cffi and the console mailer entry point
 uv run python scripts/init_local_env.py --add-missing  # adds SALES_DEMO_PASSWORD
 uv run alembic upgrade head
-uv run python -m sales_platform.persistence.seed        # demo people become verified users with that password
+uv run python -m sales_platform.seed        # demo people become verified users with that password
 ```
 Then, with the API, the worker and the portal running ("Run all" in VS Code):
 1. Open http://localhost:5173/portal/ (or `/portal/` on the API) and choose **Create an account**.
@@ -247,7 +247,7 @@ uv sync --all-extras                                   # registers the telegram 
 uv run alembic upgrade head
 cd portal; npm ci; npm run build; cd ..
 ```
-- **No accounts are needed for development.** The simulated phone shows approval by message: approval requests, questions and confirmations are files under `var/storage/simulated-channel/`, each with its `message_id`. A `reply` event answers one of them (see the [PostgreSQL test](../../tests/integration/workflows/test_manager_replies.py)). Written replies are read only with `SALES_MODEL` set; without it the phone gets "written replies are not read here".
+- **No accounts are needed for development.** The simulated phone shows approval by message: approval requests, questions and confirmations are files under `var/storage/simulated-channel/`, each with its `message_id`. A `reply` event answers one of them (see the [PostgreSQL test](../../tests/integration/platform/workflows/test_manager_replies.py)). Written replies are read only with `SALES_MODEL` set; without it the phone gets "written replies are not read here".
 - **Signed link:** every approval request carries `<portal>#/approve/<token>`. Open it signed in as the approver it was sent to.
 - **Telegram for real** needs a bot, a public HTTPS address (a tunnel) and the operator command: [provider setup](../operations/provider-setup.md#telegram). Without settings the Telegram card still shows, but Enable fails with "Telegram is not set up for this platform".
 
@@ -257,7 +257,7 @@ After pulling phase 3, run once. The first command gives the migration role CREA
 docker compose exec -T postgres psql -U postgres -d sales_dev -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/01-roles.sql
 uv sync --all-extras                                   # registers the local_catalogue provider
 uv run alembic upgrade head                            # 0011 catalogue (pg_trgm, our list as default source)
-uv run python -m sales_platform.persistence.seed        # adds the Demo Local Catalogue business
+uv run python -m sales_platform.seed        # adds the Demo Local Catalogue business
 ```
 Then ("Run all" in VS Code):
 1. Sign in as `sales@local.example` (dev login) and open **Products**: five synthetic products, prices and stock.

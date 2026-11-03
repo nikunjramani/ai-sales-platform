@@ -13,21 +13,26 @@ from uuid import NAMESPACE_URL, UUID, uuid5
 
 import pytest
 
-from sales_platform.adapters.erp.simulated import SimulatedErp, demo_catalogues
-from sales_platform.adapters.providers.api import ApiProvider
-from sales_platform.application.providers import ProviderRegistry
-from sales_platform.domain.attachments import AttachmentStatus
-from sales_platform.domain.connections import Connection, ConnectionStatus, Purpose
-from sales_platform.domain.conversations import OpenEnquiry
-from sales_platform.domain.intake import EnquiryStatus, InboundEnvelope
-from sales_platform.domain.money import RoundingMode
-from sales_platform.domain.pricing import PricingPolicy
-from sales_platform.domain.tenancy import Role, TenantContext
-from sales_platform.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
-from sales_platform.ports.api_keys import ApiKeyRecord
-from sales_platform.ports.intake import AttachmentView, EnquiryRouter, EnquiryView, Receipt
-from sales_platform.ports.storage import ObjectNotFound
-from sales_platform.ports.tenancy import PricingPolicyNotConfigured
+from sales_platform.accounts.ports.api_keys import ApiKeyRecord
+from sales_platform.catalogue.adapters.erp.simulated import SimulatedErp, demo_catalogues
+from sales_platform.enquiries.domain.attachments import AttachmentStatus
+from sales_platform.enquiries.domain.follow_ups import OpenEnquiry
+from sales_platform.enquiries.domain.intake import EnquiryStatus, InboundEnvelope
+from sales_platform.enquiries.ports.intake import (
+    AttachmentView,
+    EnquiryRouter,
+    EnquiryView,
+    Receipt,
+)
+from sales_platform.integrations.application.providers import ProviderRegistry
+from sales_platform.integrations.domain.connections import Connection, ConnectionStatus, Purpose
+from sales_platform.platform.domain.money import RoundingMode
+from sales_platform.platform.domain.tenancy import Role, TenantContext
+from sales_platform.platform.ports.storage import ObjectNotFound
+from sales_platform.providers.api import ApiProvider
+from sales_platform.quotations.domain.pricing import PricingPolicy
+from sales_platform.quotations.ports.pricing_policy import PricingPolicyNotConfigured
+from sales_platform.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
 
 INTEGRATION_DIR = Path(__file__).parent / "integration"
 

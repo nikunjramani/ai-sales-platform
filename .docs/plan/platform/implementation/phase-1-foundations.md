@@ -88,7 +88,7 @@ The user accepted the recommendation for every question below: P1-Q1 a (also con
 | `persistence/documents.py:167-223` | `queue_delivery` reads `InboxEvent.connection_id` and `sender_external_id` to compute the recipient | Recipient becomes the envelope's `reply_to`, computed at intake from capabilities (backfilled) |
 
 ### 4.3 Other couplings found
-- `api/app.py:91-93` and `worker.py:68-72,97` build one `SimulatedErp(demo_catalogues(INDUSTRIAL_TENANT, OFFICE_TENANT))` shared by pricing (`application/pricing.py:23-31`), the enquiry workflow (`workflows/enquiry.py:174,218`) and acceptance (`application/acceptance.py:219`). Keeping `QuotationPricingService(erp: ErpReader, ...)` unchanged and passing a **tenant-routing `ErpReader`** avoids touching those services and their tests.
+- `api/app.py:91-93` and `worker.py:68-72,97` build one `SimulatedErp(demo_catalogues(INDUSTRIAL_TENANT, OFFICE_TENANT))` shared by pricing (`application/pricing.py:23-31`), the enquiry workflow (`workflows/enquiry.py:174,218`) and acceptance (`application/acceptance.py:219`). Keeping `QuotationPricingService(erp: ProductSource, ...)` unchanged and passing a **tenant-routing `ProductSource`** avoids touching those services and their tests.
 - `scripts/simulated_channel.py:22-26,47,100-105` and `demo/server.py:114-127,143-149` sign events with the global secret, post to the old route and expect `200` with `result`. The demo also posts `{"channel": "simulated"}` to `/channel-enrollments` (`demo/server.py:144`).
 - `tests/integration/workflows/test_quotation.py:120-170` wires handlers by hand (`{"simulated": SimulatedChannelNotifier(...)}`, `{"api": ApiPullDelivery()}`); `:309-341` uses the old route. A shared composition function (WI-11) stops future refactors from touching test wiring.
 - `tests/integration/conftest.py:27-33` truncates intake tables; it must add `outbound_messages` and must not truncate `connections` (seeded) or `connection_events`.
@@ -196,7 +196,7 @@ class Provider(Protocol):          # 00 §3, plus the proposed additions marked 
     def verify_inbound(self, conn, secrets, request: InboundRequest) -> None: ...
     def parse_inbound(self, conn, request: InboundRequest) -> list[InboundEvent]: ...
     def send(self, conn, secrets, message: RenderedMessage) -> SendReceipt: ...
-    def catalogue_reader(self, conn, secrets) -> ErpReader: ...           # (+) only for Purpose.CATALOGUE
+    def catalogue_reader(self, conn, secrets) -> ProductSource: ...           # (+) only for Purpose.CATALOGUE
 type ProviderFactory = Callable[[ProviderEnvironment], Provider]          # (+) what an entry point points to
 ```
 ```python
@@ -407,12 +407,12 @@ Tests: `tests/unit/application/test_providers.py` (fake entry points: load, dupl
 - `pyproject.toml`:
 ```toml
 [project.entry-points."sales_platform.providers"]
-api = "sales_platform.adapters.providers.api:build"
-simulated = "sales_platform.adapters.providers.simulated:build"
+api = "sales_platform.providers.api:build"
+simulated = "sales_platform.providers.simulated:build"
 
 [project.entry-points."sales_platform.secret_stores"]
-local = "sales_platform.adapters.secrets.local:build"
-none = "sales_platform.adapters.secrets.none:build"
+local = "sales_platform.platform.adapters.secrets.local:build"
+none = "sales_platform.platform.adapters.secrets.none:build"
 ```
 - Seed (WI-2): when `SALES_SIMULATED_CHANNEL_SECRET` is set, the demo `simulated` connection gets `signing_secret` = that value (stored through the `SecretStore`) and webhook token `hmac_sha256(secret, "hook:" + connection_id)` (only its hash stored), so development tools can compute the hook URL from `.env`. `scripts/simulated_channel.py` gains `--via hooks` (default stays the old route).
 - `api/channels.py` becomes the deprecated alias (§5.2). Old body and responses unchanged; docstring marks it deprecated with the removal phase.
@@ -521,14 +521,14 @@ class CatalogueSourceResolver:
         ttl: timedelta = timedelta(seconds=30),
         clock=utc_now,
     ): ...
-    def reader_for(self, tenant_id: UUID) -> ErpReader: ...
+    def reader_for(self, tenant_id: UUID) -> ProductSource: ...
 
 
-class TenantCatalogue:  # implements ErpReader; each call goes to reader_for(context.tenant_id)
+class TenantCatalogue:  # implements ProductSource; each call goes to reader_for(context.tenant_id)
     def __init__(self, resolver: CatalogueSourceResolver): ...
 ```
   Exactly one active connection with purpose `catalogue` (P1-Q7); readers cached per tenant for `ttl`, keyed by connection ID and `updated_at` so a changed connection is picked up within 30 s.
-- `api/app.py:14,91-93` and `worker.py:16,68-69` build `TenantCatalogue(...)` instead of `SimulatedErp`. `QuotationPricingService`, `EnquiryWorkflowDeps` and `QuotationResponseService` keep taking an `ErpReader` (no change).
+- `api/app.py:14,91-93` and `worker.py:16,68-69` build `TenantCatalogue(...)` instead of `SimulatedErp`. `QuotationPricingService`, `EnquiryWorkflowDeps` and `QuotationResponseService` keep taking an `ProductSource` (no change).
 - `application/jobs.py:59-71`: treat `ErpError` with `retryable is False` as permanent (P1-Q4; if the user picks option b, only `CatalogueSourceMissing`). Recorded error: `"ErpError unsupported: No product source is connected for this business"`.
 - If P1-Q3 = b: the enquiry graph's `match`/`assess` step catches `CatalogueSourceMissing` and finishes with `needs_review` and that reason (`workflows/enquiry.py:164-218`); quotation drafting records `pricing_failed` with an issue `no_catalogue_source`.
 - API acceptance (`api/enquiries.py:303-308`) keeps 503 (P1-Q5 = a).
@@ -537,8 +537,8 @@ Tests: `tests/unit/application/test_catalogue_sources.py` (none → missing; two
 ### WI-11. Composition root shared by API, worker and tests — S
 `sales_platform/composition.py` (top level, like `worker.py`):
 ```python
-@dataclass(frozen=True) class Runtime: registry; secrets; connections; catalogue: ErpReader; outbound: OutboundService
-def build_runtime(settings: Settings, engine: Engine, *, catalogue: ErpReader | None = None) -> Runtime: ...
+@dataclass(frozen=True) class Runtime: registry; secrets; connections; catalogue: ProductSource; outbound: OutboundService
+def build_runtime(settings: Settings, engine: Engine, *, catalogue: ProductSource | None = None) -> Runtime: ...
 def build_job_handlers(settings: Settings, engine: Engine, runtime: Runtime, checkpointer, interpreter) -> dict[JobKind, JobHandler]: ...
 ```
 `worker.py:53-122` and `api/app.py:84-139` call it. `tests/integration/workflows/test_quotation.py:120-170` uses `build_job_handlers(..., catalogue=SimulatedErp(...))` (wiring only; assertions unchanged), so the failure-injection tests keep their own `SimulatedErp`.
@@ -650,7 +650,7 @@ Total: about 5-6 weeks of focused work for one developer ("large refactor", 08-p
 These must be applied to [00-shared-contracts.md](00-shared-contracts.md) (with the user's agreement) before WI-1 starts.
 | # | Contract text today | Proposed | Why |
 |---|---|---|---|
-| C1 | `Provider` has no catalogue operation | Add `catalogue_reader(conn, secrets) -> ErpReader` (raises `OperationUnsupported` unless `Purpose.CATALOGUE`) | Per-business catalogue resolution needs a generic way to get an `ErpReader` from a connection |
+| C1 | `Provider` has no catalogue operation | Add `catalogue_reader(conn, secrets) -> ProductSource` (raises `OperationUnsupported` unless `Purpose.CATALOGUE`) | Per-business catalogue resolution needs a generic way to get an `ProductSource` from a connection |
 | C2 | `Provider` has no dev-only flag; production refusal lives in `config.py` naming the simulated provider | Add `dev_only: bool`; the registry skips dev-only providers in production | Removes a provider-named production check |
 | C3 | How an entry point builds a provider is unspecified | Entry point → `ProviderFactory = Callable[[ProviderEnvironment], Provider]` | Providers need settings such as the storage folder without provider-named settings |
 | C4 | `outbound_messages` statuses: pending/sending/sent/delivered/failed/unknown | Add `available` (pull providers) | The `api` provider's delivery is "available", not "sent" (ADR 0015) |

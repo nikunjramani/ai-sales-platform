@@ -8,7 +8,7 @@ A business with no ERP can type its products, categories, prices and stock into 
 
 In simple words:
 - **Catalogue tables:** new tables that hold one business's products, price history and stock counts, protected by the same row-level security as every other table.
-- **`LocalCatalogue`:** a new adapter that implements the existing `ErpReader` port over those tables. To the core it looks exactly like an ERP: same five operations, same contract tests.
+- **`LocalCatalogue`:** a new adapter that implements the existing `ProductSource` port over those tables. To the core it looks exactly like an ERP: same five operations, same contract tests.
 - **Product editor:** a new portal feature `catalogue` to add and edit products, categories, prices and stock.
 - **Default source:** a new business gets the local catalogue as its catalogue source; the demo businesses keep the simulated ERP.
 
@@ -111,7 +111,7 @@ Each has a **proposed default, to confirm**. None of these is decided by this pl
 ## 4. Current-state findings (file:line)
 | # | Finding | Where | Consequence for phase 3 |
 |---|---|---|---|
-| F1 | `ErpReader` has five reads: `search_products(query, limit=10)`, `list_categories`, `get_products`, `get_prices(skus, currency, effective_at)`, `get_availability(skus, warehouse)`. Rules: tenant-scoped, unknown SKUs omitted, timezone-aware `fetched_at`, failures as `ErpError` | `src/sales_platform/ports/erp.py:1-8`, `:45-70`; codes `:19-28`; retryable `:31-42` | `LocalCatalogue` implements this unchanged. Database failures must become `ErpError(TEMPORARY_UNAVAILABLE)` so callers retry |
+| F1 | `ProductSource` has five reads: `search_products(query, limit=10)`, `list_categories`, `get_products`, `get_prices(skus, currency, effective_at)`, `get_availability(skus, warehouse)`. Rules: tenant-scoped, unknown SKUs omitted, timezone-aware `fetched_at`, failures as `ErpError` | `src/sales_platform/catalogue/ports/erp.py:1-8`, `:45-70`; codes `:19-28`; retryable `:31-42` | `LocalCatalogue` implements this unchanged. Database failures must become `ErpError(TEMPORARY_UNAVAILABLE)` so callers retry |
 | F2 | `Product` has `sku` (≤64), `description` (≤500), `unit` (≤32), positive `minimum_quantity`/`quantity_step`, optional `category` (≤100). There is no separate "name" | `domain/catalogue.py:12-30` | Our `name` maps to `Product.description` (it is what customers see in questions). Our longer `description` is staff-only |
 | F3 | `PriceQuote` carries `price_list_id`, `price_list_version`, `effective_from/to`, `fetched_at`, `source`; `is_effective_at` | `domain/catalogue.py:34-62` | Local mapping: list code `standard`, version = revision number, `effective_to` = start of the next scheduled price |
 | F4 | `StockLevel.available_quantity=None` means unknown; `fetched_at` required | `domain/catalogue.py:66-84` | A "not tracked" entry stores NULL. `fetched_at` = the entered "as of" time |
@@ -131,7 +131,7 @@ Each has a **proposed default, to confirm**. None of these is decided by this pl
 | F18 | Architecture test: `adapters` may import only domain, ports, adapters and a short third-party list (no SQLAlchemy); `persistence` is free | `tests/unit/test_architecture.py:12-30` | `LocalCatalogue` (adapter) cannot run SQL itself. It works over a port (`CatalogueReadStore`) implemented in `persistence/catalogue.py` |
 | F19 | ERP contract suite: one factory per adapter (`ADAPTERS`), checks known SKU evidence, unknown SKU absent, other tenant blind, search scoped, naive date refused | `tests/unit/ports/test_erp_contract.py:22-91` | Add `local` (in memory) and a PostgreSQL run; move generic checks from the simulated tests into the contract |
 | F20 | Simulated-only tests: unconfigured tenant, injected failure, unknown stock, warehouse, invalid search, categories, category search, partial code | `tests/unit/adapters/erp/test_simulated.py:17-98` | Invalid search, categories and best-match search become contract checks |
-| F21 | Evaluation runs the real workflow with any `ErpReader`; 14 synthetic cases | `evaluation.py:32`, `:142-149`; `evals/enquiry_extraction.jsonl` | Run the same dataset against `LocalCatalogue` |
+| F21 | Evaluation runs the real workflow with any `ProductSource`; 14 synthetic cases | `evaluation.py:32`, `:142-149`; `evals/enquiry_extraction.jsonl` | Run the same dataset against `LocalCatalogue` |
 | F22 | Composition roots hardcode `SimulatedErp` | `worker.py:69`; `api/app.py:92` | Phase 1 replaces this with per-business resolution; phase 3 only registers the new provider |
 | F23 | Portal API pattern: router per area with `/api/v1/tenants/{tenant_id}` prefix, `Context` dependency, `guarded()` maps errors to 403/404/409/422/503; mutations need the CSRF header | `api/portal.py:400-441`; `api/auth.py:32`, `:89-91` | Catalogue router copies this pattern |
 | F24 | Session exposes `permissions` per tenant; portal checks with `useCurrentTenant().can(...)` | `api/auth.py:55-59`; `portal/src/features/tenant/hooks/useCurrentTenant.ts:24` | Edit buttons hidden without `catalogue:manage` (the API still enforces) |
@@ -145,7 +145,7 @@ portal catalogue screens ──> /catalogue API ──> ProductService (applicat
                                                                                    │
                                                               SqlCatalogueStore (persistence) ──> catalogue_* tables (RLS)
                                                                                    │
-workflow / pricing / acceptance ──> ErpReader (port) ── resolved per business (phase 1)
+workflow / pricing / acceptance ──> ProductSource (port) ── resolved per business (phase 1)
                                        └─ LocalCatalogue (adapter) ──> CatalogueReadStore (port, same SQL class)
 ```
 
@@ -177,7 +177,7 @@ Each item lists files, signatures and tests. Items 1-4 are backend foundations, 
 - Confirm the proposed contract changes in section 12 with the owners of phases 1 and 2.
 
 ### 6.1 Shared search tokeniser (refactor, no behaviour change)
-- **New** `src/sales_platform/domain/catalogue_search.py` (standard library only):
+- **New** `src/sales_platform/catalogue/domain/catalogue_search.py` (standard library only):
   ```python
   def search_words(text: str) -> frozenset[str]: ...            # today's _search_words, moved
   def query_terms(query: str) -> frozenset[str]:                 # words of query + query with "-" as " "
@@ -190,7 +190,7 @@ Each item lists files, signatures and tests. Items 1-4 are backend foundations, 
 - Tests: `tests/unit/domain/test_catalogue_search.py` (hyphen compounds, plural rule incl. `ss`, two-letter minimum, case, digits, duplicates). All existing simulated and evaluation tests must stay green unchanged.
 
 ### 6.2 Product editing rules
-- **New** `src/sales_platform/domain/catalogue_admin.py`:
+- **New** `src/sales_platform/catalogue/domain/catalogue_admin.py`:
   ```python
   CATALOGUE_UNITS: frozenset[str] = frozenset(UNIT_ALIASES.values())   # each, metre, kg, box (Q3)
   LOCAL_PRICE_LIST = "standard"                                          # Q23
@@ -221,7 +221,7 @@ Each item lists files, signatures and tests. Items 1-4 are backend foundations, 
 - Tests: extend `tests/unit/domain/test_tenancy.py` (role map) and confirm the session's permission list in `tests/unit/api/test_portal.py`.
 
 ### 6.4 Ports
-- **New** `src/sales_platform/ports/catalogue_admin.py` (contract name):
+- **New** `src/sales_platform/catalogue/ports/catalogue_admin.py` (contract name):
   ```python
   class CatalogueUnavailable(Exception): ...            # store could not be reached; adapter maps to ErpError
 
@@ -370,7 +370,7 @@ CREATE INDEX ix_catalogue_changes_entity ON catalogue_changes (tenant_id, entity
 **`alembic check`:** declare the expression and GIN indexes in `models.py` with `Index(..., postgresql_using="gin", postgresql_ops=...)`. If autogenerate still reports false differences for expression indexes, exclude **only those index names** in `migrations/env.py` `include_object`, with a comment, and assert their existence in an integration test instead.
 
 ### 6.6 SQL store
-- **New** `src/sales_platform/persistence/catalogue.py`: `SqlCatalogueStore(engine)` implementing `CatalogueStore` and `CatalogueReadStore`. Every method uses `tenant_transaction(engine, tenant_id)` and an explicit `tenant_id =` filter (RLS is the second guard). `OperationalError`/`InterfaceError` in read methods become `CatalogueUnavailable`; unique violations become `SkuAlreadyExists` / `CategoryNameTaken`; a revision clash retries once, then `VersionConflict`.
+- **New** `src/sales_platform/catalogue/persistence/catalogue.py`: `SqlCatalogueStore(engine)` implementing `CatalogueStore` and `CatalogueReadStore`. Every method uses `tenant_transaction(engine, tenant_id)` and an explicit `tenant_id =` filter (RLS is the second guard). `OperationalError`/`InterfaceError` in read methods become `CatalogueUnavailable`; unique violations become `SkuAlreadyExists` / `CategoryNameTaken`; a revision clash retries once, then `VersionConflict`.
 - **Search query** (one statement; `:terms` from `query_terms`):
   ```sql
   SELECT * FROM (
@@ -394,7 +394,7 @@ CREATE INDEX ix_catalogue_changes_entity ON catalogue_changes (tenant_id, entity
 - **Seed helper** in `persistence/seed.py` (development/test only, owner role): `seed_local_catalogue(settings, tenant_id, catalogue: SimulatedCatalogue | Mapping)` copies the synthetic demo data (products, categories, price rows with their original dates, stock as of seeding time). It writes through the owner connection, so the "no back-dating" rule of the service does not apply to fixtures. Optional third demo business (Q20).
 
 ### 6.7 `LocalCatalogue` adapter
-- **New** `src/sales_platform/adapters/catalogue/local.py` (contract name):
+- **New** `src/sales_platform/catalogue/adapters/catalogue/local.py` (contract name):
   ```python
   class LocalCatalogue:
       source = "local-catalogue"
@@ -413,7 +413,7 @@ CREATE INDEX ix_catalogue_changes_entity ON catalogue_changes (tenant_id, entity
   ```
 - Every call wraps `CatalogueUnavailable` into `ErpError(TEMPORARY_UNAVAILABLE)` (retryable; the job queue already retries any failure, `application/jobs.py:64`).
 - It never invents data: no price → absent; no stock row → absent; archived → absent.
-- **Provider registration** (phase 1 registry): package `src/sales_platform/adapters/providers/local_catalogue/` with `key = "local_catalogue"`, `display_name = "Our product list"` (wording to confirm), `purposes = {catalogue}`, capabilities `catalogue_editable=True` (section 12), empty config model, `test()` = "store reachable", every messaging operation raises `OperationUnsupported`; entry point in `pyproject.toml`. **Adding another catalogue source later** (spreadsheet sync, Odoo, Shopify...) = another provider package implementing the same port and passing the same contract suite; the business picks it as its `catalogue` connection. No core change.
+- **Provider registration** (phase 1 registry): package `src/sales_platform/providers/local_catalogue/` with `key = "local_catalogue"`, `display_name = "Our product list"` (wording to confirm), `purposes = {catalogue}`, capabilities `catalogue_editable=True` (section 12), empty config model, `test()` = "store reachable", every messaging operation raises `OperationUnsupported`; entry point in `pyproject.toml`. **Adding another catalogue source later** (spreadsheet sync, Odoo, Shopify...) = another provider package implementing the same port and passing the same contract suite; the business picks it as its `catalogue` connection. No core change.
 
 ### 6.8 Contract and adapter tests (before the editor)
 - `tests/unit/ports/test_erp_contract.py`: add factory `_local_in_memory()` using `InMemoryCatalogueStore` (a fake in root `tests/conftest.py`, seeded from `demo_catalogues`). Move the generic checks from `test_simulated.py` into the contract: invalid search (blank, limit 0, 51), categories sorted and tenant-scoped, search best-matches-only. Keep simulated-only checks (injected failure, unknown tenant) where they are.
@@ -421,7 +421,7 @@ CREATE INDEX ix_catalogue_changes_entity ON catalogue_changes (tenant_id, entity
 - `tests/unit/adapters/catalogue/test_local.py`: mapping, `fetched_at` rules (price = clock, stock = as of), `effective_to` = next start, archived hidden, category of an archived category = None, warehouse filter, store failure → retryable `ErpError`, limit and validation.
 
 ### 6.9 Application service
-- **New** `src/sales_platform/application/catalogue_admin.py` (contract name `ProductService`):
+- **New** `src/sales_platform/catalogue/application/catalogue_admin.py` (contract name `ProductService`):
   ```python
   class ProductService:
       def __init__(self, store: CatalogueStore, policies: PricingPolicyReader,
@@ -450,7 +450,7 @@ CREATE INDEX ix_catalogue_changes_entity ON catalogue_changes (tenant_id, entity
 - Tests: `tests/unit/application/test_catalogue_admin.py` with the in-memory store: each permission (viewer reads only; approver reads only; sales operator and administrator edit; intake service denied), read-only source refuses writes, version conflicts, limit reached, replay, audit rows, price normalised to minor units, unit change refused once priced.
 
 ### 6.10 API
-- **New** `src/sales_platform/api/catalogue.py`: `build_catalogue_router(auth: PortalAuth, products: ProductService) -> APIRouter`, prefix `/api/v1/tenants/{tenant_id}/catalogue`, same `Context` and `guarded()` pattern (F23); wired in `api/app.py`. Decimals travel as strings; datetimes as ISO 8601 with offset. Mutations need the CSRF header (existing session auth).
+- **New** `src/sales_platform/catalogue/api/catalogue.py`: `build_catalogue_router(auth: PortalAuth, products: ProductService) -> APIRouter`, prefix `/api/v1/tenants/{tenant_id}/catalogue`, same `Context` and `guarded()` pattern (F23); wired in `api/app.py`. Decimals travel as strings; datetimes as ISO 8601 with offset. Mutations need the CSRF header (existing session auth).
 
 | Method and path | Permission | Body / query | Success | Errors |
 |---|---|---|---|---|
@@ -516,7 +516,7 @@ Follows `.docs/development/portal-architecture.md` and passes `portal/tests/arch
 - Wording: plain English, money and quantities shown exactly as the API returns them (no float formatting).
 
 ### 6.13 Evaluation against the local catalogue
-- `src/sales_platform/evaluation.py` needs no change (it takes any `ErpReader`).
+- `src/sales_platform/evaluation.py` needs no change (it takes any `ProductSource`).
 - `tests/unit/test_evaluation.py`: parametrise the rules-interpreter run over `SimulatedErp` and `LocalCatalogue(InMemoryCatalogueStore)` seeded with `demo_catalogues`; both must pass 14/14 with 0 invented facts.
 - `tests/integration/evaluation/test_local_catalogue_evaluation.py`: seed two fresh tenants in PostgreSQL with `seed_local_catalogue`, run `evaluate(RulesInterpreter(), LocalCatalogue(SqlCatalogueStore(worker_engine)), …)`; 14/14.
 - `scripts/evaluate_extraction.py`: option `--source simulated|local` (default `simulated`); `local` uses the development database's third demo business (Q20). Model runs stay opt-in.
@@ -642,7 +642,7 @@ These are deviations from or additions to [00-shared-contracts.md](00-shared-con
 | C1 | §4 `0011_catalogue` | Add table **`catalogue_changes`** (append-only audit of product and category edits) | The scope asks for an audit trail; prices and stock audit themselves, but products and categories are edited in place |
 | C2 | §6 permissions | Add **`catalogue:view`** (administrator, sales_operator, approver, viewer) for reading the catalogue; `catalogue:manage` unchanged | Reading should not need edit rights, and no existing permission fits (Q14). Alternative if rejected: reuse `quotations:view` |
 | C3 | §2 module layout | Add **`domain/catalogue_search.py`** (shared tokeniser). `ports/catalogue_admin.py` holds both `CatalogueStore` and a read port `CatalogueReadStore`; `adapters/catalogue/local.py` depends on that port and `persistence/catalogue.py` implements it | The architecture test forbids SQLAlchemy in adapters (F18); this keeps the contract's file names without loosening the rule |
-| C4 | §3 Provider contract | A catalogue provider needs a way to build its reader, e.g. `catalogue_reader(conn: Connection, secrets: SecretStore) -> ErpReader` (raises `OperationUnsupported` for non-catalogue providers), and the registry must hand providers their dependencies (for `local_catalogue`: the store bound to the role's engine) | The contract's Provider protocol has messaging operations only; phase 1 resolves "the ErpReader per business" but the shape is not fixed yet |
+| C4 | §3 Provider contract | A catalogue provider needs a way to build its reader, e.g. `catalogue_reader(conn: Connection, secrets: SecretStore) -> ProductSource` (raises `OperationUnsupported` for non-catalogue providers), and the registry must hand providers their dependencies (for `local_catalogue`: the store bound to the role's engine) | The contract's Provider protocol has messaging operations only; phase 1 resolves "the ProductSource per business" but the shape is not fixed yet |
 | C5 | §1 `Capabilities` | Add `catalogue_editable: bool` | The portal and service decide "read-only" by capability, never by provider name (generic integrations rule) |
 | C6 | §4 `0010_accounts` | `create_business(...)` gains `default_catalogue_provider text`; 0011 replaces the function body and backfills a `local_catalogue` connection for tenants without one. New setting `SALES_DEFAULT_CATALOGUE_PROVIDER` (default `local_catalogue`) | A new business must have a catalogue source from its first minute, created atomically with the business |
 | C7 | §4 `0008_connections` (assumption to confirm) | Phase 1's backfill gives both demo tenants an enabled connection with purpose `catalogue` to the simulated ERP | Otherwise 0011's backfill would switch the demo tenants to the empty local catalogue |
@@ -657,7 +657,7 @@ These are deviations from or additions to [00-shared-contracts.md](00-shared-con
 | Later feature | How it fits |
 |---|---|
 | Spreadsheet import (A) | New `catalogue_imports` table (file, mapping, row errors, status, who, when). An import writes products, prices (`source = import`) and stock counts through the same store in one transaction per file; `LocalCatalogue` is unchanged. The `source` checks gain `import` in that migration |
-| ERP or shop live connector (C) | Another provider package with purpose `catalogue` implementing `ErpReader`, passing the same contract suite. The business switches its catalogue connection; local tables stay as they are (read-only banner) |
+| ERP or shop live connector (C) | Another provider package with purpose `catalogue` implementing `ProductSource`, passing the same contract suite. The business switches its catalogue connection; local tables stay as they are (read-only banner) |
 | ERP/shop sync into our tables (D) | Products gain `external_id`/`connection_id`; rows use `source = sync`; price `fetched_at` = sync time so the policy's max price age applies to copies |
 | Our own inventory (E) | `stock_movements` (receipts, sales, adjustments, transfers) and `reservations` reference `catalogue_products`; current `catalogue_stock` rows become counts; `location_code` becomes a FK to a `locations` table. `get_availability` computes count + movements − reservations; the port is unchanged |
 | Customer-specific prices, discounts | More price lists (`price_list` other than `standard`) and a customer reference on price rows; `get_prices` gains customer context in a port version change (integrations.md already lists `customer_context` as deferred). Not built now |

@@ -2,26 +2,26 @@
 The sales workflow table below remains a target. M0-M3 implement only the traces described here.
 
 ## Implemented M0 trace
-1. Uvicorn calls [create_app](../../src/sales_platform/api/app.py); [Settings](../../src/sales_platform/config.py) validates configuration and hides secrets.
-2. [build_engine](../../src/sales_platform/persistence/database.py) configures a bounded pool. Creating the app does not connect, migrate or seed the database.
+1. Uvicorn calls [create_app](../../src/sales_platform/api_app.py); [Settings](../../src/sales_platform/platform/config.py) validates configuration and hides secrets.
+2. [build_engine](../../src/sales_platform/platform/persistence/database.py) configures a bounded pool. Creating the app does not connect, migrate or seed the database.
 3. GET /health/live returns 200 without a database query.
 4. GET /health/ready reads the schema revision and checks the connected role. Missing/unreachable/unmigrated DB, unexpected revision or privileged role returns sanitized 503; a valid connection/schema/role returns 200.
 5. Application shutdown disposes the engine.
-6. Separately, Alembic uses migration credentials to create the tenant table and RLS. The [seed](../../src/sales_platform/persistence/seed.py) sets transaction-local tenant context and inserts fictional fixtures idempotently; it refuses production mode.
+6. Separately, Alembic uses migration credentials to create the tenant table and RLS. The [seed](../../src/sales_platform/seed.py) sets transaction-local tenant context and inserts fictional fixtures idempotently; it refuses production mode.
 No business HTTP routes, authenticated tenant context, workflow engine or external actions exist yet. Migration, seed, RLS and readiness behaviour were executed against local PostgreSQL on 2026-10-22. See [setup](../development/setup.md).
 
 ## Implemented M1 trace (pricing a draft)
 Entry point: `QuotationPricingService.price`; see [quotation pricing](../features/quotation-pricing.md). No HTTP route calls it yet.
-1. [TenantContextResolver](../../src/sales_platform/application/tenancy.py) asks the membership repository for the subject's roles inside a transaction whose tenant context is set. No roles: `AccessDenied`.
+1. [TenantContextResolver](../../src/sales_platform/platform/application/tenancy.py) asks the membership repository for the subject's roles inside a transaction whose tenant context is set. No roles: `AccessDenied`.
 2. The service requires `quotations:draft`; viewers and approvers get `PermissionDenied` before any ERP call.
 3. The tenant's pricing policy is read through RLS; a missing policy raises `PricingPolicyNotConfigured`.
 4. The ERP port returns products, prices effective now in the policy currency, and stock, all stamped with source and fetch time. ERP errors propagate.
-5. [calculate_quotation](../../src/sales_platform/domain/pricing.py) validates every line, computes rounded line totals, a subtotal, tax on the subtotal and a total, and attaches price evidence plus one of five stock statuses. Any blocking issue returns `PricingRejected` listing all issues.
+5. [calculate_quotation](../../src/sales_platform/quotations/domain/pricing.py) validates every line, computes rounded line totals, a subtotal, tax on the subtotal and a total, and attaches price evidence plus one of five stock statuses. Any blocking issue returns `PricingRejected` listing all issues.
 Nothing is stored or sent. Persisted quotation versions arrive with approval (M4).
 
 ## Implemented M2 trace (enquiry intake)
 Entry point: `POST /api/v1/enquiries`. See [enquiry intake](../features/enquiry-intake.md).
-1. The bearer API key is verified ([ApiKeyAuthenticator](../../src/sales_platform/application/api_keys.py)), which yields the tenant and role. The body is size-checked and validated, and `enquiries:submit` is required.
+1. The bearer API key is verified ([ApiKeyAuthenticator](../../src/sales_platform/accounts/application/api_keys.py)), which yields the tenant and role. The body is size-checked and validated, and `enquiries:submit` is required.
 2. An existing receipt for (tenant, api, key, Idempotency-Key) is returned as a replay (200), or rejected with 409 if the payload fingerprint differs.
 3. Attachments are written to `tenants/<tenant>/quarantine/<id>`.
 4. One transaction inserts the inbox event, enquiry, attachment rows and a `prepare_enquiry` job. If a concurrent duplicate wins, our files are deleted and its receipt is returned. On failure, files are deleted and the API returns 503.

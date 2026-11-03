@@ -19,15 +19,15 @@ import json
 import sys
 from pathlib import Path
 
-from sales_platform.adapters.interpreters.factory import build_reply_classifier
-from sales_platform.config import Settings
-from sales_platform.domain.manager_replies import (
+from sales_platform.enquiries.ports.interpretation import InterpretationRejected
+from sales_platform.platform.config import Settings
+from sales_platform.quotations.adapters.interpreters.reply_classifier import build_reply_classifier
+from sales_platform.quotations.domain.manager_replies import (
     ReplyClassification,
     ReplyIntent,
     clean_reply,
     guard,
 )
-from sales_platform.ports.interpretation import InterpretationRejected
 
 CASES = Path(__file__).parents[1] / "evals" / "manager_replies.jsonl"
 NUMBER = "Q-1A2B3C4D"

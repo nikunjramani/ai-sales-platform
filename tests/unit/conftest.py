@@ -18,32 +18,55 @@ from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 import pytest
 from langgraph.checkpoint.memory import InMemorySaver
 
-from sales_platform.adapters.documents.pdf import ReportLabQuotationRenderer
-from sales_platform.adapters.erp.simulated import SimulatedErp
-from sales_platform.adapters.providers.api import ApiProvider
-from sales_platform.application.acceptance import (
+from sales_platform.catalogue.adapters.erp.simulated import SimulatedErp
+from sales_platform.enquiries.domain.requirements import RequestedLine
+from sales_platform.integrations.application.inbound import ProcessInboundHandler, routes_for
+from sales_platform.integrations.application.messaging import OutboundService, SendMessageHandler
+from sales_platform.integrations.application.providers import ProviderRegistry
+from sales_platform.integrations.domain.connections import (
+    Capabilities,
+    Connection,
+    ConnectionStatus,
+    Purpose,
+)
+from sales_platform.integrations.domain.events import InboundEvent, InboundEventType, event_type
+from sales_platform.integrations.domain.messages import MessageStatus, OutboundMessage, TemplateKey
+from sales_platform.integrations.ports.inbound import RecordedEvent, StoredEvent
+from sales_platform.integrations.ports.messages import NewMessage
+from sales_platform.integrations.ports.providers import (
+    ProviderDefaults,
+    ReceiptKind,
+    RenderedMessage,
+    SendReceipt,
+)
+from sales_platform.platform.application.tenancy import TenantContextResolver
+from sales_platform.platform.domain.jobs import JobKind
+from sales_platform.platform.domain.tenancy import Role, TenantContext, TenantStatus
+from sales_platform.platform.ports.identity import SessionRecord, VerifiedIdentity
+from sales_platform.platform.ports.jobs import ClaimedJob
+from sales_platform.platform.ports.storage import ObjectStorage
+from sales_platform.providers.api import ApiProvider
+from sales_platform.quotations.adapters.documents.pdf import ReportLabQuotationRenderer
+from sales_platform.quotations.application.acceptance import (
     QuotationExpiryHandler,
     QuotationResponseService,
     ResponseNotificationHandler,
 )
-from sales_platform.application.approvals import ApprovalService
-from sales_platform.application.channel_actions import ChannelActionService
-from sales_platform.application.delivery import (
+from sales_platform.quotations.application.approvals import ApprovalService
+from sales_platform.quotations.application.channel_actions import ChannelActionService
+from sales_platform.quotations.application.delivery import (
     QuotationDeliveryHandler,
     QuotationDocumentHook,
 )
-from sales_platform.application.documents import QuotationDocumentService
-from sales_platform.application.inbound import ProcessInboundHandler, routes_for
-from sales_platform.application.messaging import OutboundService, SendMessageHandler
-from sales_platform.application.notifications import (
+from sales_platform.quotations.application.documents import QuotationDocumentService
+from sales_platform.quotations.application.inbound_routes import ManagerActionRoute
+from sales_platform.quotations.application.notifications import (
     ApprovalNotificationHandler,
     ApprovalRequestHook,
 )
-from sales_platform.application.pricing import QuotationPricingService
-from sales_platform.application.providers import ProviderRegistry
-from sales_platform.application.quotations import QuotationService
-from sales_platform.application.tenancy import TenantContextResolver
-from sales_platform.domain.acceptance import (
+from sales_platform.quotations.application.pricing import QuotationPricingService
+from sales_platform.quotations.application.quotations import QuotationService
+from sales_platform.quotations.domain.acceptance import (
     DEFAULT_QUOTE_VALIDITY_DAYS,
     QUOTATION_STATUS_FOR,
     SYSTEM_SUBJECT,
@@ -53,24 +76,14 @@ from sales_platform.domain.acceptance import (
     ResponseOutcome,
     customer_status,
 )
-from sales_platform.domain.connections import (
-    Capabilities,
-    Connection,
-    ConnectionStatus,
-    Purpose,
-)
-from sales_platform.domain.documents import (
+from sales_platform.quotations.domain.documents import (
     OFFERED_STATUSES,
     DeliveryRecord,
     DeliveryStatus,
     DocumentSource,
     StoredDocument,
 )
-from sales_platform.domain.intake import InboundEvent, InboundEventType, event_type
-from sales_platform.domain.jobs import JobKind
-from sales_platform.domain.messages import MessageStatus, OutboundMessage, TemplateKey
-from sales_platform.domain.pricing import RequestedLine
-from sales_platform.domain.quotations import (
+from sales_platform.quotations.domain.quotations import (
     QUOTATION_STATUS_AFTER,
     REVISABLE,
     TASK_STATUS_AFTER,
@@ -83,29 +96,17 @@ from sales_platform.domain.quotations import (
     TaskStatus,
     quotation_number,
 )
-from sales_platform.domain.tenancy import Role, TenantContext, TenantStatus
-from sales_platform.ports.acceptance import NewResponse
-from sales_platform.ports.approvals import TaskState
-from sales_platform.ports.channels import ActionReference, ChannelBinding
-from sales_platform.ports.documents import DeliveryWork
-from sales_platform.ports.identity import SessionRecord, VerifiedIdentity
-from sales_platform.ports.inbound import RecordedEvent, StoredEvent
-from sales_platform.ports.jobs import ClaimedJob
-from sales_platform.ports.messages import NewMessage
-from sales_platform.ports.providers import (
-    ProviderDefaults,
-    ReceiptKind,
-    RenderedMessage,
-    SendReceipt,
-)
-from sales_platform.ports.quotations import (
+from sales_platform.quotations.ports.acceptance import NewResponse
+from sales_platform.quotations.ports.approvals import TaskState
+from sales_platform.quotations.ports.channels import ActionReference, ChannelBinding
+from sales_platform.quotations.ports.documents import DeliveryWork
+from sales_platform.quotations.ports.quotations import (
     QuotationDetail,
     QuotationSummary,
     TaskView,
     VersionView,
 )
-from sales_platform.ports.storage import ObjectStorage
-from sales_platform.workflows.quotation import (
+from sales_platform.quotations.workflows.quotation import (
     QuotationJobHandler,
     QuotationWorkflowDeps,
     build_quotation_graph,
@@ -1133,7 +1134,7 @@ class MemoryDirectory:
         self._db = db
 
     def tenants_for(self, subject: str) -> list[Any]:
-        from sales_platform.ports.tenancy import TenantMembership
+        from sales_platform.platform.ports.tenancy import TenantMembership
 
         return [
             TenantMembership(tenant, self._db.tenant_names.get(tenant, "Demo"), roles)
@@ -1611,7 +1612,9 @@ class QuotationHarness:
         elif job.kind is JobKind.SEND_MESSAGE:
             self.sender()(claimed)
         elif job.kind is JobKind.PROCESS_INBOUND:
-            ProcessInboundHandler(self.inbox, routes_for(self.channels))(claimed)
+            ProcessInboundHandler(self.inbox, routes_for(ManagerActionRoute(self.channels)))(
+                claimed
+            )
         else:
             self.handler()(claimed)
         return True
@@ -1718,8 +1721,8 @@ class NoPeople:
 
 @pytest.fixture
 def session_view(memory_directory: MemoryDirectory) -> Any:
-    from sales_platform.api.auth import SessionView
-    from sales_platform.application.accounts import ProfileService
+    from sales_platform.accounts.api.auth import SessionView
+    from sales_platform.accounts.application.accounts import ProfileService
 
     return SessionView(memory_directory, ProfileService(NoPeople()))  # type: ignore[arg-type]
 
