@@ -1,5 +1,11 @@
 # Current handoff
-Updated: 2026-10-30 (phases 1-7 merged through PR #11; friendly portal design implemented on `feat/portal-friendly-design`, not committed yet).
+Updated: 2026-11-02 (phases 1-7 merged through PR #11; friendly portal design merged in PR #12; backend restructure accepted in ADR 0026, in progress).
+
+## Latest: backend restructure planned (2026-11-02, ADR 0026)
+- **User decisions (2026-11-02):** regroup the backend into business modules with one shared wiring and fuller architecture tests; rename the package to `sales_platform` (portal "Sales Portal"); remove the deprecated simulated route; **plan only, no code yet**.
+- **Review findings:** see the ADR's table (code spread by layer; 20 objects wired twice in `api/app.py` and `composition.py`; `persistence`/`api` not covered by the import test; 1,865-line `models.py`; empty folders, a deprecated route and an in-memory double in `src/`; names that no longer fit).
+- **User answers (2026-11-03):** go ahead, one PR per step merged by Claude after CI; `SALES_` settings at once; `sales_*` database names with one fresh baseline (local data recreated); repository renamed by the user; offline evaluation removed. See ADR 0026.
+- **Next:** ADR 0026 steps 1-14 in order.
 
 ## Latest: friendly portal design (2026-10-30, ADR 0025)
 - **User decisions (2026-10-30):** see [ADR 0025](adr/0025-friendly-portal-design.md). New look, a sidebar/bottom-bar menu with icons, a Home page with to-do cards, a one-line hint on each main page, plain words on screen (codes unchanged), `lucide-react` 1.60.0, "friendly and clean" style. No backend change.
@@ -8,7 +14,7 @@ Updated: 2026-10-30 (phases 1-7 merged through PR #11; friendly portal design im
 - **Not checked:** no visual check in a real browser yet; detail pages not reorganised (open idea).
 - **Settings and Integrations (same day, ADR 0025 addendum):** one settings frame (side list on wide screens, pills on phones) with Business, Pricing, People, Integrations, API keys; Integrations groups connected tools by kind, hides switched-off ones, lists one-click tools and website chat, and shows WhatsApp/Email/SMS as Coming soon (not built). "Apps & channels" left the menu; managers link their account on the profile page. Checks: typecheck passes, 41 files / 140 tests pass, build passes (JS 510 kB / 152 kB gzip).
 - **Dropped (user, 2026-10-30):** a plan to remove ERPNext and build our own inventory was discussed and dropped before any code; nothing changed.
-- **Next:** the user looks at it running, then decides whether to commit and open a PR.
+- **Merged:** PR #12 as `fee24c5` on 2026-10-30; CI `portal` and `verify` passed on both runs (41019156323, 41019164580).
 
 ## Current state
 - **M0-M6 are COMPLETE** (local and CI), all on origin/main:
