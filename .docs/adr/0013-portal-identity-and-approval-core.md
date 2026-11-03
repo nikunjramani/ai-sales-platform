@@ -1,6 +1,6 @@
 # 0013: Portal identity, immutable versions and the shared approval core
 Date: 2026-10-22
-Status: accepted; implemented in M4 (commit 21f0ba5, [CI run 39900219005](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39900219005) passed)
+Status: accepted; implemented in M4 (commit 21f0ba5, [CI run 39900219005](https://github.com/nikunjramani/ai-sales-platform/actions/runs/39900219005) passed)
 Implements: [0007](0007-channel-independent-approval.md) for the portal and a simulated channel
 Extended by [0019](0019-accounts-and-onboarding.md) (phase 2): email + password login (D1) produces the same `VerifiedIdentity` and session; OIDC is no longer planned, and the dev login stays for development only.
 Extended by [0018](0018-connector-framework.md) (phase 1): the `ApprovalChannel` enum and notifier map are replaced by connections and the outbox; the old simulated route is a deprecated alias.

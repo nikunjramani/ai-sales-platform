@@ -1,5 +1,5 @@
 # Current handoff
-Updated: 2026-11-02 (phases 1-7 merged through PR #11; friendly portal design merged in PR #12; backend restructure accepted in ADR 0026, in progress).
+Updated: 2026-11-03 (phases 1-7 and the friendly portal merged; backend restructure ADR 0026 implemented, PRs #13-#17; repository renamed `ai-sales-platform`).
 
 ## Latest: backend restructure planned (2026-11-02, ADR 0026)
 - **User decisions (2026-11-02):** regroup the backend into business modules with one shared wiring and fuller architecture tests; rename the package to `sales_platform` (portal "Sales Portal"); remove the deprecated simulated route; **plan only, no code yet**.
@@ -16,7 +16,9 @@ Updated: 2026-11-02 (phases 1-7 merged through PR #11; friendly portal design me
 - **Steps 4-14 in one PR (user, 2026-11-03: "just create single pr for all"):** the baseline (step 4) plus the module restructure: nine modules in a fixed order (`platform`, `integrations`, `accounts`, `catalogue`, `conversations`, `enquiries`, `quotations`, `orders`, `customer_channels`) and `providers/`; every two-way link removed (see ADR 0026 implementation notes, including the deviations); `models.py` split per module; `ErpReader`/`ErpWriter` renamed `ProductSource`/`OrderWriter`; tests mirror the modules; docs (code map, module boundaries, testing, README). The old data volume `quotation-local_quotation_pgdata` was deleted as the user asked.
 - **Checks:** ruff and strict mypy (393 files) clean; 950 unit tests pass; `check_database.py --cycle` results in the PR.
 - **After pulling:** `uv sync --all-extras`, then restart the API and the worker (module paths changed; VS Code launch entries updated).
-- **Open:** the user renames the GitHub repository (ADR 0026 Q3), then the links are updated.
+- **Merged:** PR #17 as `a947f51` (the user merged it; CI `portal` and `verify` passed on both runs).
+- **Audit against the plan (2026-11-03):** every step of ADR 0026 checked in the code (removed files gone, no old package/setting/database names, one baseline, nine modules and no old layer folders, tables split, plug-in contracts, routes, outbox hooks, phone links in quotations, tests mirrored, renames). Gaps found and closed in the follow-up PR: stale status lines in the ADR index, open decisions and this handoff; `agent-context.md` updated; the repository renamed `ai-sales-platform` (user's name); the cookie and portal package renamed (`sales_session`, `sales-portal`).
+- **Next:** no ADR 0026 work left. Choose the next milestone with the user (clarify-before-building).
 
 ## Latest: friendly portal design (2026-10-30, ADR 0025)
 - **User decisions (2026-10-30):** see [ADR 0025](adr/0025-friendly-portal-design.md). New look, a sidebar/bottom-bar menu with icons, a Home page with to-do cards, a one-line hint on each main page, plain words on screen (codes unchanged), `lucide-react` 1.60.0, "friendly and clean" style. No backend change.
@@ -32,12 +34,12 @@ Updated: 2026-11-02 (phases 1-7 merged through PR #11; friendly portal design me
 
   | Milestone | Commit | CI run |
   |---|---|---|
-  | M1 | 5d1ae69 | [39738532222](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39738532222) |
-  | M2 | d7707eb | [39741408875](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39741408875) |
-  | M3 | 52cccd7 | [39747434193](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39747434193) |
-  | M4 | 21f0ba5 | [39900219005](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39900219005) (`verify` and `portal` jobs) |
-  | M5 | 6f951ec | [39903715921](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39903715921) (both jobs) |
-  | M6 | f545201 | [39907493342](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39907493342) (both jobs) |
+  | M1 | 5d1ae69 | [39738532222](https://github.com/nikunjramani/ai-sales-platform/actions/runs/39738532222) |
+  | M2 | d7707eb | [39741408875](https://github.com/nikunjramani/ai-sales-platform/actions/runs/39741408875) |
+  | M3 | 52cccd7 | [39747434193](https://github.com/nikunjramani/ai-sales-platform/actions/runs/39747434193) |
+  | M4 | 21f0ba5 | [39900219005](https://github.com/nikunjramani/ai-sales-platform/actions/runs/39900219005) (`verify` and `portal` jobs) |
+  | M5 | 6f951ec | [39903715921](https://github.com/nikunjramani/ai-sales-platform/actions/runs/39903715921) (both jobs) |
+  | M6 | f545201 | [39907493342](https://github.com/nikunjramani/ai-sales-platform/actions/runs/39907493342) (both jobs) |
 
   For M3 the user could not install Ollama on the corporate VM, so it ships with the free rules interpreter.
 - **Last milestone: M6 (customer acceptance), complete.** Next milestone not chosen yet: ask the user first. Decisions taken with the user on 2026-10-23 ([ADR 0016](adr/0016-customer-acceptance.md)): acceptance only (no ERP order or reservation); answers through the API; 7-day default validity from delivery; accept/decline (no PO number); any price change refuses and drafts a revision for approval; stock ignored; expiry closes; staff withdrawal with a reason; a portal plus linked-channel notice; a rejected revision closes.

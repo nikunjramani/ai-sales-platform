@@ -1,7 +1,7 @@
 # 0012: Provider-independent enquiry extraction with LangGraph and verbatim checks
 Date: 2026-10-22
 Extended by [0021](0021-customers-conversations-and-website-chat.md): The interpreter port takes a transcript of every customer message (phase 4, ADR 0021).
-Status: accepted and implemented in M3 (commit 52cccd7, [CI run 39747434193](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39747434193) passed)
+Status: accepted and implemented in M3 (commit 52cccd7, [CI run 39747434193](https://github.com/nikunjramani/ai-sales-platform/actions/runs/39747434193) passed)
 
 ## Context
 M3 turns enquiry text and attachments into structured requirements. The user wants a free model now and the freedom to switch to any provider later. Models can misread, invent facts or follow injected instructions, so their output must never set prices, stock or permissions.

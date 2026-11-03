@@ -1,5 +1,5 @@
 # Customer acceptance (M6)
-**Status:** M6 is complete: verified locally (unit, PostgreSQL integration, migration cycles, live run) and in [CI run 39907493342](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39907493342). Every rule below was decided by the user on 2026-10-23 ([ADR 0016](../adr/0016-customer-acceptance.md)). M6 creates no ERP order and reserves no stock; both come in a later milestone.
+**Status:** M6 is complete: verified locally (unit, PostgreSQL integration, migration cycles, live run) and in [CI run 39907493342](https://github.com/nikunjramani/ai-sales-platform/actions/runs/39907493342). Every rule below was decided by the user on 2026-10-23 ([ADR 0016](../adr/0016-customer-acceptance.md)). M6 creates no ERP order and reserves no stock; both come in a later milestone.
 
 **Business purpose:** the customer can say yes or no to the exact quotation they received. Nothing is accepted at a price that no longer holds. Staff can see every answer and can take back a quotation sent by mistake.
 

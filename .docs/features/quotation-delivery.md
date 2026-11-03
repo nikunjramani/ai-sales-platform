@@ -1,5 +1,5 @@
 # Quotation PDFs and delivery (M5)
-**Status:** M5 is complete: verified locally (unit, PostgreSQL integration, migration round trips and a live run) and in [CI run 39903715921](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39903715921). Email approval and email delivery were deferred by the user on 2026-10-23: managers approve in the portal ([ADR 0015](../adr/0015-quotation-documents-and-delivery.md)).
+**Status:** M5 is complete: verified locally (unit, PostgreSQL integration, migration round trips and a live run) and in [CI run 39903715921](https://github.com/nikunjramani/ai-sales-platform/actions/runs/39903715921). Email approval and email delivery were deferred by the user on 2026-10-23: managers approve in the portal ([ADR 0015](../adr/0015-quotation-documents-and-delivery.md)).
 
 **Business purpose:** once a manager approves a quotation, the customer gets exactly that approved version as a PDF, and staff can see whether and when it reached them. Nothing unapproved ever reaches a customer.
 
