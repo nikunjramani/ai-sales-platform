@@ -1,5 +1,5 @@
 """Live run of phases 6 and 7 against the local ERPNext sandbox (skipped unless
-QUOTATION_TEST_ERPNEXT_URL, _KEY and _SECRET are set; see provider-setup.md#erpnext).
+SALES_TEST_ERPNEXT_URL, _KEY and _SECRET are set; see provider-setup.md#erpnext).
 
 Through the real API and worker: Enable ERPNext with one form -> it replaces our product list
 and the first copy runs -> an enquiry for PUMP-100 is priced live from ERPNext -> approved ->
@@ -16,19 +16,19 @@ from fastapi.testclient import TestClient
 from pydantic import SecretStr
 from sqlalchemy import Engine, text
 
-from quotation_app.adapters.interpreters.rules import RulesInterpreter
-from quotation_app.adapters.providers.erpnext.client import FrappeClient
-from quotation_app.adapters.secrets.local import new_key
-from quotation_app.api.app import create_app
-from quotation_app.api.auth import CSRF_HEADER
-from quotation_app.application.jobs import JobRunner
-from quotation_app.composition import build_job_handlers, build_runtime
-from quotation_app.config import Settings
-from quotation_app.domain.tenancy import Role
-from quotation_app.persistence.jobs import SqlJobQueue
-from quotation_app.persistence.seed import LOCAL_TENANT
-from quotation_app.persistence.tenancy import tenant_transaction
-from quotation_app.persistence.workflow import open_checkpointer
+from sales_platform.adapters.interpreters.rules import RulesInterpreter
+from sales_platform.adapters.providers.erpnext.client import FrappeClient
+from sales_platform.adapters.secrets.local import new_key
+from sales_platform.api.app import create_app
+from sales_platform.api.auth import CSRF_HEADER
+from sales_platform.application.jobs import JobRunner
+from sales_platform.composition import build_job_handlers, build_runtime
+from sales_platform.config import Settings
+from sales_platform.domain.tenancy import Role
+from sales_platform.persistence.jobs import SqlJobQueue
+from sales_platform.persistence.seed import LOCAL_TENANT
+from sales_platform.persistence.tenancy import tenant_transaction
+from sales_platform.persistence.workflow import open_checkpointer
 
 pytestmark = pytest.mark.integration
 type ApiKeyFactory = Callable[[UUID, Role], str]
@@ -38,7 +38,7 @@ BASE = f"/api/v1/tenants/{LOCAL_TENANT}"
 @pytest.fixture
 def sandbox() -> dict[str, str]:
     values = {
-        name: os.environ.get(f"QUOTATION_TEST_ERPNEXT_{name.upper()}", "")
+        name: os.environ.get(f"SALES_TEST_ERPNEXT_{name.upper()}", "")
         for name in ("url", "key", "secret")
     }
     if not all(values.values()):
@@ -105,9 +105,9 @@ def test_quote_and_order_through_erpnext(
         "api_key": sandbox["key"],
         "api_secret": sandbox["secret"],
         "price_list": "Standard Selling",
-        "warehouses": os.environ.get("QUOTATION_TEST_ERPNEXT_WAREHOUSE", "Stores - PS"),
+        "warehouses": os.environ.get("SALES_TEST_ERPNEXT_WAREHOUSE", "Stores - PS"),
         "write_orders": True,
-        "default_customer": os.environ.get("QUOTATION_TEST_ERPNEXT_CUSTOMER", "Sandbox Customer"),
+        "default_customer": os.environ.get("SALES_TEST_ERPNEXT_CUSTOMER", "Sandbox Customer"),
     }
     sent = client.post(
         f"{BASE}/connections/{connection_id}/actions/settings",

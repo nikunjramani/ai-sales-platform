@@ -5,8 +5,8 @@ from uuid import UUID
 
 import pytest
 
-from quotation_app.domain.accounts import AccountEmailPurpose
-from quotation_app.domain.messages import (
+from sales_platform.domain.accounts import AccountEmailPurpose
+from sales_platform.domain.messages import (
     ACCOUNT_TEMPLATES,
     CUSTOMER_WORDING,
     FINAL_MESSAGE_STATUSES,

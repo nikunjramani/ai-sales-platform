@@ -1,4 +1,4 @@
-from quotation_app.domain.catalogue_search import (
+from sales_platform.domain.catalogue_search import (
     best_matches,
     product_terms,
     query_terms,

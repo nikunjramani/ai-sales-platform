@@ -3,9 +3,9 @@ from uuid import UUID
 
 from sqlalchemy import Engine, text
 
-from quotation_app.application.api_keys import parse_token
-from quotation_app.domain.tenancy import Role
-from quotation_app.persistence.api_keys import SqlApiKeyReader
+from sales_platform.application.api_keys import parse_token
+from sales_platform.domain.tenancy import Role
+from sales_platform.persistence.api_keys import SqlApiKeyReader
 
 type ApiKeyFactory = Callable[[UUID, Role], str]
 

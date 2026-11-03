@@ -8,9 +8,9 @@ from uuid import uuid4
 import pytest
 from pypdf import PdfReader
 
-from quotation_app.adapters.documents.logo import PillowLogoNormalizer
-from quotation_app.adapters.documents.pdf import ReportLabQuotationRenderer
-from quotation_app.domain.documents import DocumentSource, SellerDetails, UnrenderableContent
+from sales_platform.adapters.documents.logo import PillowLogoNormalizer
+from sales_platform.adapters.documents.pdf import ReportLabQuotationRenderer
+from sales_platform.domain.documents import DocumentSource, SellerDetails, UnrenderableContent
 
 type ImageFactory = Callable[[str, int, int], bytes]
 

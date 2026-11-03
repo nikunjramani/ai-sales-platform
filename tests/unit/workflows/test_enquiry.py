@@ -8,26 +8,26 @@ from uuid import UUID, uuid4
 import pytest
 from langgraph.checkpoint.memory import InMemorySaver
 
-from quotation_app.adapters.documents.text import PdfAndTextReader
-from quotation_app.adapters.erp.simulated import SimulatedErp
-from quotation_app.adapters.interpreters.rules import RulesInterpreter
-from quotation_app.domain.attachments import StorageArea, attachment_key
-from quotation_app.domain.catalogue import Product
-from quotation_app.domain.jobs import JobKind, PermanentJobError
-from quotation_app.domain.requirements import (
+from sales_platform.adapters.documents.text import PdfAndTextReader
+from sales_platform.adapters.erp.simulated import SimulatedErp
+from sales_platform.adapters.interpreters.rules import RulesInterpreter
+from sales_platform.domain.attachments import StorageArea, attachment_key
+from sales_platform.domain.catalogue import Product
+from sales_platform.domain.jobs import JobKind, PermanentJobError
+from sales_platform.domain.requirements import (
     ExtractedRequirements,
     ExtractionOutcome,
     RequestedItem,
 )
-from quotation_app.ports.erp import CatalogueSourceMissing, ErpError, ErpErrorCode
-from quotation_app.ports.interpretation import (
+from sales_platform.ports.erp import CatalogueSourceMissing, ErpError, ErpErrorCode
+from sales_platform.ports.interpretation import (
     DocumentText,
     EnquiryTranscript,
     InterpretationRejected,
 )
-from quotation_app.ports.jobs import ClaimedJob
-from quotation_app.ports.workflow import CleanAttachment, EnquiryContent
-from quotation_app.workflows.enquiry import (
+from sales_platform.ports.jobs import ClaimedJob
+from sales_platform.ports.workflow import CleanAttachment, EnquiryContent
+from sales_platform.workflows.enquiry import (
     EnquiryWorkflowDeps,
     ExtractionJobHandler,
     build_enquiry_graph,

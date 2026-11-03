@@ -36,7 +36,7 @@ def main() -> None:
     python = sys.executable
     print("Applying migrations and seed data...")
     subprocess.run([python, "-m", "alembic", "upgrade", "head"], cwd=ROOT, check=True)
-    subprocess.run([python, "-m", "quotation_app.persistence.seed"], cwd=ROOT, check=True)
+    subprocess.run([python, "-m", "sales_platform.persistence.seed"], cwd=ROOT, check=True)
 
     processes = []
     if not api_running():
@@ -46,7 +46,7 @@ def main() -> None:
                     python,
                     "-m",
                     "uvicorn",
-                    "quotation_app.api.app:create_app",
+                    "sales_platform.api.app:create_app",
                     "--factory",
                     "--host",
                     "127.0.0.1",
@@ -55,11 +55,11 @@ def main() -> None:
                 ],
                 cwd=ROOT,
                 # Serves the built portal and the website chat widget (npm run build in portal/).
-                env={**os.environ, "QUOTATION_PORTAL_DIST_DIR": str(ROOT / "portal" / "dist")},
+                env={**os.environ, "SALES_PORTAL_DIST_DIR": str(ROOT / "portal" / "dist")},
             )
         )
     if not arguments.no_worker:
-        processes.append(subprocess.Popen([python, "-m", "quotation_app.worker"], cwd=ROOT))
+        processes.append(subprocess.Popen([python, "-m", "sales_platform.worker"], cwd=ROOT))
     processes.append(
         subprocess.Popen(
             [

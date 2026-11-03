@@ -2,7 +2,7 @@ from uuid import UUID
 
 import pytest
 
-from quotation_app.domain.attachments import (
+from sales_platform.domain.attachments import (
     AttachmentStatus,
     StorageArea,
     attachment_key,

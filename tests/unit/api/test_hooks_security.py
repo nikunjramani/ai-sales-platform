@@ -9,12 +9,12 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from quotation_app.adapters.secrets.memory import InMemorySecretStore
-from quotation_app.api.hooks import build_hook_router
-from quotation_app.application.inbound import InboundService
-from quotation_app.application.lifecycle import ConnectionLifecycle
-from quotation_app.application.providers import ProviderRegistry
-from quotation_app.domain.tenancy import Role, TenantContext
+from sales_platform.adapters.secrets.memory import InMemorySecretStore
+from sales_platform.api.hooks import build_hook_router
+from sales_platform.application.inbound import InboundService
+from sales_platform.application.lifecycle import ConnectionLifecycle
+from sales_platform.application.providers import ProviderRegistry
+from sales_platform.domain.tenancy import Role, TenantContext
 from tests.unit.conftest import Job, MemoryConnections, MemoryInbox
 from tests.unit.one_click import PLATFORM_SECRET, TOOL, MemoryLifecycle, OneClickTool
 

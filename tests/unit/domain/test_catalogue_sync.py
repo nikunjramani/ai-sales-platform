@@ -3,8 +3,8 @@ from decimal import Decimal
 
 import pytest
 
-from quotation_app.domain.catalogue_admin import MAX_ACTIVE_PRODUCTS, InvalidCatalogueEntry
-from quotation_app.domain.catalogue_sync import (
+from sales_platform.domain.catalogue_admin import MAX_ACTIVE_PRODUCTS, InvalidCatalogueEntry
+from sales_platform.domain.catalogue_sync import (
     DEFAULT_SYNC_MINUTES,
     SYNC_MINUTES_KEY,
     CatalogueFeed,

@@ -7,10 +7,10 @@ from uuid import UUID
 
 import pytest
 
-from quotation_app.application.intake import EnquiryIntakeService
-from quotation_app.domain.intake import AttachmentUpload, EnquiryStatus, EnquirySubmission
-from quotation_app.domain.tenancy import PermissionDenied, Role, TenantContext
-from quotation_app.ports.intake import IdempotencyConflict, Receipt
+from sales_platform.application.intake import EnquiryIntakeService
+from sales_platform.domain.intake import AttachmentUpload, EnquiryStatus, EnquirySubmission
+from sales_platform.domain.tenancy import PermissionDenied, Role, TenantContext
+from sales_platform.ports.intake import IdempotencyConflict, Receipt
 
 type ContextFactory = Callable[[UUID, Role], TenantContext]
 

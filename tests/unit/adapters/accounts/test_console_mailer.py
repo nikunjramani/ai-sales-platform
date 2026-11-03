@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from quotation_app.adapters.accounts.mail.console import ConsoleMailer, build
-from quotation_app.ports.accounts import MailerEnvironment, OutgoingEmail
+from sales_platform.adapters.accounts.mail.console import ConsoleMailer, build
+from sales_platform.ports.accounts import MailerEnvironment, OutgoingEmail
 
 MESSAGE = OutgoingEmail(
     to="ana@shop.example",

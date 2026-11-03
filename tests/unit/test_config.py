@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 from pydantic import SecretStr, ValidationError
 
-from quotation_app.config import Settings
+from sales_platform.config import Settings
 
 RUNTIME_URL = SecretStr("postgresql+psycopg://app:private@localhost/db")
 # What production needs besides the database (phase 2: a real mailer and public addresses).

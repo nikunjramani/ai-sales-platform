@@ -7,14 +7,14 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.adapters.catalogue.local import LocalCatalogue
-from quotation_app.adapters.erp.simulated import demo_catalogue
-from quotation_app.adapters.providers.local_catalogue import LocalCatalogueProvider, build
-from quotation_app.domain.catalogue_admin import ProductFields
-from quotation_app.domain.connections import Connection, ConnectionStatus, Purpose
-from quotation_app.domain.tenancy import Role, TenantContext
-from quotation_app.ports.erp import ErpError, ErpErrorCode
-from quotation_app.ports.providers import OperationUnsupported, ProviderEnvironment
+from sales_platform.adapters.catalogue.local import LocalCatalogue
+from sales_platform.adapters.erp.simulated import demo_catalogue
+from sales_platform.adapters.providers.local_catalogue import LocalCatalogueProvider, build
+from sales_platform.domain.catalogue_admin import ProductFields
+from sales_platform.domain.connections import Connection, ConnectionStatus, Purpose
+from sales_platform.domain.tenancy import Role, TenantContext
+from sales_platform.ports.erp import ErpError, ErpErrorCode
+from sales_platform.ports.providers import OperationUnsupported, ProviderEnvironment
 from tests.support.catalogue_store import InMemoryCatalogueStore
 
 TENANT = UUID("00000000-0000-4000-8000-000000000001")

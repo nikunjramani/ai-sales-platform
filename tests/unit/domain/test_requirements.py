@@ -4,8 +4,8 @@ from decimal import Decimal
 
 import pytest
 
-from quotation_app.domain.catalogue import Product
-from quotation_app.domain.requirements import (
+from sales_platform.domain.catalogue import Product
+from sales_platform.domain.requirements import (
     ExtractedRequirements,
     ExtractionOutcome,
     MatchStatus,

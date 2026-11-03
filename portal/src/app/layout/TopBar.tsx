@@ -18,7 +18,7 @@ export function TopBar() {
         <span className="brand-mark" aria-hidden="true">
           <FileText size={20} />
         </span>
-        <span className="brand-name">Quotation Portal</span>
+        <span className="brand-name">Sales Portal</span>
       </Link>
       <div className="who">
         <TenantSwitcher />

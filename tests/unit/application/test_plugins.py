@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from quotation_app.application.plugins import PluginNotFound, load_named
+from sales_platform.application.plugins import PluginNotFound, load_named
 
 
 @dataclass

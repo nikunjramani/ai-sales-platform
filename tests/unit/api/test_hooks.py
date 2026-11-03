@@ -13,13 +13,13 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import OperationalError
 
-from quotation_app.adapters.providers.simulated import SimulatedProvider
-from quotation_app.adapters.providers.simulated.signing import SIGNATURE_HEADER, sign
-from quotation_app.api.hooks import MAX_HOOK_BYTES, build_hook_router
-from quotation_app.application.inbound import InboundService
-from quotation_app.application.providers import ProviderRegistry
-from quotation_app.domain.connections import Connection
-from quotation_app.ports.secrets import SecretNotFound
+from sales_platform.adapters.providers.simulated import SimulatedProvider
+from sales_platform.adapters.providers.simulated.signing import SIGNATURE_HEADER, sign
+from sales_platform.api.hooks import MAX_HOOK_BYTES, build_hook_router
+from sales_platform.application.inbound import InboundService
+from sales_platform.application.providers import ProviderRegistry
+from sales_platform.domain.connections import Connection
+from sales_platform.ports.secrets import SecretNotFound
 
 SECRET = "unit-signing-secret"
 TOKEN = "unit-hook-token"

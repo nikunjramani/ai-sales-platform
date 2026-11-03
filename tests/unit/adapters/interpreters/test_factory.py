@@ -1,8 +1,8 @@
 import pytest
 
-from quotation_app.adapters.interpreters.factory import build_interpreter
-from quotation_app.adapters.interpreters.langchain import LangChainInterpreter
-from quotation_app.adapters.interpreters.rules import RulesInterpreter
+from sales_platform.adapters.interpreters.factory import build_interpreter
+from sales_platform.adapters.interpreters.langchain import LangChainInterpreter
+from sales_platform.adapters.interpreters.rules import RulesInterpreter
 
 
 def test_no_model_means_the_free_rules_interpreter() -> None:

@@ -8,10 +8,10 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 
-from quotation_app.api.app import create_app
-from quotation_app.api.auth import CSRF_HEADER
-from quotation_app.config import Settings
-from quotation_app.persistence.seed import INDUSTRIAL_TENANT, LOCAL_TENANT
+from sales_platform.api.app import create_app
+from sales_platform.api.auth import CSRF_HEADER
+from sales_platform.config import Settings
+from sales_platform.persistence.seed import INDUSTRIAL_TENANT, LOCAL_TENANT
 
 pytestmark = pytest.mark.integration
 

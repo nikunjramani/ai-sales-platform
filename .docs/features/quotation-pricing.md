@@ -12,11 +12,11 @@
 - **Contract test**: one test suite that every adapter must pass, so a new ERP behaves like the others.
 
 ## Source files and entry point
-- Caller: `QuotationPricingService.price(context, lines)` in [application/pricing.py](../../src/quotation_app/application/pricing.py). Demo: [demo_quotation.py](../../scripts/demo_quotation.py).
-- Context: `TenantContextResolver.resolve(subject, tenant_id)` in [application/tenancy.py](../../src/quotation_app/application/tenancy.py).
-- Rules: `calculate_quotation` in [domain/pricing.py](../../src/quotation_app/domain/pricing.py); money in [domain/money.py](../../src/quotation_app/domain/money.py); roles in [domain/tenancy.py](../../src/quotation_app/domain/tenancy.py).
-- Contracts: [ports/erp.py](../../src/quotation_app/ports/erp.py) and [ports/tenancy.py](../../src/quotation_app/ports/tenancy.py).
-- Implementations: [simulated ERP](../../src/quotation_app/adapters/erp/simulated.py) and [SQL repositories](../../src/quotation_app/persistence/tenancy.py).
+- Caller: `QuotationPricingService.price(context, lines)` in [application/pricing.py](../../src/sales_platform/application/pricing.py). Demo: [demo_quotation.py](../../scripts/demo_quotation.py).
+- Context: `TenantContextResolver.resolve(subject, tenant_id)` in [application/tenancy.py](../../src/sales_platform/application/tenancy.py).
+- Rules: `calculate_quotation` in [domain/pricing.py](../../src/sales_platform/domain/pricing.py); money in [domain/money.py](../../src/sales_platform/domain/money.py); roles in [domain/tenancy.py](../../src/sales_platform/domain/tenancy.py).
+- Contracts: [ports/erp.py](../../src/sales_platform/ports/erp.py) and [ports/tenancy.py](../../src/sales_platform/ports/tenancy.py).
+- Implementations: [simulated ERP](../../src/sales_platform/adapters/erp/simulated.py) and [SQL repositories](../../src/sales_platform/persistence/tenancy.py).
 
 ## Inputs and validation
 - `subject`: authenticated identity string. The placeholder until OIDC (M4).
@@ -48,7 +48,7 @@ None. The use case reads only; it stores and sends nothing, so repeating it is s
 - `decimal.Inexact`: values too large to multiply exactly; rejected rather than rounded silently.
 
 ## Configuration and secrets
-No new environment variables. Runtime uses `QUOTATION_DATABASE_URL` and the seed uses `QUOTATION_MIGRATION_DATABASE_URL`. See [configuration](../development/configuration.md).
+No new environment variables. Runtime uses `SALES_DATABASE_URL` and the seed uses `SALES_MIGRATION_DATABASE_URL`. See [configuration](../development/configuration.md).
 
 ## Tests and example
 See [testing](../development/testing.md). Example with the seeded industrial tenant (INR, `half_up`, 18% synthetic tax):

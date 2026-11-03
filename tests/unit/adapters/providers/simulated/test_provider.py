@@ -8,12 +8,12 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.adapters.providers.simulated import SimulatedProvider
-from quotation_app.adapters.providers.simulated.signing import SIGNATURE_HEADER, sign
-from quotation_app.domain.connections import Connection, ConnectionStatus, Purpose
-from quotation_app.domain.intake import ManagerAction
-from quotation_app.domain.tenancy import Role, TenantContext
-from quotation_app.ports.providers import (
+from sales_platform.adapters.providers.simulated import SimulatedProvider
+from sales_platform.adapters.providers.simulated.signing import SIGNATURE_HEADER, sign
+from sales_platform.domain.connections import Connection, ConnectionStatus, Purpose
+from sales_platform.domain.intake import ManagerAction
+from sales_platform.domain.tenancy import Role, TenantContext
+from sales_platform.ports.providers import (
     InboundRejected,
     InboundRequest,
     InvalidInbound,
@@ -22,7 +22,7 @@ from quotation_app.ports.providers import (
     RenderedMessage,
     SendRejected,
 )
-from quotation_app.ports.secrets import SecretNotFound
+from sales_platform.ports.secrets import SecretNotFound
 
 TENANT = UUID("00000000-0000-4000-8000-000000000001")
 TASK = "00000000-0000-4000-8000-0000000000aa"

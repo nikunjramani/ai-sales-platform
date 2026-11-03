@@ -3,7 +3,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.domain.intake import (
+from sales_platform.domain.intake import (
     MAX_ATTACHMENT_BYTES,
     MAX_ATTACHMENTS,
     MAX_TEXT_CHARACTERS,

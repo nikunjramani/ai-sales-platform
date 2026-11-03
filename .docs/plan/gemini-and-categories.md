@@ -1,5 +1,5 @@
 # Plan: Gemini enquiry reader and category-based "not found" replies
-**Status:** implemented 2026-10-23 on `feat/gemini-and-categories` ([ADR 0017](../adr/0017-gemini-reader-and-category-replies.md)); the live Gemini evaluation waits for the user's API key. **Revised by the user on 2026-10-23:** the reader must be generic, not Gemini-specific. Instead of a `gemini` provider, `QUOTATION_MODEL=<provider>:<model>` loads any LangChain chat model (`init_chat_model`), with `QUOTATION_MODEL_API_KEY` and `QUOTATION_MODEL_OPTIONS`; the Ollama-specific code was removed. Part A below is the original plan; ADR 0017 describes what was built. Original plan below (user decisions 2026-10-23). The user asked for this plan to be stored here, not in chat history. Start on a new branch `feat/gemini-and-categories` from `main`; ask again before changing any decision below.
+**Status:** implemented 2026-10-23 on `feat/gemini-and-categories` ([ADR 0017](../adr/0017-gemini-reader-and-category-replies.md)); the live Gemini evaluation waits for the user's API key. **Revised by the user on 2026-10-23:** the reader must be generic, not Gemini-specific. Instead of a `gemini` provider, `SALES_MODEL=<provider>:<model>` loads any LangChain chat model (`init_chat_model`), with `SALES_MODEL_API_KEY` and `SALES_MODEL_OPTIONS`; the Ollama-specific code was removed. Part A below is the original plan; ADR 0017 describes what was built. Original plan below (user decisions 2026-10-23). The user asked for this plan to be stored here, not in chat history. Start on a new branch `feat/gemini-and-categories` from `main`; ask again before changing any decision below.
 
 ## Context
 In the demo, "can you get price for tata cars" got the same fixed reply twice ("Which products and
@@ -27,11 +27,11 @@ quantities…?"). Causes:
     - 4.4.0 needs `langchain-core>=1.6.1,<2` (we lock 1.6.13) and `google-genai>=2.20,<3`.
     - Check that the locked `google-genai` release is also at least 14 days old.
   - `uv lock`; CI already syncs `--all-extras`.
-- [config.py](../../src/quotation_app/config.py)
+- [config.py](../../src/sales_platform/config.py)
   - `model_provider: Literal["rules","ollama","gemini"]`.
   - New `gemini_api_key: SecretStr | None` (env `QUOTATION_GEMINI_API_KEY`).
   - Validation: provider `gemini` requires the key and `model_name`.
-- [factory.py](../../src/quotation_app/adapters/interpreters/factory.py)
+- [factory.py](../../src/sales_platform/adapters/interpreters/factory.py)
   - New `gemini` branch with a lazy import of `ChatGoogleGenerativeAI`: model, `api_key`,
     `temperature=0`, JSON output if supported, timeout and limited internal retries.
   - It returns the existing `LangChainInterpreter`, so the prompt-injection containment, strict
@@ -52,22 +52,22 @@ quantities…?"). Causes:
   the key from settings.
 
 ## Part B: Product categories, data-driven
-- [domain/catalogue.py](../../src/quotation_app/domain/catalogue.py)
+- [domain/catalogue.py](../../src/sales_platform/domain/catalogue.py)
   - `Product` gains `category: str | None = None`.
   - Update the workflow-state (de)serialisers `_product_to_state` / `_product_from_state` in
-    [workflows/enquiry.py](../../src/quotation_app/workflows/enquiry.py). Old checkpoints have no category,
+    [workflows/enquiry.py](../../src/sales_platform/workflows/enquiry.py). Old checkpoints have no category,
     so default to None.
-- [ports/erp.py](../../src/quotation_app/ports/erp.py)
+- [ports/erp.py](../../src/sales_platform/ports/erp.py)
   - `ErpReader.list_categories(context) -> Sequence[str]`: distinct category names, sorted.
   - Real ERP adapters map it to their product groups later.
-- [adapters/erp/simulated.py](../../src/quotation_app/adapters/erp/simulated.py)
+- [adapters/erp/simulated.py](../../src/sales_platform/adapters/erp/simulated.py)
   - Synthetic categories:
     - industrial: Exhaust fans, Fasteners, Cables, Pumps;
     - office: matching groups.
   - `list_categories` returns these.
   - `search_products` also matches category words, so "which pumps / fasteners do you have"
     finds that category's products.
-- **Replies** in [domain/requirements.py](../../src/quotation_app/domain/requirements.py) `assess(...)`
+- **Replies** in [domain/requirements.py](../../src/sales_platform/domain/requirements.py) `assess(...)`
   gains `categories: Sequence[str]`. These remain fixed templates:
   - **No items understood:** "Which products and quantities would you like a quotation for? We
     supply: Exhaust fans, Fasteners, Cables, Pumps. Ask about a category to see its products."
@@ -78,7 +78,7 @@ quantities…?"). Causes:
       5);
     - one match with no quantity gives the existing "How many … do you need?".
     - No prices are shown in replies (unchanged).
-- The `assess_step` node in [workflows/enquiry.py](../../src/quotation_app/workflows/enquiry.py) calls
+- The `assess_step` node in [workflows/enquiry.py](../../src/sales_platform/workflows/enquiry.py) calls
   `deps.erp.list_categories(...)` only when a not-found or no-items question is needed. It uses the
   same read-only system context, and ERP errors follow the existing retry rules.
 

@@ -8,9 +8,9 @@ from uuid import UUID
 
 import pytest
 
-from quotation_app.domain.catalogue import PriceQuote, Product, StockLevel
-from quotation_app.domain.money import Money, RoundingMode
-from quotation_app.domain.pricing import (
+from sales_platform.domain.catalogue import PriceQuote, Product, StockLevel
+from sales_platform.domain.money import Money, RoundingMode
+from sales_platform.domain.pricing import (
     IssueCode,
     PricedQuotation,
     PricingOutcome,

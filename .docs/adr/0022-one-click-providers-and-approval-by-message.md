@@ -46,7 +46,7 @@ Phase 5 was planned as six provider packages (SendGrid email, Twilio WhatsApp an
    - Short-lived public PDF links (`GET /api/v1/media/{token}`, 15 minutes, token hash only, hash re-checked) for tools that fetch attachments by URL.
    - Provider-hosted setup pages.
    - The `fill_form` and `open_url` screens.
-   - Company-level settings in the SecretStore's platform namespace, with an operator command (`python -m quotation_app.ops platform-config set|show`, `platform-setup`).
+   - Company-level settings in the SecretStore's platform namespace, with an operator command (`python -m sales_platform.ops platform-config set|show`, `platform-setup`).
    - Email helpers (`adapters/providers/email_common`: threading, new text, automatic mail, DKIM/SPF-aligned trust).
 8. **Resend.** Administrators and sales operators (`messages:resend`) can send a failed customer message again. A copy becomes a new message, linked by `resent_from_id`, once per failed message. An `unknown` message is never resent.
 9. **Migration `0013_provider_state`:**

@@ -24,15 +24,15 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
-from quotation_app.adapters.providers.simulated import DEFAULT_CONNECTION_ID, PROVIDER_KEY
-from quotation_app.adapters.providers.simulated.signing import SIGNATURE_HEADER, hook_token, sign
-from quotation_app.application.api_keys import generate_api_key
-from quotation_app.config import Settings
-from quotation_app.domain.tenancy import Role
-from quotation_app.persistence.api_keys import insert_api_key
-from quotation_app.persistence.connections import SqlConnectionStore, SqlHostedChatAdmin
-from quotation_app.persistence.database import build_engine
-from quotation_app.persistence.seed import INDUSTRIAL_TENANT
+from sales_platform.adapters.providers.simulated import DEFAULT_CONNECTION_ID, PROVIDER_KEY
+from sales_platform.adapters.providers.simulated.signing import SIGNATURE_HEADER, hook_token, sign
+from sales_platform.application.api_keys import generate_api_key
+from sales_platform.config import Settings
+from sales_platform.domain.tenancy import Role
+from sales_platform.persistence.api_keys import insert_api_key
+from sales_platform.persistence.connections import SqlConnectionStore, SqlHostedChatAdmin
+from sales_platform.persistence.database import build_engine
+from sales_platform.persistence.seed import INDUSTRIAL_TENANT
 
 API = os.environ.get("DEMO_API", "http://127.0.0.1:8000")
 MANAGER = "manager@industrial.example"
@@ -109,7 +109,7 @@ def customer_headers(state: dict[str, Any]) -> dict[str, str]:
 
 def secret() -> str:
     if settings.simulated_channel_secret is None:
-        raise HTTPException(500, "QUOTATION_SIMULATED_CHANNEL_SECRET missing in .env")
+        raise HTTPException(500, "SALES_SIMULATED_CHANNEL_SECRET missing in .env")
     return settings.simulated_channel_secret.get_secret_value()
 
 

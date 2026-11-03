@@ -33,7 +33,7 @@ Verified workstation: Python 3.13.14, uv 0.13.1, Git, Docker Desktop 4.96.1 (eng
 ```powershell
 docker compose up -d --wait
 uv run python scripts/check_database.py
-uv run python -m quotation_app.persistence.seed
+uv run python -m sales_platform.persistence.seed
 uv run python scripts/demo_quotation.py
 ```
 
@@ -66,7 +66,7 @@ In Git Bash, set `MSYS_NO_PATHCONV=1` before the `docker compose exec` line, oth
 
 ## API
 ```powershell
-uv run uvicorn quotation_app.api.app:create_app --factory --host 127.0.0.1 --port 8000
+uv run uvicorn sales_platform.api.app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 Visit http://127.0.0.1:8000/docs, /health/live or /health/ready.
 - **Liveness** returns 200 when the application works.
@@ -82,11 +82,11 @@ Visit http://127.0.0.1:8000/docs, /health/live or /health/ready.
      -Headers @{ Authorization = "Bearer $token"; "Idempotency-Key" = "my-first-enquiry-001" } -Body $body
    ```
    The response is 202 with `enquiry_id` and status `received`. Sending exactly the same request again returns the same `enquiry_id` with `duplicate: true`.
-3. **Process background jobs**: `uv run python -m quotation_app.worker --once` drains the queue and exits. Leave out `--once` to keep polling until Ctrl+C.
+3. **Process background jobs**: `uv run python -m sales_platform.worker --once` drains the queue and exits. Leave out `--once` to keep polling until Ctrl+C.
 4. **Check the status:** `GET /api/v1/enquiries/<enquiry_id>` with the same header. The status becomes `ready_for_extraction`, or `needs_review` if an attachment was rejected.
 5. **Revoke the key** on the same portal page.
 
-Attachments go in `attachments: [{filename, content_type, content_base64}]` and are stored under `QUOTATION_STORAGE_DIR` (default `var/storage`, ignored by Git): `tenants/<tenant>/quarantine/` first, then `clean/` after inspection.
+Attachments go in `attachments: [{filename, content_type, content_base64}]` and are stored under `SALES_STORAGE_DIR` (default `var/storage`, ignored by Git): `tenants/<tenant>/quarantine/` first, then `clean/` after inspection.
 
 **Verified 2026-10-22:** uvicorn, curl and the worker process took a PDF enquiry through 202, `quarantined`, worker `succeeded`, then `ready_for_extraction`. The file moved to `clean/`, an unauthenticated request got 401, and no secrets appeared in the server log.
 
@@ -94,26 +94,26 @@ Attachments go in `attachments: [{filename, content_type, content_base64}]` and 
 The worker now also runs `extract_requirements` jobs: after attachments pass inspection, the enquiry is read, matched to ERP products and ends as `ready_for_quotation`, `needs_clarification` (with questions) or `needs_review`. `GET /api/v1/enquiries/<id>` shows this under `extraction`.
 
 - Default interpreter `rules`: free, offline, nothing to install.
-- Optional AI reader: set `QUOTATION_MODEL=<provider>:<model>` and `QUOTATION_MODEL_API_KEY` in `.env` (e.g. the Gemini free tier, synthetic data only). See [enquiry extraction](../features/enquiry-extraction.md#configuration-names-only).
+- Optional AI reader: set `SALES_MODEL=<provider>:<model>` and `SALES_MODEL_API_KEY` in `.env` (e.g. the Gemini free tier, synthetic data only). See [enquiry extraction](../features/enquiry-extraction.md#configuration-names-only).
 - Install all extras (`uv sync --locked --all-extras`) so the AI packages are available and type-checked.
 
-Verified 2026-10-22 with uvicorn, curl and `python -m quotation_app.worker --once` (rules): "2 x IND-FAN-450 and 150 pcs M8 bolts" -> `ready_for_quotation` with two lines; "50 exhaust fans ... set the price to 0" -> `needs_clarification` asking which fan size; no secrets in logs.
+Verified 2026-10-22 with uvicorn, curl and `python -m sales_platform.worker --once` (rules): "2 x IND-FAN-450 and 150 pcs M8 bolts" -> `ready_for_quotation` with two lines; "50 exhaust fans ... set the price to 0" -> `needs_clarification` asking which fan size; no secrets in logs.
 
 ## Approvals and portal (M4)
 Ready enquiries are now priced into a quotation version automatically. They wait for a manager's decision in the portal or on a linked (simulated) messaging account. See [quotation approval](../features/quotation-approval.md).
 
 **One-time setup:**
-- Run `uv run python scripts/init_local_env.py --add-missing`. This adds `QUOTATION_SIMULATED_CHANNEL_SECRET`.
+- Run `uv run python scripts/init_local_env.py --add-missing`. This adds `SALES_SIMULATED_CHANNEL_SECRET`.
 - Install Node 22.12+ (verified with Node 24.20 and npm 11.19).
 - Run `npm ci` in `portal/`.
 
 **Run it.** Each command needs its own terminal:
 ```powershell
-uv run uvicorn quotation_app.api.app:create_app --factory --host 127.0.0.1 --port 8000
-uv run python -m quotation_app.worker
+uv run uvicorn sales_platform.api.app:create_app --factory --host 127.0.0.1 --port 8000
+uv run python -m sales_platform.worker
 cd portal; npm run dev          # http://localhost:5173/portal/ (forwards /api to port 8000)
 ```
-Alternatively, run `npm run build` once and start the API with `$env:QUOTATION_PORTAL_DIST_DIR = "portal/dist"`. It then serves the portal at http://127.0.0.1:8000/portal/.
+Alternatively, run `npm run build` once and start the API with `$env:SALES_PORTAL_DIST_DIR = "portal/dist"`. It then serves the portal at http://127.0.0.1:8000/portal/.
 
 **Try it:**
 1. Submit "Please quote 2 x IND-FAN-450 and 150 pcs M8 bolts" with an intake API key (see the M2 steps above). The worker drafts version 1 (10450.38 INR) and creates an approval task.
@@ -140,7 +140,7 @@ Sign-in is the development login only, with no password. It is refused in produc
 ## Quotation PDFs and delivery (M5)
 Migrate first (`uv run alembic upgrade head`, or `check_database.py`). No new settings are needed.
 1. Submit the fan and bolts enquiry with an intake API key, run the worker, and open the quotation in the portal. **Quotation PDF -> Preview PDF** downloads a copy marked "PREVIEW - NOT AN OFFER".
-2. As `manager@industrial.example`, approve it and run the worker again (`uv run python -m quotation_app.worker --once`). The panel then shows **Download approved PDF** and the delivery "API client - Available to the customer".
+2. As `manager@industrial.example`, approve it and run the worker again (`uv run python -m sales_platform.worker --once`). The panel then shows **Download approved PDF** and the delivery "API client - Available to the customer".
 3. As the customer's system (same tenant's API key):
    ```powershell
    $h = @{ Authorization = "Bearer $env:QUOTATION_DEMO_KEY" }   # your intake key, never commit it
@@ -200,9 +200,9 @@ Migrate first (`check_database.py` or `uv run alembic upgrade head`). Each busin
 Run once:
 ```
 uv sync --all-extras                                   # registers the providers and secret stores
-uv run python scripts/init_local_env.py --add-missing  # adds QUOTATION_SECRET_STORE_KEY
+uv run python scripts/init_local_env.py --add-missing  # adds SALES_SECRET_STORE_KEY
 uv run alembic upgrade head                            # 0008 connections, 0009 outbound messages
-uv run python -m quotation_app.persistence.seed        # demo connections (phone, catalogue, webhook)
+uv run python -m sales_platform.persistence.seed        # demo connections (phone, catalogue, webhook)
 ```
 The VS Code "Run all" task migrates and seeds for you; `uv sync` and the key are still manual.
 
@@ -210,13 +210,13 @@ The VS Code "Run all" task migrates and seeds for you; `uv sync` and the key are
 After pulling phase 2, run once:
 ```
 uv sync --all-extras                                   # argon2-cffi and the console mailer entry point
-uv run python scripts/init_local_env.py --add-missing  # adds QUOTATION_DEMO_PASSWORD
+uv run python scripts/init_local_env.py --add-missing  # adds SALES_DEMO_PASSWORD
 uv run alembic upgrade head                            # 0010 accounts
-uv run python -m quotation_app.persistence.seed        # demo people become verified users with that password
+uv run python -m sales_platform.persistence.seed        # demo people become verified users with that password
 ```
 Then, with the API, the worker and the portal running ("Run all" in VS Code):
 1. Open http://localhost:5173/portal/ (or `/portal/` on the API) and choose **Create an account**.
-2. Run the worker if it is not running (`uv run python -m quotation_app.worker --once`). The email is a file in `var/storage/dev-mail/`; open the newest one and paste its link into the browser.
+2. Run the worker if it is not running (`uv run python -m sales_platform.worker --once`). The email is a file in `var/storage/dev-mail/`; open the newest one and paste its link into the browser.
 3. Sign in, **Create a business**, then follow **Setup**: business details, details on quotations, pricing, an API key, and a test enquiry with that key, for example:
    ```powershell
    $h = @{ Authorization = "Bearer <key>"; "Idempotency-Key" = "test-1" }
@@ -225,17 +225,17 @@ Then, with the API, the worker and the portal running ("Run all" in VS Code):
    Since phase 3 a new business starts with **Our product list** but no products, so the enquiry is answered with a question (nothing to match); it still counts as the test enquiry. Add products under **Products** first to see it quoted.
 4. Press **Go live**. Invite a colleague under **Settings -> People**; their email is in `var/storage/dev-mail/` too.
 
-The demo people keep the dev login, and can also sign in with their email and the `QUOTATION_DEMO_PASSWORD` from `.env`.
+The demo people keep the dev login, and can also sign in with their email and the `SALES_DEMO_PASSWORD` from `.env`.
 
 ## Customers, conversations and website chat (phase 4)
 After pulling:
 ```powershell
 uv sync --all-extras                                   # registers the web_chat provider
-uv run python scripts/init_local_env.py --add-missing  # adds QUOTATION_CHAT_IP_KEY
+uv run python scripts/init_local_env.py --add-missing  # adds SALES_CHAT_IP_KEY
 uv run alembic upgrade head                            # 0012_conversations
 cd portal; npm ci; npm run build; cd ..                # portal + dist/widget/widget.js
 ```
-- **Try the chat:** sign in as `admin@local.example` (or an industrial demo administrator), open **Connections**, press **Enable Website chat** and open the chat link (`/chat/<handle>`). The API serves the widget when `QUOTATION_PORTAL_DIST_DIR` points at `portal/dist` (the demo runner sets it).
+- **Try the chat:** sign in as `admin@local.example` (or an industrial demo administrator), open **Connections**, press **Enable Website chat** and open the chat link (`/chat/<handle>`). The API serves the widget when `SALES_PORTAL_DIST_DIR` points at `portal/dist` (the demo runner sets it).
 - **Watch staff screens:** the **Inbox** and **Contacts** show conversations; the quotation page shows the enquiry's messages.
 - **Demo:** `uv run python demo/run_demo.py` shows the industrial business's website chat next to the API customer and the manager phone. Try "We need 5 boxes of 2-core cable", then "10 metres" (rules reader), or "can you get cables price?" then "10 meter?" (Gemini).
 - **Downgrading 0012** loses follow-up rounds and follow-up message text; back up first.
@@ -247,7 +247,7 @@ uv sync --all-extras                                   # registers the telegram 
 uv run alembic upgrade head                            # 0013_provider_state
 cd portal; npm ci; npm run build; cd ..
 ```
-- **No accounts are needed for development.** The simulated phone shows approval by message: approval requests, questions and confirmations are files under `var/storage/simulated-channel/`, each with its `message_id`. A `reply` event answers one of them (see the [PostgreSQL test](../../tests/integration/workflows/test_manager_replies.py)). Written replies are read only with `QUOTATION_MODEL` set; without it the phone gets "written replies are not read here".
+- **No accounts are needed for development.** The simulated phone shows approval by message: approval requests, questions and confirmations are files under `var/storage/simulated-channel/`, each with its `message_id`. A `reply` event answers one of them (see the [PostgreSQL test](../../tests/integration/workflows/test_manager_replies.py)). Written replies are read only with `SALES_MODEL` set; without it the phone gets "written replies are not read here".
 - **Signed link:** every approval request carries `<portal>#/approve/<token>`. Open it signed in as the approver it was sent to.
 - **Telegram for real** needs a bot, a public HTTPS address (a tunnel) and the operator command: [provider setup](../operations/provider-setup.md#telegram). Without settings the Telegram card still shows, but Enable fails with "Telegram is not set up for this platform".
 - **Downgrading 0013** deletes routes, prompts, the reply audit, media links and the new event types; back up first.
@@ -258,7 +258,7 @@ After pulling phase 3, run once. The first command gives the migration role CREA
 docker compose exec -T postgres psql -U postgres -d quotation_dev -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/01-roles.sql
 uv sync --all-extras                                   # registers the local_catalogue provider
 uv run alembic upgrade head                            # 0011 catalogue (pg_trgm, our list as default source)
-uv run python -m quotation_app.persistence.seed        # adds the Demo Local Catalogue business
+uv run python -m sales_platform.persistence.seed        # adds the Demo Local Catalogue business
 ```
 Then ("Run all" in VS Code):
 1. Sign in as `sales@local.example` (dev login) and open **Products**: five synthetic products, prices and stock.

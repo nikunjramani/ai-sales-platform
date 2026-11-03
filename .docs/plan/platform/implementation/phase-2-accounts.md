@@ -1,7 +1,7 @@
 # Implementation plan, phase 2: accounts and onboarding
 **Status:** all open questions answered by the user on 2026-10-27 (see [User answers](#user-answers-2026-10-27)); implementation in progress on branch `feat/phase-2-accounts`. Where an answer differs from a proposal below, the answers section wins. It follows the binding [shared contracts](00-shared-contracts.md); where this plan needs something the contracts do not list, it says so in [Proposed changes to shared contracts](#15-proposed-changes-to-shared-contracts). Every value marked **(to confirm)** is a proposal only and must be confirmed by the user before code is written (AGENTS.md "Ask, do not assume").
 
-Background: [02 accounts and onboarding](../02-accounts-and-onboarding.md), [07 decisions](../07-decisions-needed.md), [08 phases](../08-phases.md). Paths are relative to `src/quotation_app/` unless they start with another top-level folder.
+Background: [02 accounts and onboarding](../02-accounts-and-onboarding.md), [07 decisions](../07-decisions-needed.md), [08 phases](../08-phases.md). Paths are relative to `src/sales_platform/` unless they start with another top-level folder.
 
 ---
 
@@ -76,12 +76,12 @@ The user answered every question on 2026-10-27. Where the answer differs from th
 | Q16 | PDF: legal name, address (required for Go live), optional tax ID with label, optional logo PNG/JPEG ≤ 1 MB (as proposed) |
 | Q17 | Only intake keys from the portal; `scripts/create_api_key.py` removed (as proposed) |
 | Q18 | Email normalisation as proposed (no Gmail dot/plus folding) |
-| Q19 | `QUOTATION_MAIL_FROM`, `QUOTATION_PUBLIC_PORTAL_URL`; console mailer in development; production blocked until phase 5 (as proposed) |
+| Q19 | `SALES_MAIL_FROM`, `SALES_PUBLIC_PORTAL_URL`; console mailer in development; production blocked until phase 5 (as proposed) |
 | Q20 | Retention setting in phase 4 (as proposed) |
 | Q21 | No total limit; 5 creations per day per person (as proposed) |
 | Q22 | Members may leave by themselves, except the last administrator (as proposed) |
 | Q23 | Profile: display name and password only (as proposed) |
-| Q24 | **Seeded demo people also get a password**, read from the new setting `QUOTATION_DEMO_PASSWORD` (development/test only; `init_local_env.py --add-missing` fills it with a random value; never in Git). Dev login stays |
+| Q24 | **Seeded demo people also get a password**, read from the new setting `SALES_DEMO_PASSWORD` (development/test only; `init_local_env.py --add-missing` fills it with a random value; never in Git). Dev login stays |
 | Q25 | Bundled offline common-password list (as proposed) |
 | Q26 | Narrow SECURITY DEFINER functions (as proposed) |
 | Q27 | API pull delivery allowed while `setting_up` (as proposed) |
@@ -113,7 +113,7 @@ Every row has a proposal. None of these proposals may be coded until confirmed.
 | Q16 | PDF details | Legal name and address required for Go live; tax ID and its label (e.g. "GSTIN", "VAT no.") optional; logo optional (PNG/JPEG ≤ 1 MB, shown ≤ 60 mm wide). Contact email/phone on the PDF: not in phase 2 | What appears on customer documents |
 | Q17 | API keys from the portal | Only `intake_service` keys can be created in the portal; `scripts/create_api_key.py` is removed (AGENTS.md: remove replaced code); key name 1-100 characters | Today the script can create keys for any role |
 | Q18 | Email normalisation | Trim, Unicode NFKC, lower-case the **whole** address, reject anything without exactly one `@`, ≤ 254 characters, ASCII local part; internationalised domains stored in punycode. No Gmail dot/plus folding | Two spellings of one address must not become two accounts |
-| Q19 | Sender address and link base | `QUOTATION_MAIL_FROM` and `QUOTATION_PUBLIC_PORTAL_URL` settings; dev: `no-reply@localhost.example` and `http://localhost:8000/portal/` | Real values need the domain (D24) |
+| Q19 | Sender address and link base | `SALES_MAIL_FROM` and `SALES_PUBLIC_PORTAL_URL` settings; dev: `no-reply@localhost.example` and `http://localhost:8000/portal/` | Real values need the domain (D24) |
 | Q20 | Retention setting (D17) | Add it with phase 4 (conversations and files), where it is enforced; not in phase 2 | A setting with no effect would mislead managers |
 | Q21 | Businesses per person | No total limit; creation throttled (Q4) | D3 says anyone, no restrictions |
 | Q22 | Leaving a business | A member may remove themselves (same last-administrator rule) | Otherwise people stay forever |
@@ -500,7 +500,7 @@ Both: set tenant; require `app.subject` to hold `administrator` in `p_tenant` (m
 |---|---|
 | `adapters/accounts/password.py` | `Argon2PasswordHasher(time_cost=3, memory_cost=65536, parallelism=4, max_concurrent=4)` (RFC 9106 low-memory profile, to confirm); a `threading.BoundedSemaphore` caps simultaneous hashes so a login flood cannot use more than ~256 MB; `needs_rehash` via `argon2.PasswordHasher.check_needs_rehash`; `dummy_hash` computed once at start; loads the common-password list (Q25) |
 | `adapters/accounts/mail/console.py` | `ConsoleMailer(directory)`: writes each email to `storage_dir/dev-mail/<utc time>-<idempotency key>.txt` and logs only "account email written" with the file name (no address, no token). Development/test only |
-| `adapters/accounts/mail/__init__.py` | `load_mailer(name, options) -> Mailer` from entry points group `quotation_app.mailers` (`console = ...:ConsoleMailer`). Phase 5 adds the SendGrid package with its own entry point, no code change here (generic integrations rule) |
+| `adapters/accounts/mail/__init__.py` | `load_mailer(name, options) -> Mailer` from entry points group `sales_platform.mailers` (`console = ...:ConsoleMailer`). Phase 5 adds the SendGrid package with its own entry point, no code change here (generic integrations rule) |
 | `adapters/accounts/rate_limit.py` | `InMemoryRateLimiter` (sliding window, keyed by SHA-256 of the key so no email sits in memory in clear, bounded size) |
 | `adapters/documents/logo.py` | `PillowLogoNormalizer`: accept PNG/JPEG only by magic bytes, ≤ 1 MB, `Image.MAX_IMAGE_PIXELS` lowered (e.g. 4 MP), verify, downscale to ≤ 600×240 px, re-encode PNG without metadata |
 | `adapters/documents/pdf.py` | Renderer `quotation-pdf-v2`: header shows logo (if any), legal name (fallback: business name), address lines, tax ID label + value. Still data-only (no URLs, no HTML). Escapes all text |
@@ -518,7 +518,7 @@ Dependencies: `argon2-cffi` (newest release at least 14 days old, e.g. 25.1.0; c
 | `ApiKeyAdminService` | `create(context, name, role) -> NewApiKey`, `list`, `revoke` | `integrations:manage` (02 and contract §6); role must be `intake_service` (Q17); token returned once; if phase 1 ties each key to an `api` connection, creation goes through phase 1's `ConnectionService` in the same transaction |
 | `AccountEmailHandler` | `__call__(job: ClaimedJob)` | Payload `{purpose, ref_id}` only. For token purposes: mint `secrets.token_urlsafe(32)`, compare-and-set `pending → sending` storing the SHA-256 and `expires_at`, then `Mailer.send`; `MailRejected` → `failed`; `MailUncertain` → `unknown` (never retried; the person can press "resend"); success → `sent`. Rows already consumed/revoked → job completes without sending. Links: `{public_portal_url}#/verify-email?token=…`, `#/reset-password?token=…`, `#/invitations/accept?token=…` (token in the URL fragment, so it never reaches server logs or `Referer`) |
 
-`ClientInfo(ip: str)` comes from the request; with `QUOTATION_TRUSTED_PROXY_COUNT > 0` the IP is read from `X-Forwarded-For` (rightmost trusted hop).
+`ClientInfo(ip: str)` comes from the request; with `SALES_TRUSTED_PROXY_COUNT > 0` the IP is read from `X-Forwarded-For` (rightmost trusted hop).
 
 ### W7. API
 `api/auth.py` keeps `PortalAuth`, `/auth/config`, `/auth/session`, `/auth/logout`, `/auth/dev-login`. New routers `api/accounts.py` and `api/business.py` (contract names). All bodies `extra="forbid"`; all responses that carry a token or session use `Cache-Control: no-store`.
@@ -558,7 +558,7 @@ Dependencies: `argon2-cffi` (newest release at least 14 days old, e.g. 25.1.0; c
 | `POST /api/v1/tenants/{t}/api-keys` | `integrations:manage` | `{name}` | 201 `{key_id, token}` (shown once, `no-store`) |
 | `DELETE /api/v1/tenants/{t}/api-keys/{key_id}` | `integrations:manage` | — | 204 |
 
-`api/app.py`: wire stores, hasher, mailer (API side only needs the job queue), rate limiter, `build_account_router`, `build_business_router`; dev login stays exactly as today behind `QUOTATION_DEV_LOGIN`.
+`api/app.py`: wire stores, hasher, mailer (API side only needs the job queue), rate limiter, `build_account_router`, `build_business_router`; dev login stays exactly as today behind `SALES_DEV_LOGIN`.
 
 ### W8. Worker
 `worker.py`: register `JobKind.SEND_ACCOUNT_EMAIL: AccountEmailHandler(SqlAccountEmailStore(engine), load_mailer(settings.mailer, settings.mailer_options), settings.public_portal_url)`. Every existing handler uses `job.require_tenant()`. Gate checks of §6 in delivery and (phase 1) outbound sending.
@@ -566,13 +566,13 @@ Dependencies: `argon2-cffi` (newest release at least 14 days old, e.g. 25.1.0; c
 ### W9. Configuration (`config.py`)
 | Setting | Default | Rule |
 |---|---|---|
-| `QUOTATION_DEV_LOGIN` (replaces `QUOTATION_AUTH_PROVIDER`) | on in development/test, off in production | `true` in production refused |
-| `QUOTATION_MAILER` | `console` | an entry point name; `console` refused in production |
-| `QUOTATION_MAILER_OPTIONS` | `{}` | non-secret options; secrets via `SecretStore` (D8) |
-| `QUOTATION_MAIL_FROM` | `no-reply@localhost.example` (dev) | required in production (Q19) |
-| `QUOTATION_PUBLIC_PORTAL_URL` | `http://localhost:8000/portal/` (dev) | `https` required in production |
-| `QUOTATION_TRUSTED_PROXY_COUNT` | 0 | ≥ 0 |
-| `QUOTATION_PASSWORD_HASH_CONCURRENCY` | 4 | 1-16 |
+| `SALES_DEV_LOGIN` (replaces `QUOTATION_AUTH_PROVIDER`) | on in development/test, off in production | `true` in production refused |
+| `SALES_MAILER` | `console` | an entry point name; `console` refused in production |
+| `SALES_MAILER_OPTIONS` | `{}` | non-secret options; secrets via `SecretStore` (D8) |
+| `SALES_MAIL_FROM` | `no-reply@localhost.example` (dev) | required in production (Q19) |
+| `SALES_PUBLIC_PORTAL_URL` | `http://localhost:8000/portal/` (dev) | `https` required in production |
+| `SALES_TRUSTED_PROXY_COUNT` | 0 | ≥ 0 |
+| `SALES_PASSWORD_HASH_CONCURRENCY` | 4 | 1-16 |
 
 Business rules (password length, lockout, token lifetimes, rate limits) are **domain constants** after confirmation, not settings, so they cannot drift per installation.
 
@@ -623,7 +623,7 @@ Delete `scripts/create_api_key.py` (if Q17 confirms). Update `setup.md` and `enq
 
 ## 8. Mailer and `send_account_email`
 - **Port** `Mailer.send(RenderedAccountEmail)`; the message is plain text: `to`, `from`, `subject`, `body`, `idempotency_key` (`<purpose>:<ref_id>:<token row version>`).
-- **Adapters:** `console` now (writes files under `storage_dir/dev-mail/`), real sender in phase 5 (SendGrid package with its own entry point; its API key through `SecretStore`). Choosing another sender = install its package and set `QUOTATION_MAILER`; no code changes.
+- **Adapters:** `console` now (writes files under `storage_dir/dev-mail/`), real sender in phase 5 (SendGrid package with its own entry point; its API key through `SecretStore`). Choosing another sender = install its package and set `SALES_MAILER`; no code changes.
 - **Job:** `send_account_email`, payload `{"purpose": "...", "ref_id": "<uuid>"}`; `tenant_id` NULL for verification, reset and notices; the business ID for invitations.
 - **Honest outcomes:** `pending → sending` is a compare-and-set before sending; a crash after that leaves `sending`, which the next attempt turns into `unknown`, never a second email (same rule as deliveries, `application/delivery.py:93-101`). "Resend" creates a fresh token and email.
 - **Production:** settings refuse `console` in production, so phase 2 alone cannot be deployed; this is a release gate until phase 5.
@@ -722,7 +722,7 @@ Fixture changes: add the new tables to the truncate list (`tests/integration/con
 | Least privilege | Runtime role: no INSERT on tenants or memberships; access changes only through four definer functions with fixed `search_path`, EXECUTE for `quotation_app` only, caller identity from `app.subject` checked against stored data; worker cannot read credentials |
 | RLS for global users | Narrow GUC-scoped policies (self, presented email, presented token, current tenant's members) |
 | Audit | `admin_events` append-only (grants + `reject_change()` trigger), written in the same transaction as each change, with actor and old/new values, never secrets |
-| Email content | Plain text, fixed templates, user-supplied names length-limited and stripped of line breaks (no header injection); links only to `QUOTATION_PUBLIC_PORTAL_URL` |
+| Email content | Plain text, fixed templates, user-supplied names length-limited and stripped of line breaks (no header injection); links only to `SALES_PUBLIC_PORTAL_URL` |
 | Uploads | Logo: magic-byte check, size and pixel limits, re-encoded PNG, stored under a server-generated key; served `nosniff`, `no-store` |
 | PDF | Profile text validated with the renderer's own character rule on save; renderer stays data-only |
 | Configuration | Dev login and console mailer refused in production; https portal URL in production |
@@ -789,5 +789,5 @@ These are deviations from or additions to [00-shared-contracts.md](00-shared-con
 | C5 | §2 third-party packages | Add Pillow (`PIL`) as a direct adapters dependency (already installed through ReportLab) | Logo validation and re-encoding |
 | C6 | §7 portal | `account` covers sign-up/login/password/profile/invitation acceptance; the existing `auth` feature stays for session state and the route guard (contract does not say whether `account` replaces `auth`) | Avoid moving session plumbing used by every feature |
 | C7 | §1 vocabulary | `User.subject` is `user:<uuid>` for sign-ups; legacy subjects (demo emails) are kept | Existing `subject` columns keep working |
-| C8 | Settings (not in contract) | `QUOTATION_AUTH_PROVIDER` replaced by `QUOTATION_DEV_LOGIN`; new `QUOTATION_MAILER` (entry point name, group `quotation_app.mailers`), `QUOTATION_MAIL_FROM`, `QUOTATION_PUBLIC_PORTAL_URL`, `QUOTATION_TRUSTED_PROXY_COUNT` | Password login is always on; mailer chosen generically |
+| C8 | Settings (not in contract) | `QUOTATION_AUTH_PROVIDER` replaced by `SALES_DEV_LOGIN`; new `SALES_MAILER` (entry point name, group `sales_platform.mailers`), `SALES_MAIL_FROM`, `SALES_PUBLIC_PORTAL_URL`, `SALES_TRUSTED_PROXY_COUNT` | Password login is always on; mailer chosen generically |
 | C9 | §1 / phase 1 `TemplateKey` | Add six `account_*` template keys | Account email wording uses the same template mechanism |

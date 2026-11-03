@@ -5,10 +5,10 @@ from uuid import uuid4
 
 import pytest
 
-from quotation_app.application.jobs import JobRunner
-from quotation_app.domain.jobs import JobKind, PermanentJobError
-from quotation_app.ports.erp import CatalogueSourceMissing, ErpError, ErpErrorCode
-from quotation_app.ports.jobs import ClaimedJob, LeaseLost
+from sales_platform.application.jobs import JobRunner
+from sales_platform.domain.jobs import JobKind, PermanentJobError
+from sales_platform.ports.erp import CatalogueSourceMissing, ErpError, ErpErrorCode
+from sales_platform.ports.jobs import ClaimedJob, LeaseLost
 
 
 class FakeQueue:
@@ -116,8 +116,8 @@ def test_temporary_erp_errors_are_retried() -> None:
 def test_a_suspended_business_s_jobs_wait() -> None:
     from uuid import uuid4
 
-    from quotation_app.application.jobs import BusinessSuspended, PauseWhileSuspended
-    from quotation_app.domain.tenancy import TenantStatus
+    from sales_platform.application.jobs import BusinessSuspended, PauseWhileSuspended
+    from sales_platform.domain.tenancy import TenantStatus
 
     ran: list[str] = []
     statuses = {"suspended": TenantStatus.SUSPENDED}

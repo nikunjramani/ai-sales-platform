@@ -5,12 +5,12 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.application.preparation import EnquiryPreparationHandler
-from quotation_app.domain.attachments import AttachmentStatus, StorageArea, attachment_key
-from quotation_app.domain.intake import EnquiryStatus
-from quotation_app.domain.jobs import JobKind, PermanentJobError
-from quotation_app.ports.intake import StoredAttachment
-from quotation_app.ports.jobs import ClaimedJob
+from sales_platform.application.preparation import EnquiryPreparationHandler
+from sales_platform.domain.attachments import AttachmentStatus, StorageArea, attachment_key
+from sales_platform.domain.intake import EnquiryStatus
+from sales_platform.domain.jobs import JobKind, PermanentJobError
+from sales_platform.ports.intake import StoredAttachment
+from sales_platform.ports.jobs import ClaimedJob
 
 PDF = b"%PDF-1.7\n%%EOF"
 

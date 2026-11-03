@@ -1,5 +1,5 @@
 # Approval by message (D10, phase 5)
-Decision: [ADR 0022](../adr/0022-one-click-providers-and-approval-by-message.md); D10 safety rules in [07 decisions](../plan/platform/07-decisions-needed.md). Code: [application/manager_replies.py](../../src/quotation_app/application/manager_replies.py), [domain/manager_replies.py](../../src/quotation_app/domain/manager_replies.py), [application/approval_links.py](../../src/quotation_app/application/approval_links.py).
+Decision: [ADR 0022](../adr/0022-one-click-providers-and-approval-by-message.md); D10 safety rules in [07 decisions](../plan/platform/07-decisions-needed.md). Code: [application/manager_replies.py](../../src/sales_platform/application/manager_replies.py), [domain/manager_replies.py](../../src/sales_platform/domain/manager_replies.py), [application/approval_links.py](../../src/sales_platform/application/approval_links.py).
 
 ## Three ways to decide in a tool
 All three use the same approval core as the portal. It checks the approver role, no self-approval, one decision per request and the current version.
@@ -26,7 +26,7 @@ After every decision the manager gets what was recorded, e.g. "Demo Industrial: 
 5. **The existing rules still apply**: approver role, no self-approval, one decision per request, no outdated version.
 
 ## What the AI sees
-Only the reply text (new words only, at most 1,000 characters), the quotation number and the version (P5-6). Never prices, customer data, tokens or IDs. The reply sits inside a `<manager_reply>` data tag, and the answer must be strict JSON. The model is the business-wide `QUOTATION_MODEL` (no new settings).
+Only the reply text (new words only, at most 1,000 characters), the quotation number and the version (P5-6). Never prices, customer data, tokens or IDs. The reply sits inside a `<manager_reply>` data tag, and the answer must be strict JSON. The model is the business-wide `SALES_MODEL` (no new settings).
 
 ## Audit
 Every written reply is recorded in `manager_reply_classifications` (append-only):

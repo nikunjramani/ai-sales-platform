@@ -4,9 +4,9 @@ from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
-from quotation_app.application.conversations import FollowUpHandler, IntentRouter, default_router
-from quotation_app.domain.conversations import FollowUp, OpenEnquiry
-from quotation_app.domain.intake import EnquiryStatus
+from sales_platform.application.conversations import FollowUpHandler, IntentRouter, default_router
+from sales_platform.domain.conversations import FollowUp, OpenEnquiry
+from sales_platform.domain.intake import EnquiryStatus
 
 NOW = datetime(2026, 10, 28, 12, 0, tzinfo=UTC)
 

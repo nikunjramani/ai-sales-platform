@@ -16,15 +16,15 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.adapters.catalogue.local import LocalCatalogue
-from quotation_app.adapters.erp.simulated import SimulatedErp, demo_catalogues
-from quotation_app.adapters.providers.simulated import SimulatedProvider
-from quotation_app.application.catalogue_sources import CatalogueSourceResolver, TenantCatalogue
-from quotation_app.application.providers import ProviderRegistry
-from quotation_app.domain.connections import Connection, ConnectionStatus, Purpose
-from quotation_app.domain.tenancy import Role, TenantContext
-from quotation_app.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
-from quotation_app.ports.erp import ErpError, ErpErrorCode, ErpReader
+from sales_platform.adapters.catalogue.local import LocalCatalogue
+from sales_platform.adapters.erp.simulated import SimulatedErp, demo_catalogues
+from sales_platform.adapters.providers.simulated import SimulatedProvider
+from sales_platform.application.catalogue_sources import CatalogueSourceResolver, TenantCatalogue
+from sales_platform.application.providers import ProviderRegistry
+from sales_platform.domain.connections import Connection, ConnectionStatus, Purpose
+from sales_platform.domain.tenancy import Role, TenantContext
+from sales_platform.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
+from sales_platform.ports.erp import ErpError, ErpErrorCode, ErpReader
 from tests.support.catalogue_store import InMemoryCatalogueStore
 
 SEARCH_CASES = json.loads(

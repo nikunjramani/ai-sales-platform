@@ -13,8 +13,8 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from quotation_app.adapters.erp.simulated import SimulatedCatalogue
-from quotation_app.domain.catalogue_admin import (
+from sales_platform.adapters.erp.simulated import SimulatedCatalogue
+from sales_platform.domain.catalogue_admin import (
     DEFAULT_LOCATION,
     LOCAL_PRICE_LIST,
     CatalogueProduct,
@@ -31,9 +31,9 @@ from quotation_app.domain.catalogue_admin import (
     field_changes,
     fields_as_dict,
 )
-from quotation_app.domain.catalogue_search import best_matches, product_terms
-from quotation_app.domain.tenancy import TenantContext
-from quotation_app.ports.catalogue_admin import (
+from sales_platform.domain.catalogue_search import best_matches, product_terms
+from sales_platform.domain.tenancy import TenantContext
+from sales_platform.ports.catalogue_admin import (
     AddedEntry,
     CatalogueCounts,
     CatalogueLimitReached,

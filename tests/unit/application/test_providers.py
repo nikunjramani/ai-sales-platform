@@ -5,11 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from quotation_app.adapters.providers.api import ApiProvider
-from quotation_app.adapters.providers.simulated import SimulatedProvider
-from quotation_app.application.providers import ProviderRegistry, UnknownProvider
-from quotation_app.domain.connections import Purpose
-from quotation_app.ports.providers import Provider, ProviderEnvironment
+from sales_platform.adapters.providers.api import ApiProvider
+from sales_platform.adapters.providers.simulated import SimulatedProvider
+from sales_platform.application.providers import ProviderRegistry, UnknownProvider
+from sales_platform.domain.connections import Purpose
+from sales_platform.ports.providers import Provider, ProviderEnvironment
 
 
 @dataclass

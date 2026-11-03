@@ -7,9 +7,9 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.adapters.erp.simulated import SimulatedErp
-from quotation_app.domain.tenancy import Role, TenantContext
-from quotation_app.ports.erp import ErpError, ErpErrorCode
+from sales_platform.adapters.erp.simulated import SimulatedErp
+from sales_platform.domain.tenancy import Role, TenantContext
+from sales_platform.ports.erp import ErpError, ErpErrorCode
 
 type ContextFactory = Callable[[UUID, Role], TenantContext]
 

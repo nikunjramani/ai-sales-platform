@@ -1,7 +1,7 @@
 import threading
 import time
 
-from quotation_app.adapters.accounts.password import Argon2PasswordHasher, load_common_passwords
+from sales_platform.adapters.accounts.password import Argon2PasswordHasher, load_common_passwords
 
 
 def light() -> Argon2PasswordHasher:

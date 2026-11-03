@@ -7,14 +7,14 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.application.media import MediaLinkHook, MediaNotFound, MediaService
-from quotation_app.application.providers import ProviderRegistry
-from quotation_app.domain.connections import Capabilities, Purpose
-from quotation_app.domain.documents import StoredDocument
-from quotation_app.domain.messages import MessageStatus, OutboundMessage, TemplateKey
-from quotation_app.ports.media import MediaLinkTarget
-from quotation_app.ports.messages import SendPreparation
-from quotation_app.ports.providers import Attachment, SendReceipt
+from sales_platform.application.media import MediaLinkHook, MediaNotFound, MediaService
+from sales_platform.application.providers import ProviderRegistry
+from sales_platform.domain.connections import Capabilities, Purpose
+from sales_platform.domain.documents import StoredDocument
+from sales_platform.domain.messages import MessageStatus, OutboundMessage, TemplateKey
+from sales_platform.ports.media import MediaLinkTarget
+from sales_platform.ports.messages import SendPreparation
+from sales_platform.ports.providers import Attachment, SendReceipt
 from tests.conftest import InMemoryStorage
 from tests.unit.one_click import OneClickTool
 

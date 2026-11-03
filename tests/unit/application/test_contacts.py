@@ -6,9 +6,9 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.application.contacts import ContactService
-from quotation_app.domain.tenancy import PermissionDenied, Role, TenantContext
-from quotation_app.ports.contacts import ContactSummary
+from sales_platform.application.contacts import ContactService
+from sales_platform.domain.tenancy import PermissionDenied, Role, TenantContext
+from sales_platform.ports.contacts import ContactSummary
 
 TENANT = uuid4()
 ASHA = ContactSummary(

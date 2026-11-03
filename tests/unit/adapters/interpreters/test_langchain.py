@@ -8,10 +8,10 @@ import pytest
 from langchain_core.language_models import FakeListChatModel
 from langchain_core.messages import BaseMessage
 
-from quotation_app.adapters.interpreters.langchain import LangChainInterpreter
-from quotation_app.domain.catalogue import Product
-from quotation_app.domain.requirements import RequestedItem
-from quotation_app.ports.interpretation import (
+from sales_platform.adapters.interpreters.langchain import LangChainInterpreter
+from sales_platform.domain.catalogue import Product
+from sales_platform.domain.requirements import RequestedItem
+from sales_platform.ports.interpretation import (
     CustomerText,
     DocumentText,
     EnquiryTranscript,

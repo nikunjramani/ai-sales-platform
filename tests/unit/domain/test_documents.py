@@ -6,9 +6,9 @@ from uuid import uuid4
 
 import pytest
 
-from quotation_app.adapters.storage.local import LocalObjectStorage
-from quotation_app.domain.connections import DeliveryMode
-from quotation_app.domain.documents import (
+from sales_platform.adapters.storage.local import LocalObjectStorage
+from sales_platform.domain.connections import DeliveryMode
+from sales_platform.domain.documents import (
     MAX_ERROR_CHARACTERS,
     DocumentKind,
     DocumentSource,

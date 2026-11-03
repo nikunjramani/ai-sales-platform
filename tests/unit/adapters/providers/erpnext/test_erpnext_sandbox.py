@@ -1,5 +1,5 @@
 """The ERPNext package against the real local sandbox (integration marker; skipped unless
-QUOTATION_TEST_ERPNEXT_URL, _KEY and _SECRET are set). Seed it first with
+SALES_TEST_ERPNEXT_URL, _KEY and _SECRET are set). Seed it first with
 scripts/seed_erpnext_sandbox.py; see .docs/operations/provider-setup.md#erpnext.
 """
 
@@ -8,20 +8,20 @@ from datetime import UTC, datetime
 
 import pytest
 
-from quotation_app.adapters.providers.erpnext.catalogue import build_feed
-from quotation_app.adapters.providers.erpnext.client import FrappeClient
-from quotation_app.adapters.providers.erpnext.config import ErpnextForm, ErpnextSettings
-from quotation_app.adapters.providers.erpnext.provider import ErpnextProvider
-from quotation_app.ports.providers import ProvisionStatus
+from sales_platform.adapters.providers.erpnext.catalogue import build_feed
+from sales_platform.adapters.providers.erpnext.client import FrappeClient
+from sales_platform.adapters.providers.erpnext.config import ErpnextForm, ErpnextSettings
+from sales_platform.adapters.providers.erpnext.provider import ErpnextProvider
+from sales_platform.ports.providers import ProvisionStatus
 
 pytestmark = pytest.mark.integration
 
 
 @pytest.fixture
 def form() -> dict[str, object]:
-    url = os.environ.get("QUOTATION_TEST_ERPNEXT_URL")
-    key = os.environ.get("QUOTATION_TEST_ERPNEXT_KEY")
-    secret = os.environ.get("QUOTATION_TEST_ERPNEXT_SECRET")
+    url = os.environ.get("SALES_TEST_ERPNEXT_URL")
+    key = os.environ.get("SALES_TEST_ERPNEXT_KEY")
+    secret = os.environ.get("SALES_TEST_ERPNEXT_SECRET")
     if not (url and key and secret):
         pytest.skip("No ERPNext sandbox configured")
     return {
@@ -29,7 +29,7 @@ def form() -> dict[str, object]:
         "api_key": key,
         "api_secret": secret,
         "price_list": "Standard Selling",
-        "warehouses": os.environ.get("QUOTATION_TEST_ERPNEXT_WAREHOUSE", "Stores - PS"),
+        "warehouses": os.environ.get("SALES_TEST_ERPNEXT_WAREHOUSE", "Stores - PS"),
     }
 
 

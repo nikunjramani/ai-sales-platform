@@ -4,7 +4,7 @@ from io import BytesIO
 import pytest
 from pypdf import PdfReader, PdfWriter
 
-from quotation_app.adapters.documents.text import MAX_DOCUMENT_CHARACTERS, PdfAndTextReader
+from sales_platform.adapters.documents.text import MAX_DOCUMENT_CHARACTERS, PdfAndTextReader
 
 reader = PdfAndTextReader()
 

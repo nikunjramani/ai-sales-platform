@@ -1,7 +1,7 @@
 # Implementation plan, phase 1: foundations (refactor, no new features)
 **Status:** implemented on branch `feat/phase-1-foundations` (2026-10-27), recorded in [ADR 0018](../../../adr/0018-connector-framework.md); deviations from this plan are listed in the [handoff](../../../handoff.md). The original planning text follows. planning document (2026-10-23), for the user's review. Nothing here is built. It follows the binding names in [00-shared-contracts.md](00-shared-contracts.md); where this plan needs something the contracts do not have, it is listed in [Proposed changes to shared contracts](#proposed-changes-to-shared-contracts) and must be accepted there first.
 
-Paths are relative to `src/quotation_app/` unless they start with `tests/`, `portal/`, `migrations/`, `scripts/`, `demo/` or `.docs/`. Line numbers are from commit `3b38741`.
+Paths are relative to `src/sales_platform/` unless they start with `tests/`, `portal/`, `migrations/`, `scripts/`, `demo/` or `.docs/`. Line numbers are from commit `3b38741`.
 
 ## 1. Goal
 Replace today's hardcoded "channel" plumbing with the generic connector framework, **without changing what users, API clients, the demo page or the scripts see**:
@@ -241,7 +241,7 @@ Recommendation: keep `POST /api/v1/channels/simulated/events` in phase 1, re-imp
 - It is development-only (refused in production, `config.py:45-51`) and already signed with a secret.
 
 How it works after phase 1:
-1. Verify the global `QUOTATION_SIMULATED_CHANNEL_SECRET` HMAC on the raw body (as today, `api/channels.py:76`).
+1. Verify the global `SALES_SIMULATED_CHANNEL_SECRET` HMAC on the raw body (as today, `api/channels.py:76`).
 2. Parse the old body shape. Use `tenant_id` + `connection_id` only to **find** the tenant's `simulated` connection by `account_ref` (`find_by_account`). No connection, or not active → 403 "Action not accepted".
 3. Give the parsed `ManagerAction` to `InboundService.process_now(connection, events)`: it records the event in `inbox_events` (dedupe) and routes it **in the request**, returning the `ChannelActionService` result. A duplicate is routed again (the services are idempotent), so a repeat still answers `replayed`.
 4. Same answers and status codes as today.
@@ -324,7 +324,7 @@ Indexes: `ix_connections_tenant_status (tenant_id, status)`; `uq_connections_one
 
 **Persistence:** `persistence/models.py` (new `ConnectionRow`, `ConnectionEvent`; columns above on `InboxEvent` `:125-148`, `ChannelEnrollment` `:419-434`, `ChannelBindingRow` `:437-462`); new `persistence/connections.py` with `SqlConnectionStore` and `SqlHookLookup` (sets `app.connection_id`, like `persistence/api_keys.py:19-24`).
 `persistence/api_keys.py:44-57 insert_api_key` also inserts the `api` connection and a `created` event in the same transaction; `revoke_api_key` sets the connection `disabled` with a `status_changed` event.
-`persistence/seed.py:49-84` ensures, for each demo tenant, one `simulated` connection with `account_ref = 'simulated-local'`, `purposes = {manager_approvals, catalogue}`, `config = {"catalogue": "industrial" | "office"}`, and (only when `QUOTATION_SIMULATED_CHANNEL_SECRET` is set) a webhook token and signing secret (WI-5). Upsert on `(tenant_id, provider_key, account_ref)` merging purposes.
+`persistence/seed.py:49-84` ensures, for each demo tenant, one `simulated` connection with `account_ref = 'simulated-local'`, `purposes = {manager_approvals, catalogue}`, `config = {"catalogue": "industrial" | "office"}`, and (only when `SALES_SIMULATED_CHANNEL_SECRET` is set) a webhook token and signing secret (WI-5). Upsert on `(tenant_id, provider_key, account_ref)` merging purposes.
 `persistence/channels.py:106-122` adds `JOIN connections ... status = 'active'`; `enroll` (`:201-276`) matches on `connection_ref` and honours `channel_enrollments.connection_ref`.
 `persistence/intake.py:45-46,65-69,83-101` use `connection_ref` + `event_type`; `:195,:331` stop parsing the enum.
 
@@ -335,15 +335,15 @@ Tests: `tests/integration/persistence/test_connections.py` (RLS isolation betwee
 ### WI-3. SecretStore adapters and selection — S
 - `adapters/secrets/local.py` `LocalSecretStore(root: Path, key: bytes)`: one file per secret at `<storage_dir>/secrets/<tenant_id>/<uuid>.bin`, AES-256-GCM (`cryptography` AEAD) with associated data `tenant_id + reference`, so a file copied to another tenant or renamed does not decrypt. Reference format `local:<uuid>`. Writes are atomic (temp file + replace, as `adapters/channels/simulated.py:84-91`).
 - `adapters/secrets/none.py` `NoSecretStore`: every call raises `SecretStoreUnavailable("No secret store is configured (see D24)")`.
-- Selection by entry point group `quotation_app.secret_stores` (`local`, `none`); a cloud adapter later is one package + one entry point (no code change). Resolved in the composition root (WI-11).
+- Selection by entry point group `sales_platform.secret_stores` (`local`, `none`); a cloud adapter later is one package + one entry point (no code change). Resolved in the composition root (WI-11).
 - `pyproject.toml`: add `cryptography>=50,<51` to `dependencies` (already locked at 50.0.2 as a transitive dependency); architecture test allow-list for `adapters` gains `cryptography`.
 - Settings (`config.py`):
 | Setting | Type / default | Rule |
 |---|---|---|
-| `QUOTATION_SECRET_STORE` | str, default `local` in development/test, `none` in production | Production refuses `local` |
-| `QUOTATION_SECRET_STORE_KEY` | SecretStr, optional | Required when the store is `local`: 32 bytes, url-safe base64. `scripts/init_local_env.py --add-missing` generates it |
-| `QUOTATION_SECRET_STORE_OPTIONS` | JSON dict, default `{}` | Passed to the adapter as is (for cloud adapters later) |
-| `QUOTATION_PUBLIC_BASE_URL` | URL, optional | Only used to show hook URLs in logs/portal; D24 tunnel in development |
+| `SALES_SECRET_STORE` | str, default `local` in development/test, `none` in production | Production refuses `local` |
+| `SALES_SECRET_STORE_KEY` | SecretStr, optional | Required when the store is `local`: 32 bytes, url-safe base64. `scripts/init_local_env.py --add-missing` generates it |
+| `SALES_SECRET_STORE_OPTIONS` | JSON dict, default `{}` | Passed to the adapter as is (for cloud adapters later) |
+| `SALES_PUBLIC_BASE_URL` | URL, optional | Only used to show hook URLs in logs/portal; D24 tunnel in development |
 - Never log secret values or references with values; `repr` hides them.
 Tests: `tests/unit/adapters/secrets/test_local.py` (round trip; wrong tenant → `SecretNotFound`; tampered file; wrong key; delete idempotent), `tests/unit/test_config.py` (production refuses `local`; key required for `local`).
 
@@ -359,7 +359,7 @@ class ProviderRegistry:
     def all(self) -> list[Provider]: ...
     def for_purpose(self, purpose: Purpose) -> list[Provider]: ...
 ```
-  Reads `importlib.metadata.entry_points(group="quotation_app.providers")`. Refuses duplicate keys, a key different from the entry point name, and `dev_only` providers when `environment == "production"` (logs and skips). A missing entry point gives "run `uv sync` to register providers".
+  Reads `importlib.metadata.entry_points(group="sales_platform.providers")`. Refuses duplicate keys, a key different from the entry point name, and `dev_only` providers when `environment == "production"` (logs and skips). A missing entry point gives "run `uv sync` to register providers".
 - `application/inbound.py`:
 ```python
 @dataclass(frozen=True) class InboundReceipt: received: int; duplicates: int
@@ -406,15 +406,15 @@ Tests: `tests/unit/application/test_providers.py` (fake entry points: load, dupl
   - Delete `adapters/channels/simulated.py`; update imports in `scripts/simulated_channel.py:22-26`, `demo/server.py:24`, `tests/integration/workflows/test_quotation.py:31` (imports only).
 - `pyproject.toml`:
 ```toml
-[project.entry-points."quotation_app.providers"]
-api = "quotation_app.adapters.providers.api:build"
-simulated = "quotation_app.adapters.providers.simulated:build"
+[project.entry-points."sales_platform.providers"]
+api = "sales_platform.adapters.providers.api:build"
+simulated = "sales_platform.adapters.providers.simulated:build"
 
-[project.entry-points."quotation_app.secret_stores"]
-local = "quotation_app.adapters.secrets.local:build"
-none = "quotation_app.adapters.secrets.none:build"
+[project.entry-points."sales_platform.secret_stores"]
+local = "sales_platform.adapters.secrets.local:build"
+none = "sales_platform.adapters.secrets.none:build"
 ```
-- Seed (WI-2): when `QUOTATION_SIMULATED_CHANNEL_SECRET` is set, the demo `simulated` connection gets `signing_secret` = that value (stored through the `SecretStore`) and webhook token `hmac_sha256(secret, "hook:" + connection_id)` (only its hash stored), so development tools can compute the hook URL from `.env`. `scripts/simulated_channel.py` gains `--via hooks` (default stays the old route).
+- Seed (WI-2): when `SALES_SIMULATED_CHANNEL_SECRET` is set, the demo `simulated` connection gets `signing_secret` = that value (stored through the `SecretStore`) and webhook token `hmac_sha256(secret, "hook:" + connection_id)` (only its hash stored), so development tools can compute the hook URL from `.env`. `scripts/simulated_channel.py` gains `--via hooks` (default stays the old route).
 - `api/channels.py` becomes the deprecated alias (§5.2). Old body and responses unchanged; docstring marks it deprecated with the removal phase.
 Tests: contract tests (WI-14) for both; `tests/unit/adapters/providers/simulated/test_outbox.py` (WI-0 golden files), `test_signing.py`.
 
@@ -535,7 +535,7 @@ class TenantCatalogue:  # implements ErpReader; each call goes to reader_for(con
 Tests: `tests/unit/application/test_catalogue_sources.py` (none → missing; two tenants isolated; cache TTL; disabled connection ignored); ERP contract suite (`tests/unit/ports/test_erp_contract.py`) also runs over `TenantCatalogue` + simulated provider; `tests/unit/application/test_jobs.py` (non-retryable ERP error → dead at attempt 1, retryable → retry); PostgreSQL: a third tenant without a source gets the clear outcome on the first attempt.
 
 ### WI-11. Composition root shared by API, worker and tests — S
-`quotation_app/composition.py` (top level, like `worker.py`):
+`sales_platform/composition.py` (top level, like `worker.py`):
 ```python
 @dataclass(frozen=True) class Runtime: registry; secrets; connections; catalogue: ErpReader; outbound: OutboundService
 def build_runtime(settings: Settings, engine: Engine, *, catalogue: ErpReader | None = None) -> Runtime: ...
@@ -600,7 +600,7 @@ Order of deployment: stop the worker → `alembic upgrade head` → run the seed
 | `.docs/development/adding-channels.md` | Rewrite as `adding-providers.md` (old file becomes a one-line pointer): one package, entry point, capabilities, contract tests, secrets, no core change |
 | `.docs/architecture/integrations.md` | Mark the provider contract, hook route, outbox and event types implemented; event dedupe key |
 | `.docs/architecture/data-model.md`, `module-boundaries.md`, `execution-flow.md`, `approvals.md`, `flowcharts.md` | Connections, outbox, `process_inbound`/`send_message` flows |
-| `.docs/development/configuration.md` | New settings (§WI-3); `QUOTATION_SIMULATED_CHANNEL_SECRET` marked deprecated; new routes |
+| `.docs/development/configuration.md` | New settings (§WI-3); `SALES_SIMULATED_CHANNEL_SECRET` marked deprecated; new routes |
 | `.docs/development/code-map.md`, `testing.md`, `setup.md` (`uv sync` after pulling, secret key), `portal-architecture.md` | New modules, tests, portal feature |
 | `.docs/features/` | New `connections.md`; update `enquiry-intake.md`, `quotation-approval.md`, `quotation-delivery.md`, `customer-acceptance.md` |
 | `.docs/operations/security.md` | Webhook tokens (hash only), verify-before-parse, secret store, the alias weakness, P1-Q9 finding |
@@ -659,7 +659,7 @@ These must be applied to [00-shared-contracts.md](00-shared-contracts.md) (with 
 | C7 | 0008 backfill: "one `simulated` connection per tenant with bindings" | One per distinct `(tenant, connection_id)` used by bindings (normally one) | The old route let callers choose any `connection_id` string |
 | C8 | `ports/messages.py` has `MessageOutbox`, `MessageSender` | Add `SendHook` (before/after send, per `TemplateKey`); `MessageSender` is the `send_message` handler | Action tokens must never be stored in the outbox |
 | C9 | Event type named `DeliveryStatus` | Name it `DeliveryStatusUpdate`; inbound event types live in `domain/intake.py` | `domain/documents.py:36` already has `DeliveryStatus` |
-| C10 | `adapters/secrets/cloud.py` "chosen by setting" | Secret stores by entry point group `quotation_app.secret_stores` (`local`, `none` in phase 1); `cloud.py` written only after D24 | Same generic loading as providers; D24 is open |
+| C10 | `adapters/secrets/cloud.py` "chosen by setting" | Secret stores by entry point group `sales_platform.secret_stores` (`local`, `none` in phase 1); `cloud.py` written only after D24 | Same generic loading as providers; D24 is open |
 | C11 | Column name `connection` for the outbox | `connection_ref`, a composite FK `(tenant_id, connection_ref)` like every other table | Consistency with `inbox_events`/`channel_bindings` |
 | C12 | 08-phases: "All existing tests unchanged" | "All behaviour tests (API, PostgreSQL, evaluation, demo) unchanged; unit tests of replaced classes migrated case by case" (P1-Q1) | The contract itself replaces `DeliveryChannel`/`ApprovalNotifier` |
 | C13 | Phase 5 note | The `Provider` protocol will likely need a webhook handshake operation (e.g. GET challenge) | Some platforms verify a webhook with a GET request before sending events |

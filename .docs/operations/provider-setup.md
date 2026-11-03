@@ -9,14 +9,14 @@ Decision: [ADR 0022](../adr/0022-one-click-providers-and-approval-by-message.md)
 ## The operator command
 ```powershell
 # Store (or replace) a provider's settings from a JSON file (or from stdin)
-uv run python -m quotation_app.ops platform-config set <provider_key> --file settings.json
+uv run python -m sales_platform.ops platform-config set <provider_key> --file settings.json
 # Show them, secrets masked
-uv run python -m quotation_app.ops platform-config show <provider_key>
+uv run python -m sales_platform.ops platform-config show <provider_key>
 # One-time company setup with the tool (e.g. register our webhook URL)
-uv run python -m quotation_app.ops platform-setup <provider_key>
+uv run python -m sales_platform.ops platform-setup <provider_key>
 ```
-- `platform-setup` needs `QUOTATION_PUBLIC_BASE_URL`: our public HTTPS address, which can be a tunnel in development (D24).
-- The command uses the configured secret store (`QUOTATION_SECRET_STORE`; locally the encrypted files under `QUOTATION_STORAGE_DIR/secrets/platform/`).
+- `platform-setup` needs `SALES_PUBLIC_BASE_URL`: our public HTTPS address, which can be a tunnel in development (D24).
+- The command uses the configured secret store (`SALES_SECRET_STORE`; locally the encrypted files under `SALES_STORAGE_DIR/secrets/platform/`).
 - Delete `settings.json` after storing it.
 
 ## Telegram
@@ -28,7 +28,7 @@ uv run python -m quotation_app.ops platform-setup <provider_key>
    {"bot_token": "123456:ABC...", "bot_username": "your_quote_bot", "webhook_secret_token": "a-long-random-secret"}
    ```
    Then run `platform-config set telegram --file settings.json`.
-5. **Register the webhook:** `platform-setup telegram`. It calls `setWebhook` with `<QUOTATION_PUBLIC_BASE_URL>/api/v1/hooks/p/telegram`, the secret and the updates we read (`message`, `callback_query`, `business_connection`, `business_message`, `edited_business_message`, `deleted_business_messages`).
+5. **Register the webhook:** `platform-setup telegram`. It calls `setWebhook` with `<SALES_PUBLIC_BASE_URL>/api/v1/hooks/p/telegram`, the secret and the updates we read (`message`, `callback_query`, `business_connection`, `business_message`, `edited_business_message`, `deleted_business_messages`).
 6. **Check:** Connections → Telegram → Enable in a test business, then follow the steps (see [Telegram](../features/telegram.md)).
 
 **Rotating the token or secret:** store new settings, then run `platform-setup` again.
@@ -53,7 +53,7 @@ In the portal, enable ERPNext with:
 
 If the sandbox answers "Encryption key is invalid" or 502 right after the first start, restart it (`... restart backend queue-short queue-long scheduler frontend websocket`) and run the seed again: it is safe to repeat.
 
-To run the sandbox tests, set `QUOTATION_TEST_ERPNEXT_URL`, `QUOTATION_TEST_ERPNEXT_KEY` and `QUOTATION_TEST_ERPNEXT_SECRET`, then `uv run pytest --run-integration tests/unit/ports/test_erp_writer_contract.py tests/unit/adapters/providers/erpnext/test_erpnext_sandbox.py`. They create sales orders, so never point them at a real ERPNext.
+To run the sandbox tests, set `SALES_TEST_ERPNEXT_URL`, `SALES_TEST_ERPNEXT_KEY` and `SALES_TEST_ERPNEXT_SECRET`, then `uv run pytest --run-integration tests/unit/ports/test_erp_writer_contract.py tests/unit/adapters/providers/erpnext/test_erpnext_sandbox.py`. They create sales orders, so never point them at a real ERPNext.
 
 **A business's real ERPNext:**
 - Use a dedicated API user with read access to Item, Item Price, Price List, Bin, Warehouse, UOM and Item Group, plus Customer and Sales Order (create) when orders are written.

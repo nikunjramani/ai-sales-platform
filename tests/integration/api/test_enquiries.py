@@ -11,24 +11,24 @@ from fastapi.testclient import TestClient
 from sqlalchemy import Engine, text
 from sqlalchemy.exc import ProgrammingError
 
-from quotation_app.adapters.providers.api import ApiProvider
-from quotation_app.adapters.storage.local import LocalObjectStorage
-from quotation_app.api.app import create_app
-from quotation_app.application.api_keys import ApiKeyAuthenticator, parse_token
-from quotation_app.application.intake import EnquiryIntakeService
-from quotation_app.application.jobs import JobRunner
-from quotation_app.application.preparation import EnquiryPreparationHandler
-from quotation_app.application.providers import ProviderRegistry
-from quotation_app.config import Settings
-from quotation_app.domain.intake import AttachmentUpload, EnquirySubmission
-from quotation_app.domain.jobs import JobKind
-from quotation_app.domain.tenancy import Role
-from quotation_app.persistence import intake as intake_persistence
-from quotation_app.persistence.api_keys import SqlApiKeyReader, revoke_api_key
-from quotation_app.persistence.connections import SqlConnectionStore
-from quotation_app.persistence.intake import SqlIntakeStore, SqlPreparationStore
-from quotation_app.persistence.jobs import SqlJobQueue
-from quotation_app.persistence.tenancy import tenant_transaction
+from sales_platform.adapters.providers.api import ApiProvider
+from sales_platform.adapters.storage.local import LocalObjectStorage
+from sales_platform.api.app import create_app
+from sales_platform.application.api_keys import ApiKeyAuthenticator, parse_token
+from sales_platform.application.intake import EnquiryIntakeService
+from sales_platform.application.jobs import JobRunner
+from sales_platform.application.preparation import EnquiryPreparationHandler
+from sales_platform.application.providers import ProviderRegistry
+from sales_platform.config import Settings
+from sales_platform.domain.intake import AttachmentUpload, EnquirySubmission
+from sales_platform.domain.jobs import JobKind
+from sales_platform.domain.tenancy import Role
+from sales_platform.persistence import intake as intake_persistence
+from sales_platform.persistence.api_keys import SqlApiKeyReader, revoke_api_key
+from sales_platform.persistence.connections import SqlConnectionStore
+from sales_platform.persistence.intake import SqlIntakeStore, SqlPreparationStore
+from sales_platform.persistence.jobs import SqlJobQueue
+from sales_platform.persistence.tenancy import tenant_transaction
 
 type ApiKeyFactory = Callable[[UUID, Role], str]
 

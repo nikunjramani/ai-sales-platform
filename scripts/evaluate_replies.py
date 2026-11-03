@@ -7,7 +7,7 @@ worker uses (domain/manager_replies.py guard). Two numbers are reported:
   itself must not suggest it);
 - exact: the share of all other cases read as expected (target 90 %).
 
-Example (any "<provider>:<model>"; the key is QUOTATION_MODEL_API_KEY from .env):
+Example (any "<provider>:<model>"; the key is SALES_MODEL_API_KEY from .env):
   uv run python scripts/evaluate_replies.py --model google_genai:gemini-3.5-flash-lite
 Live model runs are opt-in and use only synthetic data. Without a model, written replies are
 not read at all (user answer P5-5), so there is nothing to evaluate. Exit code 1 if the hard
@@ -19,15 +19,15 @@ import json
 import sys
 from pathlib import Path
 
-from quotation_app.adapters.interpreters.factory import build_reply_classifier
-from quotation_app.config import Settings
-from quotation_app.domain.manager_replies import (
+from sales_platform.adapters.interpreters.factory import build_reply_classifier
+from sales_platform.config import Settings
+from sales_platform.domain.manager_replies import (
     ReplyClassification,
     ReplyIntent,
     clean_reply,
     guard,
 )
-from quotation_app.ports.interpretation import InterpretationRejected
+from sales_platform.ports.interpretation import InterpretationRejected
 
 CASES = Path(__file__).parents[1] / "evals" / "manager_replies.jsonl"
 NUMBER = "Q-1A2B3C4D"

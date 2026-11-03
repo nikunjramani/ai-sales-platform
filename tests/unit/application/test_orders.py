@@ -13,9 +13,9 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.adapters.erp.simulated_orders import SimulatedOrderWriter
-from quotation_app.application.jobs import JobRunner
-from quotation_app.application.orders import (
+from sales_platform.adapters.erp.simulated_orders import SimulatedOrderWriter
+from sales_platform.application.jobs import JobRunner
+from sales_platform.application.orders import (
     CreateOrderHandler,
     Destination,
     ErpOrderOperationHandler,
@@ -25,18 +25,18 @@ from quotation_app.application.orders import (
     ReconcileOrderOperationHandler,
     RefreshOrderStatusHandler,
 )
-from quotation_app.domain.catalogue import StockLevel
-from quotation_app.domain.connections import (
+from sales_platform.domain.catalogue import StockLevel
+from sales_platform.domain.connections import (
     Capabilities,
     Connection,
     ConnectionStatus,
     OrderCapabilities,
     Purpose,
 )
-from quotation_app.domain.intake import OrderStatusRequest
-from quotation_app.domain.jobs import JobKind
-from quotation_app.domain.messages import TemplateKey
-from quotation_app.domain.orders import (
+from sales_platform.domain.intake import OrderStatusRequest
+from sales_platform.domain.jobs import JobKind
+from sales_platform.domain.messages import TemplateKey
+from sales_platform.domain.orders import (
     RECONCILE_WINDOW,
     EventSource,
     Fulfilment,
@@ -51,10 +51,10 @@ from quotation_app.domain.orders import (
     Resolution,
     order_number,
 )
-from quotation_app.domain.tenancy import Role, TenantContext
-from quotation_app.ports.erp import ErpError, ErpErrorCode, ErpOrderState
-from quotation_app.ports.jobs import ClaimedJob
-from quotation_app.ports.orders import (
+from sales_platform.domain.tenancy import Role, TenantContext
+from sales_platform.ports.erp import ErpError, ErpErrorCode, ErpOrderState
+from sales_platform.ports.jobs import ClaimedJob
+from sales_platform.ports.orders import (
     AcceptedQuotation,
     NewOrder,
     OperationOutcome,
@@ -457,7 +457,7 @@ def test_only_accepted_quotations_and_order_managers_may_create(local: World) ->
     )
     with pytest.raises(OrderNotAllowed):
         local.service.create(local.staff(), quotation_id)
-    from quotation_app.domain.tenancy import PermissionDenied
+    from sales_platform.domain.tenancy import PermissionDenied
 
     with pytest.raises(PermissionDenied):
         local.service.create(local.staff(Role.VIEWER), local.accepted())
@@ -475,7 +475,7 @@ def test_unknown_stock_is_not_a_shortfall_and_a_down_source_means_try_again(loca
     local.stock.levels["PUMP-100"] = None
     assert local.service.create(local.staff(), local.accepted()).status is OrderStatus.PLACED
     local.stock.down = True
-    from quotation_app.application.orders import OrderUnavailable
+    from sales_platform.application.orders import OrderUnavailable
 
     with pytest.raises(OrderUnavailable):
         local.service.create(local.staff(), local.accepted())

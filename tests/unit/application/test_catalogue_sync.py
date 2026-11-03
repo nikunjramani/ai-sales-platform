@@ -5,13 +5,13 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.application.catalogue_sync import (
+from sales_platform.application.catalogue_sync import (
     CatalogueSyncHandler,
     CatalogueSyncService,
     SyncNotAvailable,
 )
-from quotation_app.application.providers import ProviderRegistry
-from quotation_app.domain.catalogue_sync import (
+from sales_platform.application.providers import ProviderRegistry
+from sales_platform.domain.catalogue_sync import (
     SYNC_MINUTES_KEY,
     CatalogueFeed,
     FeedIssue,
@@ -20,18 +20,18 @@ from quotation_app.domain.catalogue_sync import (
     SyncRun,
     SyncTrigger,
 )
-from quotation_app.domain.connections import (
+from sales_platform.domain.connections import (
     Capabilities,
     CatalogueCapabilities,
     Connection,
     ConnectionStatus,
     Purpose,
 )
-from quotation_app.domain.jobs import JobKind, PermanentJobError
-from quotation_app.domain.tenancy import PermissionDenied, Role, TenantContext
-from quotation_app.ports.erp import ErpError, ErpErrorCode
-from quotation_app.ports.jobs import ClaimedJob
-from quotation_app.ports.providers import (
+from sales_platform.domain.jobs import JobKind, PermanentJobError
+from sales_platform.domain.tenancy import PermissionDenied, Role, TenantContext
+from sales_platform.ports.erp import ErpError, ErpErrorCode
+from sales_platform.ports.jobs import ClaimedJob
+from sales_platform.ports.providers import (
     OperationUnsupported,
     ProviderDefaults,
     RenderedMessage,

@@ -7,20 +7,20 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.adapters.erp.simulated import demo_catalogue
-from quotation_app.adapters.providers.local_catalogue import LocalCatalogueProvider
-from quotation_app.adapters.providers.simulated import SimulatedProvider
-from quotation_app.application.catalogue_admin import (
+from sales_platform.adapters.erp.simulated import demo_catalogue
+from sales_platform.adapters.providers.local_catalogue import LocalCatalogueProvider
+from sales_platform.adapters.providers.simulated import SimulatedProvider
+from sales_platform.application.catalogue_admin import (
     CurrencyNotSet,
     ProductService,
     SourceNotEditable,
 )
-from quotation_app.application.providers import ProviderRegistry
-from quotation_app.domain.catalogue_admin import InvalidCatalogueEntry, PriceState, ProductFields
-from quotation_app.domain.connections import Connection, ConnectionStatus, Purpose
-from quotation_app.domain.tenancy import PermissionDenied, Role, TenantContext, TenantStatus
-from quotation_app.ports.accounts import NotAllowed, PricingSettings, StoredPricing
-from quotation_app.ports.catalogue_admin import (
+from sales_platform.application.providers import ProviderRegistry
+from sales_platform.domain.catalogue_admin import InvalidCatalogueEntry, PriceState, ProductFields
+from sales_platform.domain.connections import Connection, ConnectionStatus, Purpose
+from sales_platform.domain.tenancy import PermissionDenied, Role, TenantContext, TenantStatus
+from sales_platform.ports.accounts import NotAllowed, PricingSettings, StoredPricing
+from sales_platform.ports.catalogue_admin import (
     ProductArchived,
     ProductQuery,
     ProductReferenced,

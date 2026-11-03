@@ -2,10 +2,10 @@ from decimal import Decimal
 
 import pytest
 
-from quotation_app.adapters.interpreters.rules import RulesInterpreter
-from quotation_app.domain.catalogue import Product
-from quotation_app.domain.requirements import RequestedItem, unverified_items
-from quotation_app.ports.interpretation import (
+from sales_platform.adapters.interpreters.rules import RulesInterpreter
+from sales_platform.domain.catalogue import Product
+from sales_platform.domain.requirements import RequestedItem, unverified_items
+from sales_platform.ports.interpretation import (
     CustomerText,
     DocumentText,
     EnquiryTranscript,

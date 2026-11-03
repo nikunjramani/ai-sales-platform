@@ -8,18 +8,18 @@ import pytest
 from sqlalchemy import Engine, text
 from sqlalchemy.exc import ProgrammingError
 
-from quotation_app.adapters.erp.simulated import SimulatedErp, demo_catalogues
-from quotation_app.application.pricing import QuotationPricingService
-from quotation_app.application.tenancy import TenantContextResolver
-from quotation_app.domain.money import Money
-from quotation_app.domain.pricing import PricedQuotation, RequestedLine
-from quotation_app.domain.tenancy import AccessDenied, Role, TenantContext
-from quotation_app.persistence.tenancy import (
+from sales_platform.adapters.erp.simulated import SimulatedErp, demo_catalogues
+from sales_platform.application.pricing import QuotationPricingService
+from sales_platform.application.tenancy import TenantContextResolver
+from sales_platform.domain.money import Money
+from sales_platform.domain.pricing import PricedQuotation, RequestedLine
+from sales_platform.domain.tenancy import AccessDenied, Role, TenantContext
+from sales_platform.persistence.tenancy import (
     SqlMembershipReader,
     SqlPricingPolicyReader,
     tenant_transaction,
 )
-from quotation_app.ports.tenancy import PricingPolicyNotConfigured
+from sales_platform.ports.tenancy import PricingPolicyNotConfigured
 
 type ContextFactory = Callable[[UUID, Role], TenantContext]
 

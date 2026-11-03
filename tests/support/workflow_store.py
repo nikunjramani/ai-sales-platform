@@ -3,8 +3,8 @@
 from collections.abc import Mapping
 from uuid import UUID, uuid4
 
-from quotation_app.domain.requirements import ExtractionOutcome
-from quotation_app.ports.workflow import EnquiryContent
+from sales_platform.domain.requirements import ExtractionOutcome
+from sales_platform.ports.workflow import EnquiryContent
 
 
 class InMemoryWorkflowStore:

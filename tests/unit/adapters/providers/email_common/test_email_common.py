@@ -1,6 +1,6 @@
 """Email helpers for future email packages: threading, new text, automatic mail, trust."""
 
-from quotation_app.adapters.providers.email_common import (
+from sales_platform.adapters.providers.email_common import (
     auth_results,
     automatic,
     new_text,

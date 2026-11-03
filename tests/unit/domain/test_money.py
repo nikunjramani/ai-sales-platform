@@ -2,7 +2,7 @@ from decimal import Decimal, Inexact
 
 import pytest
 
-from quotation_app.domain.money import Money, RoundingMode, exact_multiply, round_to_minor_units
+from sales_platform.domain.money import Money, RoundingMode, exact_multiply, round_to_minor_units
 
 
 def test_money_rejects_float_and_invalid_currency() -> None:

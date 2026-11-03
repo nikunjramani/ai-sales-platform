@@ -8,10 +8,10 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.adapters.erp.simulated import SimulatedPrice
-from quotation_app.application.acceptance import NotDueYet, NotIssued
-from quotation_app.application.channel_actions import ChannelEvent, ChannelEventKind
-from quotation_app.domain.acceptance import (
+from sales_platform.adapters.erp.simulated import SimulatedPrice
+from sales_platform.application.acceptance import NotDueYet, NotIssued
+from sales_platform.application.channel_actions import ChannelEvent, ChannelEventKind
+from sales_platform.domain.acceptance import (
     CustomerStatus,
     NotCurrentOffer,
     Offer,
@@ -23,12 +23,12 @@ from quotation_app.domain.acceptance import (
     ResponseOutcome,
     ResponseRequest,
 )
-from quotation_app.domain.documents import DocumentNotAvailable
-from quotation_app.domain.jobs import JobKind
-from quotation_app.domain.messages import TemplateKey, render_template
-from quotation_app.domain.quotations import ApprovalAction, QuotationStatus
-from quotation_app.domain.tenancy import PermissionDenied, Role, TenantContext
-from quotation_app.ports.erp import ErpError, ErpErrorCode
+from sales_platform.domain.documents import DocumentNotAvailable
+from sales_platform.domain.jobs import JobKind
+from sales_platform.domain.messages import TemplateKey, render_template
+from sales_platform.domain.quotations import ApprovalAction, QuotationStatus
+from sales_platform.domain.tenancy import PermissionDenied, Role, TenantContext
+from sales_platform.ports.erp import ErpError, ErpErrorCode
 
 FAN = ("IND-FAN-450", "2", "each")
 MANAGER = "manager@industrial.example"

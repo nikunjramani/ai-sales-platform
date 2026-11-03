@@ -57,7 +57,7 @@ UPDATE tenants SET status = 'suspended' WHERE id = '<tenant id>';  -- or 'active
 ```
 
 ## Emails
-Account emails are jobs (`send_account_email`) sent by the worker through the mailer chosen in `QUOTATION_MAILER`. In development the `console` mailer writes each email to `var/storage/dev-mail/<time>-<key>.txt`; open the file and follow the link. Production refuses the console mailer, so phase 2 alone cannot be deployed (a real sender comes in phase 5).
+Account emails are jobs (`send_account_email`) sent by the worker through the mailer chosen in `SALES_MAILER`. In development the `console` mailer writes each email to `var/storage/dev-mail/<time>-<key>.txt`; open the file and follow the link. Production refuses the console mailer, so phase 2 alone cannot be deployed (a real sender comes in phase 5).
 
 | Email | When |
 |---|---|

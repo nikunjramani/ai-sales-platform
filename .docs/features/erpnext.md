@@ -53,7 +53,7 @@
 - Live checks that fail make the drafting job retry (never a guessed price).
 - Disable switches the previous product source back on.
 
-**Configuration and secrets (names only):** connection secrets `api_key` and `api_secret`. Config `erpnext.*` and the generic `sync_minutes`. Test-only environment variables: `QUOTATION_TEST_ERPNEXT_URL`, `_KEY`, `_SECRET`, `_WAREHOUSE`, `_CUSTOMER`, `_SKU`.
+**Configuration and secrets (names only):** connection secrets `api_key` and `api_secret`. Config `erpnext.*` and the generic `sync_minutes`. Test-only environment variables: `SALES_TEST_ERPNEXT_URL`, `_KEY`, `_SECRET`, `_WAREHOUSE`, `_CUSTOMER`, `_SKU`.
 
 **Tests and reproducible example:**
 - Unit: `tests/unit/adapters/providers/erpnext/test_erpnext.py` (fake Frappe API), `tests/unit/domain/test_catalogue_sync.py`, `tests/unit/application/test_catalogue_sync.py`.

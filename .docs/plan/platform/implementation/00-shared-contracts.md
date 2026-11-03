@@ -26,7 +26,7 @@
 
 "Channel" is not used for new code. Existing columns named `channel` keep their name, but they now hold a `ProviderKey` (e.g. `api`, `simulated`, `telegram`).
 
-## 2. Module layout (backend, `src/quotation_app/`)
+## 2. Module layout (backend, `src/sales_platform/`)
 This follows the existing layers enforced by `tests/unit/test_architecture.py`: domain, ports and application use the standard library only.
 
 **`domain/`**
@@ -58,8 +58,8 @@ This follows the existing layers enforced by `tests/unit/test_architecture.py`: 
 
 **`adapters/`**
 - **`providers/`:** one sub-package per provider: `api/`, `simulated/`, `local_catalogue/`, `web_chat/`, later `sendgrid_email/`, `twilio_whatsapp/`, `twilio_sms/`, `telegram/`, `meta_instagram/`, `meta_messenger/`, ERP/shop packages.
-- **`secrets/`:** loaded by entry points (group `quotation_app.secret_stores`): `local` (dev, encrypted with a key from `.env`) and `none`. The cloud store is written only after D24.
-- **`accounts/`:** `password.py` (Argon2id), `rate_limit.py`, and mailers by entry points (group `quotation_app.mailers`): `console` (dev), later `sendgrid`.
+- **`secrets/`:** loaded by entry points (group `sales_platform.secret_stores`): `local` (dev, encrypted with a key from `.env`) and `none`. The cloud store is written only after D24.
+- **`accounts/`:** `password.py` (Argon2id), `rate_limit.py`, and mailers by entry points (group `sales_platform.mailers`): `console` (dev), later `sendgrid`.
 - **`catalogue/`:** `local.py`, over `CatalogueReadStore`; no SQLAlchemy in adapters.
 - **`documents/`:** gains `logo.py`.
 
@@ -127,7 +127,7 @@ class Provider(Protocol):
   - A `PendingAction` has `action_id`, `expires_at` and a kind: `open_url`, `provider_page` (HTML from the provider package, e.g. Meta's pop-up, served by our API), `show_steps` or `fill_form` (JSON schema).
   - `resume` receives the result.
 - **`InboundRequest`:** raw body, headers, query and URL. For first-party providers (`web_chat`, `api`) it also carries an optional `session` filled in by our own routes.
-- **Discovery:** Python entry points, group `quotation_app.providers`. `ProviderRegistry.load(environment)` runs at start-up in the API and the worker. The in-repo providers register the same way, in `pyproject.toml`.
+- **Discovery:** Python entry points, group `sales_platform.providers`. `ProviderRegistry.load(environment)` runs at start-up in the API and the worker. The in-repo providers register the same way, in `pyproject.toml`.
 - **Contract tests:** `tests/unit/providers/test_provider_contract.py` runs every registered provider through the same checks:
   - a forged signature is refused;
   - duplicate events are handled;
@@ -204,10 +204,10 @@ The existing `tenant:manage` covers business settings.
 | Widget `portal/src/widget/` | 4 | Built by `portal/vite.widget.config.ts` to `dist/widget/widget.js`, served at `/chat/widget.js`; must not import portal features |
 
 **Settings changes** (generic, never provider-named):
-- `QUOTATION_DEV_LOGIN` replaces `QUOTATION_AUTH_PROVIDER`.
-- `QUOTATION_MAILER` (an entry point name), `QUOTATION_MAIL_FROM`, `QUOTATION_PUBLIC_PORTAL_URL`, `QUOTATION_TRUSTED_PROXY_COUNT`.
-- `QUOTATION_SECRET_STORE` (an entry point name).
-- `QUOTATION_DEFAULT_CATALOGUE_PROVIDER` (default `local_catalogue`).
+- `SALES_DEV_LOGIN` replaces `QUOTATION_AUTH_PROVIDER`.
+- `SALES_MAILER` (an entry point name), `SALES_MAIL_FROM`, `SALES_PUBLIC_PORTAL_URL`, `SALES_TRUSTED_PROXY_COUNT`.
+- `SALES_SECRET_STORE` (an entry point name).
+- `SALES_DEFAULT_CATALOGUE_PROVIDER` (default `local_catalogue`).
 
 ## 8. Points for the user (raised by the phase plans, not decided here)
 | # | Question | Proposal | Where |
@@ -228,7 +228,7 @@ The existing `tenant:manage` covers business settings.
 | 2 | 2026-10-26 | **Permissions:** `catalogue:view`, order permissions (phase 7); U1/U2 raised for the user | Phase 3 C2; phase 4 C9; phase 6-7 P5 |
 | 2 | 2026-10-26 | **ERP write names** aligned with `integrations.md`; `06-future-commerce.md` and `05-product-data.md` table names aligned with this file | Phase 6-7 P8; phase 3 contradictions |
 | 3 | 2026-10-27 | **Phase 2 as built:** `0010_accounts` also has `account_notices` (emails without a link) and `rate_limit_counters` (user answer Q5: counters in PostgreSQL); no lockout columns (Q3); no "all-or-nothing" pricing check (currency or tax may be saved alone at creation, Q14; complete = all six set). `create_business` does **not** create a catalogue connection yet (no in-portal catalogue provider until phase 3; the default catalogue connection moves to 0011). Ports: `UserStore.reset_email`, `sign_up(notify_existing=callable)`, `MailerEnvironment`, `TenantStatusReader`; services also `ProfileService`, wrapper `PauseWhileSuspended`. API key reads are scoped to the submitting key (P1-Q9) | Phase 2 implementation |
-| 4 | 2026-10-28 | **Phase 3 as built:** `create_business` gains `p_catalogue_provider` and `p_catalogue_name` (default NULL); the API passes `QUOTATION_DEFAULT_CATALOGUE_PROVIDER`. **C7 was not quite true:** the 0008 backfill gives the simulated connection only manager approvals; the seed adds the catalogue purpose. So the seed now disables any other active catalogue source on the two ERP demo businesses, and a third dev-only business uses the local list. `ProviderEnvironment.catalogue_store` (each process's store) instead of a registry-level dependency hook. `InMemoryCatalogueStore` ships in `adapters/catalogue/memory.py` (tests and `evaluate_extraction.py --source local`). `CatalogueReadStore.search` returns the best matches already ranked. The catalogue summary also returns the business time zone (a scheduled price starts at midnight there) | Phase 3 implementation |
+| 4 | 2026-10-28 | **Phase 3 as built:** `create_business` gains `p_catalogue_provider` and `p_catalogue_name` (default NULL); the API passes `SALES_DEFAULT_CATALOGUE_PROVIDER`. **C7 was not quite true:** the 0008 backfill gives the simulated connection only manager approvals; the seed adds the catalogue purpose. So the seed now disables any other active catalogue source on the two ERP demo businesses, and a third dev-only business uses the local list. `ProviderEnvironment.catalogue_store` (each process's store) instead of a registry-level dependency hook. `InMemoryCatalogueStore` ships in `adapters/catalogue/memory.py` (tests and `evaluate_extraction.py --source local`). `CatalogueReadStore.search` returns the best matches already ranked. The catalogue summary also returns the business time zone (a scheduled price starts at midnight there) | Phase 3 implementation |
 | 5 | 2026-10-28 | **Phase 4 as built:** permissions `contacts:details` (not viewers, Q12) and `contacts:merge` (administrators, sales operators, D13) besides `conversations:view`; capability `hosted_chat`; one `customer_action_refs` row per offered version and identity (button ID or secure-link token hash), not one per action; `connections.public_handle_changed_at`, `tenants.acknowledge_enquiries`; extra connection event kind `settings_changed` and admin actions `contacts_merged`, `customer_messages_changed`; the API role may update a connection's `config` (chat settings); `IntakeStore.record(..., router)` replaces a separate `ConversationStore`; `WorkflowStore.record_outcome` returns whether the outcome applies and gains `readings_today`; customer messages from webhook providers are routed in phase 5 | Phase 4 implementation |
-| 6 | 2026-10-29 | **Phase 5 as built (framework + Telegram, user answers 2026-10-29):** `ProviderDefaults` (explicit unsupported operations); `Provider.cost`, `platform_setup`, `unrouted`, `fetch_file`, `enrollment_hint`; `deprovision` returns steps; capabilities `self_service`, `platform_webhooks`, `attachments_by_url`; `ProvisionResult` statuses ready / needs_action / working / failed with config, secrets, routes and `poll_after`; `PendingAction.once` (one-time values never stored); `RenderedMessage.purpose`, `link`, `attachment_url`; `SendReceipt.routing_keys`; `ManagerAction` kind `confirm`; `CustomerMessage.files`, `skipped`, `from_business`; `IntakeStore.record(hold_for_review)`; routes as a lookup policy; prompts in `approval_reply_prompts`; job kinds `poll_connection`, `classify_manager_reply` (`provision_connection` unused: Enable provisions in the request); permission `messages:resend`; settings `QUOTATION_MEDIA_LINK_MINUTES` (no provider-named settings; company settings in the platform secret namespace); `httpx` only inside provider packages | Phase 5 implementation |
+| 6 | 2026-10-29 | **Phase 5 as built (framework + Telegram, user answers 2026-10-29):** `ProviderDefaults` (explicit unsupported operations); `Provider.cost`, `platform_setup`, `unrouted`, `fetch_file`, `enrollment_hint`; `deprovision` returns steps; capabilities `self_service`, `platform_webhooks`, `attachments_by_url`; `ProvisionResult` statuses ready / needs_action / working / failed with config, secrets, routes and `poll_after`; `PendingAction.once` (one-time values never stored); `RenderedMessage.purpose`, `link`, `attachment_url`; `SendReceipt.routing_keys`; `ManagerAction` kind `confirm`; `CustomerMessage.files`, `skipped`, `from_business`; `IntakeStore.record(hold_for_review)`; routes as a lookup policy; prompts in `approval_reply_prompts`; job kinds `poll_connection`, `classify_manager_reply` (`provision_connection` unused: Enable provisions in the request); permission `messages:resend`; settings `SALES_MEDIA_LINK_MINUTES` (no provider-named settings; company settings in the platform secret namespace); `httpx` only inside provider packages | Phase 5 implementation |
 | 7 | 2026-10-29 | **Phases 6 and 7 as built (ERPNext; ADR 0023, 0024):** capabilities `catalogue: CatalogueCapabilities` and `orders: OrderCapabilities` (with `sync` and `order_status` added to the planned flags; `catalogue_editable` kept); purpose `orders`; `Provider.fetch_catalogue` (full feed) next to `catalogue_reader` and `order_writer`; `ErpWriter` = `create_sales_order`, `get_order_by_external_reference`, `get_order_status` (no reservation port: Q6 needs none); generic config key `sync_minutes`; `ConnectionChange.exclusive_purposes`, `restore_replaced`, `jobs` (one product source and one order destination per business); event `OrderStatusRequest`; templates `order_confirmed`, `order_shipped`, `order_delivered`, `order_cancelled`, `order_status`, `order_none`; migrations renumbered `0014_catalogue_sync` and `0015_orders` (§4) | Phase 6-7 implementation |

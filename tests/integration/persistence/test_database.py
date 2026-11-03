@@ -1,6 +1,6 @@
 from sqlalchemy import Engine
 
-from quotation_app.persistence.database import database_ready
+from sales_platform.persistence.database import database_ready
 
 
 def test_runtime_role_is_ready(runtime_engine: Engine) -> None:

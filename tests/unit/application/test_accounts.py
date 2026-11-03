@@ -9,7 +9,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.application.accounts import (
+from sales_platform.application.accounts import (
     LOGIN_FAILED,
     AccountEmailHandler,
     ApiKeyAdminService,
@@ -24,8 +24,8 @@ from quotation_app.application.accounts import (
     SignupService,
     validate_pricing,
 )
-from quotation_app.application.api_keys import hash_secret
-from quotation_app.domain.accounts import (
+from sales_platform.application.api_keys import hash_secret
+from sales_platform.domain.accounts import (
     AccountEmailPurpose,
     InvalidEmail,
     LastAdministrator,
@@ -35,9 +35,9 @@ from quotation_app.domain.accounts import (
     SetupItemKey,
     User,
 )
-from quotation_app.domain.jobs import JobKind, PermanentJobError
-from quotation_app.domain.tenancy import PermissionDenied, Role, TenantContext, TenantStatus
-from quotation_app.ports.accounts import (
+from sales_platform.domain.jobs import JobKind, PermanentJobError
+from sales_platform.domain.tenancy import PermissionDenied, Role, TenantContext, TenantStatus
+from sales_platform.ports.accounts import (
     AccountEmailWork,
     LoginRecord,
     MailRejected,
@@ -49,7 +49,7 @@ from quotation_app.ports.accounts import (
     PricingSettings,
     RateDecision,
 )
-from quotation_app.ports.jobs import ClaimedJob
+from sales_platform.ports.jobs import ClaimedJob
 
 NOW = datetime(2026, 10, 27, 9, 0, tzinfo=UTC)
 CLIENT = ClientInfo("203.0.113.7")

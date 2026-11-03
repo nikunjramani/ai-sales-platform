@@ -8,17 +8,17 @@ from uuid import UUID
 import pytest
 from sqlalchemy import Engine, text
 
-from quotation_app.adapters.providers.api import ApiProvider
-from quotation_app.adapters.storage.local import LocalObjectStorage
-from quotation_app.application.api_keys import ApiKeyAuthenticator
-from quotation_app.application.intake import EnquiryIntakeService, IntakeResult
-from quotation_app.application.providers import ProviderRegistry
-from quotation_app.domain.intake import EnquiryStatus, EnquirySubmission
-from quotation_app.domain.tenancy import Role, TenantContext
-from quotation_app.persistence.api_keys import SqlApiKeyReader
-from quotation_app.persistence.connections import SqlConnectionStore
-from quotation_app.persistence.intake import SqlIntakeStore
-from quotation_app.persistence.tenancy import tenant_transaction
+from sales_platform.adapters.providers.api import ApiProvider
+from sales_platform.adapters.storage.local import LocalObjectStorage
+from sales_platform.application.api_keys import ApiKeyAuthenticator
+from sales_platform.application.intake import EnquiryIntakeService, IntakeResult
+from sales_platform.application.providers import ProviderRegistry
+from sales_platform.domain.intake import EnquiryStatus, EnquirySubmission
+from sales_platform.domain.tenancy import Role, TenantContext
+from sales_platform.persistence.api_keys import SqlApiKeyReader
+from sales_platform.persistence.connections import SqlConnectionStore
+from sales_platform.persistence.intake import SqlIntakeStore
+from sales_platform.persistence.tenancy import tenant_transaction
 
 type ApiKeyFactory = Callable[[UUID, Role], str]
 

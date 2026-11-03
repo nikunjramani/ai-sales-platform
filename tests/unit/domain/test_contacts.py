@@ -2,7 +2,7 @@
 
 import pytest
 
-from quotation_app.domain.contacts import (
+from sales_platform.domain.contacts import (
     ClaimedDetails,
     ConsentStatus,
     InvalidContact,

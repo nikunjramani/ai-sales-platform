@@ -9,7 +9,9 @@ Updated: 2026-11-02 (phases 1-7 merged through PR #11; friendly portal design me
 - **Step 1 (guard rails):** `composition.build_core` builds the 20 shared stores and services once for the API and the worker; the API's sign-in route depends on a new `IdentityProvider` port instead of the dev adapter; the architecture test now covers `persistence` and `api` (named exceptions listed in the test) and fails if anything but the wiring builds a SQL store. Checks: Ruff, strict mypy (194 files), 952 unit tests, `check_database.py` 1113 passed / 14 skipped. A first `check_database.py` run failed and the second passed: a flaky test is possible; its output was not kept, so watch the next runs.
 - **Step 1** merged (PR #14, `89bbc0a`, CI green).
 - **Step 2 (leftovers):** removed the deprecated `/api/v1/channels/simulated/events` route (the demo page and `scripts/simulated_channel.py` use the generic hook route; the demo waits for the worker to link the phone), the empty `adapters/channels` and `adapters/delivery` folders, and the whole offline extraction evaluation (`evaluation.py`, `scripts/evaluate_extraction.py`, `evals/enquiry_extraction.jsonl`, `test_evaluation.py`). The in-memory catalogue and workflow stores moved to `tests/support/` (unit tests still use them). The portal-revoke check moved into the generic-hook integration test; the two-phone regression test now uses the hook route. `scripts/evaluate_replies.py` (model only) stays.
-- **Next:** ADR 0026 step 3 (rename to `sales_platform`, `SALES_` settings).
+- **Step 2** merged (PR #15, `ed11600`, CI green; `check_database.py` 1106 passed / 14 skipped).
+- **Step 3 (rename):** the package is now `src/sales_platform` (every import, the entry-point groups `sales_platform.providers` / `.secret_stores` / `.mailers`, the wheel path), the project is `sales-platform`, the API title "Sales Platform" and the portal "Sales Portal". Every setting is now `SALES_...` (27 names, plus `SALES_TEST_ERPNEXT_*` for the sandbox tests); `.env.example`, the user's local `.env` (keys renamed in place, values unchanged), VS Code launch/tasks/stop script and the docs follow. Database role and database names (`quotation_app`, `quotation_owner`, `quotation_worker`, `quotation_dev`, `quotation_test`), the Compose project and the session cookie name are unchanged until step 4. **After pulling: run `uv sync --all-extras` and restart the API and the worker** (old processes still import `quotation_app`).
+- **Next:** ADR 0026 step 4 (one fresh baseline migration with `sales_*` database names; the user's local database is recreated, confirm first).
 
 ## Latest: friendly portal design (2026-10-30, ADR 0025)
 - **User decisions (2026-10-30):** see [ADR 0025](adr/0025-friendly-portal-design.md). New look, a sidebar/bottom-bar menu with icons, a Home page with to-do cards, a one-line hint on each main page, plain words on screen (codes unchanged), `lucide-react` 1.60.0, "friendly and clean" style. No backend change.
@@ -153,7 +155,7 @@ Updated: 2026-11-02 (phases 1-7 merged through PR #11; friendly portal design me
   - Upgrading again was clean.
 - **Real bug found by the PostgreSQL run and fixed:** the first recipient rule used `sender_external_id`, which for API enquiries is the customer's reference label. `delivery_recipient` now picks the submitting connection for the API, and has a unit test.
 - **Portal:** typecheck passes; 36 tests pass (architecture rules included); the build is 375 kB JS (117 kB gzip).
-- **Live run** (uvicorn serving `/portal/`, `python -m quotation_app.worker --once` processes, httpx, `quotation_dev`):
+- **Live run** (uvicorn serving `/portal/`, `python -m sales_platform.worker --once` processes, httpx, `quotation_dev`):
   - **Before approval:** the customer got 404, the preview was marked, and the approved PDF gave 404.
   - **After approval and one worker pass:**
     - The delivery was `api available`.
@@ -178,7 +180,7 @@ Updated: 2026-11-02 (phases 1-7 merged through PR #11; friendly portal design me
 - **`check_database.py --cycle`:** both databases are at 0005_approvals with no drift. 296 passed; then downgrade to empty, upgrade, and 296 passed again.
 - **Targeted round trip with M4 data present:** 0005 -> 0004 removed exactly the M4 tables plus the approval run and its checkpoints, and kept the extraction run. Upgrading again returned to head, and `alembic check` was clean.
 - **One M2 test changed on purpose:** the worker role may now read memberships (to notify current approvers), still only with tenant context. The test now asserts that boundary.
-- **Live run** (uvicorn serving `/portal/`, `python -m quotation_app.worker --once`, curl, `scripts/simulated_channel.py`):
+- **Live run** (uvicorn serving `/portal/`, `python -m sales_platform.worker --once`, curl, `scripts/simulated_channel.py`):
   - Fan and bolts enquiry -> v1 at 10450.38 INR. The review message was delivered to the enrolled simulated phone.
   - A forwarded copy used by another account -> 403. Approval from the phone -> recorded. A second tap with a different action -> 409. Resume -> approved.
   - Pump enquiry -> `pricing_failed` (price_missing). A revision with the pump again -> 422 with issues. A revision with the 600 mm fan -> v1 at 8130.20 INR, then a new task and notification.
@@ -205,7 +207,7 @@ Updated: 2026-11-02 (phases 1-7 merged through PR #11; friendly portal design me
 ## User decisions (2026-10-23, after M6): AI reader and "not found" replies
 Implemented on `feat/gemini-and-categories` ([ADR 0017](adr/0017-gemini-reader-and-category-replies.md), [plan](plan/gemini-and-categories.md)). Verified: 339 unit tests, the PostgreSQL suite around the migration cycle, 14/14 evaluation cases (rules), and a live API/worker run; a Gemini worker with an invalid key retried. **Pending:** a live Gemini evaluation once the user has put a key in `.env`.
 - **Why:** with the rules reader, "price for tata cars" got the same fixed "which products and quantities?" reply repeatedly.
-- **Provider:** Google Gemini free tier, small (Flash-Lite class) model, synthetic/demo data only. Configured generically (user, 2026-10-23: "it should be generic"): `QUOTATION_MODEL=google_genai:gemini-3.5-flash-lite` and `QUOTATION_MODEL_API_KEY` in `.env` (the user creates the key; never in chat or Git). No provider-specific code; the Ollama code was removed.
+- **Provider:** Google Gemini free tier, small (Flash-Lite class) model, synthetic/demo data only. Configured generically (user, 2026-10-23: "it should be generic"): `SALES_MODEL=google_genai:gemini-3.5-flash-lite` and `SALES_MODEL_API_KEY` in `.env` (the user creates the key; never in chat or Git). No provider-specific code; the Ollama code was removed.
 - **AI down or rate-limited:** wait and retry (no fallback to rules).
 - **Not found:** say so and list the business's product **categories** (from the ERP); asking about a category lists its products.
 - **Replies:** stay fixed templates; AI only reads enquiries.
@@ -222,10 +224,10 @@ Implemented on `feat/gemini-and-categories` ([ADR 0017](adr/0017-gemini-reader-a
   Checks: ruff, mypy, 392 tests on PostgreSQL.
 - **WI-1 + WI-3 done:**
   - Domain types and ports: connections, the outbox and templates (wording moved word for word), inbound event types, providers, secrets, `integrations:manage` and new job kinds.
-  - Secret stores `local` (AES-256-GCM) and `none`, chosen by entry point; new settings; `init_local_env.py --add-missing` adds `QUOTATION_SECRET_STORE_KEY`. **Run it once, and `uv sync`, after pulling.**
+  - Secret stores `local` (AES-256-GCM) and `none`, chosen by entry point; new settings; `init_local_env.py --add-missing` adds `SALES_SECRET_STORE_KEY`. **Run it once, and `uv sync`, after pulling.**
   - The old `Channel`/`ApprovalChannel` enums go when the `api` and `simulated` providers exist (WI-5, WI-9).
 - **WI-2 done:** migration `0008_connections` (tables, policies, worker grants, backfill, downgrade) and persistence. API keys create and disable their `api` connection; the seed gives each demo business a `simulated` connection (approvals and catalogue); intake and enrollment link rows to connections; disabled connections get no approval requests. Tests: `test_connections.py` and `test_migrations_0008.py` (upgrade with M6 data, downgrade, upgrade). Checks: `check_database.py --cycle` with 420 tests, twice. One earlier run failed once in `test_versions_and_decisions_are_append_only` and did not repeat in three later runs; watch for flakiness.
-- **After pulling:** `uv run alembic upgrade head` and `uv run python -m quotation_app.persistence.seed` (the demo connections).
+- **After pulling:** `uv run alembic upgrade head` and `uv run python -m sales_platform.persistence.seed` (the demo connections).
 - **WI-4 + WI-5 done:**
   - **Registry and route:** the provider registry (entry points, `uv sync` registers `api` and `simulated`) and the generic hook route `POST /api/v1/hooks/{connection}/{token}`.
   - **Inbound handling:** `InboundService` (token, size, signature before parsing, stored once) and the `process_inbound` job (manager actions go through the same ChannelActionService and ApprovalService).
@@ -308,7 +310,7 @@ Implemented on `feat/gemini-and-categories` ([ADR 0017](adr/0017-gemini-reader-a
 - **Answers that change the plan:**
   - no account lockout; the rate limits are the only guard against guessing;
   - rate-limit counters live in PostgreSQL (`rate_limit_counters`);
-  - demo people also get a password, from `QUOTATION_DEMO_PASSWORD` in `.env`;
+  - demo people also get a password, from `SALES_DEMO_PASSWORD` in `.env`;
   - an API key sees only the enquiries and quotations it submitted itself (was: any key of the business).
 - **W0 done:** answers recorded in the plan, [07 decisions](plan/platform/07-decisions-needed.md) and here.
 - **W1-W11 done** (ADR [0019](adr/0019-accounts-and-onboarding.md), feature doc [accounts and onboarding](features/accounts-and-onboarding.md)):
@@ -317,9 +319,9 @@ Implemented on `feat/gemini-and-categories` ([ADR 0017](adr/0017-gemini-reader-a
   - **Gates:** suspended keys 403 and jobs wait; nothing pushed to customers before Go live (API pull and manager messages still work).
   - **P1-Q9:** an API key reads only its own enquiries and quotations.
   - **Portal:** features `account` and `business`; no business -> `/start`; setting-up businesses open `/setup`; browser storage only in the tenant store (architecture test).
-  - **Removed:** `scripts/create_api_key.py` (keys come from the portal); `QUOTATION_AUTH_PROVIDER` (now `QUOTATION_DEV_LOGIN`).
+  - **Removed:** `scripts/create_api_key.py` (keys come from the portal); `QUOTATION_AUTH_PROVIDER` (now `SALES_DEV_LOGIN`).
   - **PDF renderer v2:** seller details and logo from the business profile.
-- **After pulling:** `uv sync --all-extras`, `uv run python scripts/init_local_env.py --add-missing` (adds `QUOTATION_DEMO_PASSWORD`), `uv run alembic upgrade head`, `uv run python -m quotation_app.persistence.seed`. See [setup](development/setup.md#accounts-and-onboarding-phase-2).
+- **After pulling:** `uv sync --all-extras`, `uv run python scripts/init_local_env.py --add-missing` (adds `SALES_DEMO_PASSWORD`), `uv run alembic upgrade head`, `uv run python -m sales_platform.persistence.seed`. See [setup](development/setup.md#accounts-and-onboarding-phase-2).
 - **Bugs found and fixed during verification:**
   1. The "account exists" notice allowance was used up by every sign-up (found by the end-to-end test); it is now asked only when the address exists.
   2. Approved PDFs did not show the PDF details (found by the live run): the document source now loads the profile and the logo is read and hash-checked before rendering.
@@ -353,10 +355,10 @@ Implemented on `feat/gemini-and-categories` ([ADR 0017](adr/0017-gemini-reader-a
   - **W2-W3:** editing rules (`domain/catalogue_admin.py`) and `catalogue:view` / `catalogue:manage`.
   - **W4-W6:** ports, migration `0011_catalogue` (five tables, `pg_trgm`, RLS, triggers, grants, `create_business` with the default source, backfill, downgrade), `SqlCatalogueStore`, the **Demo Local Catalogue** business (`33333333-…`, people `admin@`, `sales@`, `manager@local.example`).
   - **W7-W8:** `LocalCatalogue` and provider `local_catalogue` ("Our product list"); `InMemoryCatalogueStore`; ERP and provider contract suites extended; a shared search-case table.
-  - **W9-W11:** `ProductService`, `/api/v1/tenants/{t}/catalogue/...`, `QUOTATION_DEFAULT_CATALOGUE_PROVIDER`, the checklist's Products step (done with one priced product; not required).
+  - **W9-W11:** `ProductService`, `/api/v1/tenants/{t}/catalogue/...`, `SALES_DEFAULT_CATALOGUE_PROVIDER`, the checklist's Products step (done with one priced product; not required).
   - **W12:** portal feature `catalogue` (list, product page with prices/stock/archive/changes, categories); top bar "Products"; the pricing form suggests a 7-day stock age (Q10).
   - **W13:** evaluation on both sources (`evaluate_extraction.py --source local`), PostgreSQL end-to-end tests.
-- **After pulling:** the init command, `uv sync --all-extras`, `uv run alembic upgrade head`, `uv run python -m quotation_app.persistence.seed` ([setup](development/setup.md#product-catalogue-phase-3)).
+- **After pulling:** the init command, `uv sync --all-extras`, `uv run alembic upgrade head`, `uv run python -m sales_platform.persistence.seed` ([setup](development/setup.md#product-catalogue-phase-3)).
 - **Deviations from the plan (for review):**
   1. **C7 was not quite true:** migration 0008 gives the demo businesses' simulated connection only manager approvals; the seed adds the catalogue purpose. After a downgrade/upgrade without seeding, 0011 gives them our list; the seed now disables such a second source on the two ERP demos (found by the full PostgreSQL run).
   2. The provider gets its store through `ProviderEnvironment.catalogue_store` (each process's own role), not a new registry hook.
@@ -400,9 +402,9 @@ Implemented on `feat/gemini-and-categories` ([ADR 0017](adr/0017-gemini-reader-a
   2. WI-6 (customer messages from webhook providers through `process_inbound`) is not built: no webhook customer provider exists before phase 5; the API and website chat route synchronously.
   3. Messages to API (pull) customers are not created: their system reads status and questions through the API as before.
   4. Two extra permissions (`contacts:details`, `contacts:merge`) besides `conversations:view`.
-- **W11-W12 done:** `web_chat` provider (capability `hosted_chat`), one-click Enable with a public handle (changed once), allowed websites and greeting, public chat API (sessions, honeypot + 2 s form time, PostgreSQL rate limits, files through quarantine, STOP/START as consent events for the worker, Accept/Decline buttons, PDF download, end), secure answer link page, daily reading cap. `QUOTATION_CHAT_IP_KEY` (required in production, with an https `QUOTATION_PUBLIC_BASE_URL`).
+- **W11-W12 done:** `web_chat` provider (capability `hosted_chat`), one-click Enable with a public handle (changed once), allowed websites and greeting, public chat API (sessions, honeypot + 2 s form time, PostgreSQL rate limits, files through quarantine, STOP/START as consent events for the worker, Accept/Decline buttons, PDF download, end), secure answer link page, daily reading cap. `SALES_CHAT_IP_KEY` (required in production, with an https `SALES_PUBLIC_BASE_URL`).
 - **W13-W14 done:** portal API and feature `conversations` (inbox, conversation, contacts with masking for viewers, manual merge with confirmation and no undo, acknowledgement switch), quotation page shows the enquiry's messages, website chat card on Connections (`GET /connections/available` keeps provider names out of the portal).
-- **W15 done:** widget `portal/src/widget/` (plain TypeScript, Shadow DOM, about 3 KB gzip), hosted page `/chat/<handle>` and `/chat/widget.js` served by the API from `QUOTATION_PORTAL_DIST_DIR`.
+- **W15 done:** widget `portal/src/widget/` (plain TypeScript, Shadow DOM, about 3 KB gzip), hosted page `/chat/<handle>` and `/chat/widget.js` served by the API from `SALES_PORTAL_DIST_DIR`.
 - **W16 done:** the demo page shows the industrial business's real website chat; API follow-ups are listed once.
 - **W17 done:** [ADR 0021](adr/0021-customers-conversations-and-website-chat.md), [conversations](features/conversations.md), [website chat](features/website-chat.md), configuration, setup ("after pulling phase 4"), code map, testing, data model, intake/extraction, portal architecture, adding providers, shared contracts change log rev 5, follow-up plan marked superseded.
 - **After pulling:** `uv sync --all-extras`, `uv run python scripts/init_local_env.py --add-missing`, `uv run alembic upgrade head`, `npm ci && npm run build` in `portal/` ([setup](development/setup.md#customers-conversations-and-website-chat-phase-4)).
@@ -436,7 +438,7 @@ Implemented on `feat/gemini-and-categories` ([ADR 0017](adr/0017-gemini-reader-a
 - **W3-W4 done:** `application/lifecycle.py` (Enable with cost tick, pending steps, setup events, poll, test, disable); platform route `/api/v1/hooks/p/{key}` and GET handshakes; `CustomerInbox` (webhook customer messages through intake, limits, files, `hold_for_review`); staff messages as reader context; public PDF links (`/api/v1/media/{token}`); Resend (`messages:resend`).
 - **W5-W6 done:** approval by message: guards, YES/NO confirmation, reason prompts, recorded/state confirmations, rules mode not reading replies, reply audit, `classify_manager_reply`, `evals/manager_replies.jsonl` (80 cases) and `scripts/evaluate_replies.py`. Signed link API `/api/v1/approval-links/{token}` (sign-in, CSRF); approval requests carry `<portal>#/approve/<token>`.
 - **W7 done:** `adapters/providers/email_common` (threading, new text, automatic mail, DKIM/SPF trust), unused.
-- **W8 done:** `adapters/providers/telegram` (business connection for customers, bot chat for managers, `/link` code, deep-link enrollment, buttons, replies, files, 24 h refusals), `python -m quotation_app.ops platform-config|platform-setup`, `httpx` limited to provider packages. Fixtures written from the Bot API docs (`tests/data/providers/telegram/updates.json`).
+- **W8 done:** `adapters/providers/telegram` (business connection for customers, bot chat for managers, `/link` code, deep-link enrollment, buttons, replies, files, 24 h refusals), `python -m sales_platform.ops platform-config|platform-setup`, `httpx` limited to provider packages. Fixtures written from the Bot API docs (`tests/data/providers/telegram/updates.json`).
 - **W9 done:** portal: one-click cards (cost tick), pending step panel (steps, page, provider page, form), Test, Disable with typed name, polling while setting up, linking hints, Send again, `#/approve/:token` page.
 - **W10-W11 done:** platform route HTTP tests; docs: [ADR 0022](adr/0022-one-click-providers-and-approval-by-message.md), [connections](features/connections.md), [Telegram](features/telegram.md), [approval by message](features/approval-by-message.md), [provider setup](operations/provider-setup.md), configuration, setup, code map, testing, data model, approvals, security, adding providers, contracts rev 6.
 - **Final checks (2026-10-29):**
@@ -499,7 +501,7 @@ Implemented on `feat/gemini-and-categories` ([ADR 0017](adr/0017-gemini-reader-a
   - ruff lint and format, strict mypy (335 files);
   - 949 unit tests passed (13 skipped: sandbox and integration cases);
   - `check_database.py --cycle`: 1110 passed, then downgrade to empty, upgrade, 1110 passed again (14 skipped: the sandbox cases);
-  - **live run against the local ERPNext sandbox** (`QUOTATION_TEST_ERPNEXT_*` set): 13 passed. `test_erpnext_live.py` covers Enable with the form, replacing the product list, the first copy, an enquiry priced live from ERPNext (`price_source erpnext`), approval, acceptance, the automatic order written once to ERPNext with `po_no = QO-…`, and the customer's pull view. The sandbox tests and the writer contract also passed;
+  - **live run against the local ERPNext sandbox** (`SALES_TEST_ERPNEXT_*` set): 13 passed. `test_erpnext_live.py` covers Enable with the form, replacing the product list, the first copy, an enquiry priced live from ERPNext (`price_source erpnext`), approval, acceptance, the automatic order written once to ERPNext with `po_no = QO-…`, and the customer's pull view. The sandbox tests and the writer contract also passed;
   - portal: typecheck, 124 tests, build (485 kB JS / 143 kB gzip).
 - **Not run:** the portal was not clicked through in a browser; no real business ERPNext (sandbox only, user answer).
 - **Choices for review (all in the ADRs):**

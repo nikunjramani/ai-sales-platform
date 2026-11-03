@@ -5,9 +5,9 @@ from uuid import UUID
 
 import pytest
 
-from quotation_app.adapters.secrets.local import LocalSecretStore, build, decode_key, new_key
-from quotation_app.adapters.secrets.none import NoSecretStore
-from quotation_app.ports.secrets import (
+from sales_platform.adapters.secrets.local import LocalSecretStore, build, decode_key, new_key
+from sales_platform.adapters.secrets.none import NoSecretStore
+from sales_platform.ports.secrets import (
     SecretNotFound,
     SecretStoreEnvironment,
     SecretStoreUnavailable,

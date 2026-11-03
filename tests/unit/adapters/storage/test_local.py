@@ -3,9 +3,9 @@ from uuid import uuid4
 
 import pytest
 
-from quotation_app.adapters.storage.local import LocalObjectStorage
-from quotation_app.domain.attachments import StorageArea, attachment_key
-from quotation_app.ports.storage import ObjectNotFound
+from sales_platform.adapters.storage.local import LocalObjectStorage
+from sales_platform.domain.attachments import StorageArea, attachment_key
+from sales_platform.ports.storage import ObjectNotFound
 
 
 @pytest.fixture

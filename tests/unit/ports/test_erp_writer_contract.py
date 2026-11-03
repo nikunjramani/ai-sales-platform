@@ -1,7 +1,7 @@
 """ErpWriter contract (phase 7): every writer, simulated or real, must pass these.
 
 The real ERPNext sandbox joins with the integration marker when its address and key are in the
-environment (QUOTATION_TEST_ERPNEXT_URL, _KEY, _SECRET, _CUSTOMER; see
+environment (SALES_TEST_ERPNEXT_URL, _KEY, _SECRET, _CUSTOMER; see
 .docs/operations/provider-setup.md#erpnext). Never a production ERP: it creates orders.
 """
 
@@ -13,9 +13,9 @@ from uuid import uuid4
 
 import pytest
 
-from quotation_app.adapters.erp.simulated_orders import SimulatedOrderWriter
-from quotation_app.domain.tenancy import Role, TenantContext
-from quotation_app.ports.erp import (
+from sales_platform.adapters.erp.simulated_orders import SimulatedOrderWriter
+from sales_platform.domain.tenancy import Role, TenantContext
+from sales_platform.ports.erp import (
     ErpError,
     ErpErrorCode,
     ErpWriter,
@@ -23,7 +23,7 @@ from quotation_app.ports.erp import (
     SalesOrderRequest,
 )
 
-SKU_ENV = "QUOTATION_TEST_ERPNEXT_SKU"
+SKU_ENV = "SALES_TEST_ERPNEXT_SKU"
 
 
 def _simulated() -> ErpWriter:
@@ -31,13 +31,13 @@ def _simulated() -> ErpWriter:
 
 
 def _sandbox() -> ErpWriter:
-    from quotation_app.adapters.providers.erpnext.client import FrappeClient
-    from quotation_app.adapters.providers.erpnext.config import ErpnextForm, ErpnextSettings
-    from quotation_app.adapters.providers.erpnext.orders import ErpnextOrderWriter
+    from sales_platform.adapters.providers.erpnext.client import FrappeClient
+    from sales_platform.adapters.providers.erpnext.config import ErpnextForm, ErpnextSettings
+    from sales_platform.adapters.providers.erpnext.orders import ErpnextOrderWriter
 
-    url = os.environ.get("QUOTATION_TEST_ERPNEXT_URL")
-    key = os.environ.get("QUOTATION_TEST_ERPNEXT_KEY")
-    secret = os.environ.get("QUOTATION_TEST_ERPNEXT_SECRET")
+    url = os.environ.get("SALES_TEST_ERPNEXT_URL")
+    key = os.environ.get("SALES_TEST_ERPNEXT_KEY")
+    secret = os.environ.get("SALES_TEST_ERPNEXT_SECRET")
     if not (url and key and secret):
         pytest.skip("No ERPNext sandbox configured")
     form = ErpnextForm.model_validate(
@@ -46,11 +46,9 @@ def _sandbox() -> ErpWriter:
             "api_key": key,
             "api_secret": secret,
             "price_list": "Standard Selling",
-            "warehouses": os.environ.get("QUOTATION_TEST_ERPNEXT_WAREHOUSE", "Stores - PS"),
+            "warehouses": os.environ.get("SALES_TEST_ERPNEXT_WAREHOUSE", "Stores - PS"),
             "write_orders": True,
-            "default_customer": os.environ.get(
-                "QUOTATION_TEST_ERPNEXT_CUSTOMER", "Sandbox Customer"
-            ),
+            "default_customer": os.environ.get("SALES_TEST_ERPNEXT_CUSTOMER", "Sandbox Customer"),
         }
     )
     return ErpnextOrderWriter(FrappeClient(url, key, secret), ErpnextSettings.from_form(form))

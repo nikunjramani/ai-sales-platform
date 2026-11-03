@@ -5,33 +5,33 @@ from uuid import UUID
 
 import pytest
 
-from quotation_app.adapters.secrets.memory import InMemorySecretStore
-from quotation_app.application.channel_actions import ConnectionNotFound
-from quotation_app.application.lifecycle import (
+from sales_platform.adapters.secrets.memory import InMemorySecretStore
+from sales_platform.application.channel_actions import ConnectionNotFound
+from sales_platform.application.lifecycle import (
     ActionNotFound,
     ConnectionLifecycle,
     CostsNotAccepted,
 )
-from quotation_app.application.providers import ProviderRegistry
-from quotation_app.domain.connections import (
+from sales_platform.application.providers import ProviderRegistry
+from sales_platform.domain.connections import (
     Capabilities,
     CatalogueCapabilities,
     Connection,
     ConnectionStatus,
     Purpose,
 )
-from quotation_app.domain.intake import ConnectionUpdate
-from quotation_app.domain.jobs import JobKind
-from quotation_app.domain.tenancy import PermissionDenied, Role, TenantContext
-from quotation_app.ports.connections import RouteTaken
-from quotation_app.ports.jobs import ClaimedJob
-from quotation_app.ports.providers import (
+from sales_platform.domain.intake import ConnectionUpdate
+from sales_platform.domain.jobs import JobKind
+from sales_platform.domain.tenancy import PermissionDenied, Role, TenantContext
+from sales_platform.ports.connections import RouteTaken
+from sales_platform.ports.jobs import ClaimedJob
+from sales_platform.ports.providers import (
     CostNote,
     PendingActionKind,
     ProvisionResult,
     ProvisionStatus,
 )
-from quotation_app.ports.secrets import SecretStore
+from sales_platform.ports.secrets import SecretStore
 from tests.unit.conftest import MemoryConnections
 from tests.unit.one_click import TOOL, MemoryLifecycle, OneClickTool
 

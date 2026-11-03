@@ -4,8 +4,8 @@ from io import BytesIO
 import pytest
 from PIL import Image
 
-from quotation_app.adapters.documents.logo import PillowLogoNormalizer
-from quotation_app.ports.accounts import InvalidLogo
+from sales_platform.adapters.documents.logo import PillowLogoNormalizer
+from sales_platform.ports.accounts import InvalidLogo
 
 type ImageFactory = Callable[[str, int, int], bytes]
 

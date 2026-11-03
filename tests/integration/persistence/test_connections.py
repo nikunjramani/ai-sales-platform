@@ -7,19 +7,19 @@ import pytest
 from sqlalchemy import Engine, text
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 
-from quotation_app.application.api_keys import generate_api_key
-from quotation_app.domain.connections import ConnectionStatus, Purpose
-from quotation_app.domain.tenancy import Role
-from quotation_app.persistence.api_keys import insert_api_key, revoke_api_key
-from quotation_app.persistence.channels import SqlChannelStore, SqlNotificationStore
-from quotation_app.persistence.connections import (
+from sales_platform.application.api_keys import generate_api_key
+from sales_platform.domain.connections import ConnectionStatus, Purpose
+from sales_platform.domain.tenancy import Role
+from sales_platform.persistence.api_keys import insert_api_key, revoke_api_key
+from sales_platform.persistence.channels import SqlChannelStore, SqlNotificationStore
+from sales_platform.persistence.connections import (
     SqlConnectionStore,
     SqlHookLookup,
     ensure_connection,
     set_status,
 )
-from quotation_app.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
-from quotation_app.persistence.tenancy import tenant_transaction
+from sales_platform.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
+from sales_platform.persistence.tenancy import tenant_transaction
 
 
 def demo_connection(store: SqlConnectionStore, tenant_id: UUID) -> UUID:

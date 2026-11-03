@@ -5,11 +5,11 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.application.customer_actions import (
+from sales_platform.application.customer_actions import (
     CustomerActionRejected,
     CustomerActionService,
 )
-from quotation_app.domain.acceptance import (
+from sales_platform.domain.acceptance import (
     NotCurrentOffer,
     Offer,
     OfferNotOpen,
@@ -17,7 +17,7 @@ from quotation_app.domain.acceptance import (
     ResponseAction,
     ResponseOutcome,
 )
-from quotation_app.ports.customer_actions import CustomerActionRef
+from sales_platform.ports.customer_actions import CustomerActionRef
 from tests.unit.application.test_acceptance import issue, set_fan_price
 
 IDENTITY = uuid4()

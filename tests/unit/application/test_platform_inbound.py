@@ -6,14 +6,14 @@ from uuid import UUID
 
 import pytest
 
-from quotation_app.adapters.secrets.memory import InMemorySecretStore
-from quotation_app.application.inbound import HookNotFound, InboundService
-from quotation_app.application.lifecycle import ConnectionLifecycle
-from quotation_app.application.providers import ProviderRegistry
-from quotation_app.domain.connections import Connection
-from quotation_app.domain.intake import ConnectionUpdate, CustomerMessage
-from quotation_app.domain.tenancy import Role, TenantContext
-from quotation_app.ports.providers import InboundRejected, InboundRequest
+from sales_platform.adapters.secrets.memory import InMemorySecretStore
+from sales_platform.application.inbound import HookNotFound, InboundService
+from sales_platform.application.lifecycle import ConnectionLifecycle
+from sales_platform.application.providers import ProviderRegistry
+from sales_platform.domain.connections import Connection
+from sales_platform.domain.intake import ConnectionUpdate, CustomerMessage
+from sales_platform.domain.tenancy import Role, TenantContext
+from sales_platform.ports.providers import InboundRejected, InboundRequest
 from tests.unit.conftest import Job, MemoryConnections, MemoryInbox
 from tests.unit.one_click import PLATFORM_SECRET, TOOL, MemoryLifecycle, OneClickTool
 

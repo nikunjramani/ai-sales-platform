@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-PACKAGE = Path(__file__).resolve().parents[2] / "src" / "quotation_app"
+PACKAGE = Path(__file__).resolve().parents[2] / "src" / "sales_platform"
 
 # Layer -> internal layers it may import.
 ALLOWED = {
@@ -27,9 +27,9 @@ COMPOSITION_ROOTS = {
 }
 # Named exceptions to the layer rules, each with its reason.
 LAYER_EXCEPTIONS = {
-    ("persistence/api_keys.py", "quotation_app.adapters.providers.api"): "API keys are the api "
+    ("persistence/api_keys.py", "sales_platform.adapters.providers.api"): "API keys are the api "
     "provider's accounts (see PROVIDER_NAME_EXCEPTIONS)",
-    ("api/enquiries.py", "quotation_app.adapters.providers.api"): "the API provider's own routes",
+    ("api/enquiries.py", "sales_platform.adapters.providers.api"): "the API provider's own routes",
 }
 # Layer -> third-party packages it may import. Domain, ports and application use only stdlib,
 # so business rules never depend on a framework, database or AI provider.
@@ -74,7 +74,7 @@ def test_layer_imports_respect_boundaries(layer: str) -> None:
             if (relative, name) in LAYER_EXCEPTIONS:
                 continue
             parts = name.split(".")
-            if parts[0] == "quotation_app":
+            if parts[0] == "sales_platform":
                 allowed = len(parts) > 1 and parts[1] in ALLOWED[layer]
             else:
                 allowed = parts[0] in sys.stdlib_module_names or parts[0] in THIRD_PARTY.get(
@@ -121,14 +121,14 @@ PROVIDER_NAME_EXCEPTIONS = {
     "api/enquiries.py": "the API provider's own routes",
     "persistence/api_keys.py": "API keys are the api provider's accounts",
     "persistence/seed.py": "synthetic demo data for development",
-    "config.py": "the default product source setting (QUOTATION_DEFAULT_CATALOGUE_PROVIDER)",
+    "config.py": "the default product source setting (SALES_DEFAULT_CATALOGUE_PROVIDER)",
 }
 
 
 def test_core_code_never_names_a_provider() -> None:
     from importlib.metadata import entry_points
 
-    keys = {entry.name for entry in entry_points(group="quotation_app.providers")}
+    keys = {entry.name for entry in entry_points(group="sales_platform.providers")}
     assert {"api", "simulated"} <= keys, "run `uv sync` to register the providers"
     violations = []
     for path in sorted(PACKAGE.rglob("*.py")):
@@ -141,7 +141,7 @@ def test_core_code_never_names_a_provider() -> None:
             if (
                 isinstance(node, ast.ImportFrom)
                 and node.module
-                and node.module.startswith("quotation_app.adapters.providers.")
+                and node.module.startswith("sales_platform.adapters.providers.")
             ):
                 violations.append(f"{relative}:{node.lineno} imports {node.module}")
     assert violations == []

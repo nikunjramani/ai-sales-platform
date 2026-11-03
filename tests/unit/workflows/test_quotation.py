@@ -6,12 +6,12 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.domain.jobs import JobKind, PermanentJobError
-from quotation_app.domain.pricing import RequestedLine
-from quotation_app.domain.quotations import ApprovalAction, QuotationStatus, TaskStatus
-from quotation_app.ports.erp import ErpError, ErpErrorCode
-from quotation_app.ports.jobs import ClaimedJob
-from quotation_app.workflows.quotation import (
+from sales_platform.domain.jobs import JobKind, PermanentJobError
+from sales_platform.domain.pricing import RequestedLine
+from sales_platform.domain.quotations import ApprovalAction, QuotationStatus, TaskStatus
+from sales_platform.ports.erp import ErpError, ErpErrorCode
+from sales_platform.ports.jobs import ClaimedJob
+from sales_platform.workflows.quotation import (
     GRAPH_VERSION,
     QuotationWorkflowDeps,
     WorkflowNotWaiting,

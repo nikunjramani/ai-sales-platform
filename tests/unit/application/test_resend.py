@@ -4,11 +4,11 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.application.resend import MessageNotResendable, ResendService
-from quotation_app.domain.connections import Purpose
-from quotation_app.domain.messages import MessageStatus, TemplateKey
-from quotation_app.domain.tenancy import PermissionDenied, Role, TenantContext
-from quotation_app.ports.messages import MessageLinks, NewMessage
+from sales_platform.application.resend import MessageNotResendable, ResendService
+from sales_platform.domain.connections import Purpose
+from sales_platform.domain.messages import MessageStatus, TemplateKey
+from sales_platform.domain.tenancy import PermissionDenied, Role, TenantContext
+from sales_platform.ports.messages import MessageLinks, NewMessage
 from tests.unit.conftest import MemoryOutbox, MemoryQuotations
 
 

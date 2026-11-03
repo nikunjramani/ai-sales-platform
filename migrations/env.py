@@ -5,8 +5,8 @@ from typing import Any
 from alembic import context
 from sqlalchemy import create_engine, pool
 
-from quotation_app.config import Settings
-from quotation_app.persistence.models import Base
+from sales_platform.config import Settings
+from sales_platform.persistence.models import Base
 
 target_metadata = Base.metadata
 url = Settings().migration_url()

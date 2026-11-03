@@ -17,7 +17,7 @@ foreach ($port in 8000, 8001, 5173) {
 # The worker has no port: find it (and leftover uvicorn/vite processes) by command line.
 # Only python/uv/node processes are considered, so shells or editors whose command line merely
 # mentions these names are never touched.
-$patterns = "*quotation_app.worker*", "*quotation_app.api.app*", "*portal*vite*"
+$patterns = "*sales_platform.worker*", "*sales_platform.api.app*", "*portal*vite*"
 $programs = "python.exe", "pythonw.exe", "uv.exe", "node.exe"
 Get-CimInstance Win32_Process | Where-Object {
     $line = $_.CommandLine

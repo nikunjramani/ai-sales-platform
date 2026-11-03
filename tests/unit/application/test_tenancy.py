@@ -3,8 +3,8 @@ from uuid import UUID
 
 import pytest
 
-from quotation_app.application.tenancy import TenantContextResolver
-from quotation_app.domain.tenancy import AccessDenied, Role
+from sales_platform.application.tenancy import TenantContextResolver
+from sales_platform.domain.tenancy import AccessDenied, Role
 
 
 def test_resolver_uses_stored_membership_not_requested_tenant(

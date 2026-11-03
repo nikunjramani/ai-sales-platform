@@ -1,8 +1,8 @@
 import pytest
 from pydantic import SecretStr
 
-from quotation_app.config import Settings
-from quotation_app.persistence.seed import seed_demo_tenants
+from sales_platform.config import Settings
+from sales_platform.persistence.seed import seed_demo_tenants
 
 
 def test_production_seed_is_rejected_before_connecting() -> None:

@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import pytest
 
-from quotation_app.domain.jobs import retry_delay
+from sales_platform.domain.jobs import retry_delay
 
 
 @pytest.mark.parametrize(
