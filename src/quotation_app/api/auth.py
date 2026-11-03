@@ -22,14 +22,13 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.exc import SQLAlchemyError
 
-from quotation_app.adapters.identity.dev import DevIdentityProvider
 from quotation_app.application.accounts import ProfileService
 from quotation_app.application.api_keys import AuthenticationFailed
 from quotation_app.application.sessions import SessionService, csrf_token_for
 from quotation_app.application.tenancy import TenantContextResolver
 from quotation_app.domain.accounts import User
 from quotation_app.domain.tenancy import AccessDenied, TenantContext, TenantStatus
-from quotation_app.ports.identity import IdentityRejected, SessionRecord
+from quotation_app.ports.identity import IdentityProvider, IdentityRejected, SessionRecord
 from quotation_app.ports.tenancy import MembershipDirectory
 
 SESSION_COOKIE = "quotation_session"
@@ -182,7 +181,7 @@ def set_session_cookie(response: Response, token: str, max_age: int, secure: boo
 def build_auth_router(
     auth: PortalAuth,
     session_out: SessionView,
-    dev: DevIdentityProvider | None,
+    dev: IdentityProvider | None,
     dev_subjects: list[str],
     cookie_secure: bool,
 ) -> APIRouter:

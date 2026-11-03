@@ -5,7 +5,9 @@ Updated: 2026-11-02 (phases 1-7 merged through PR #11; friendly portal design me
 - **User decisions (2026-11-02):** regroup the backend into business modules with one shared wiring and fuller architecture tests; rename the package to `sales_platform` (portal "Sales Portal"); remove the deprecated simulated route; **plan only, no code yet**.
 - **Review findings:** see the ADR's table (code spread by layer; 20 objects wired twice in `api/app.py` and `composition.py`; `persistence`/`api` not covered by the import test; 1,865-line `models.py`; empty folders, a deprecated route and an in-memory double in `src/`; names that no longer fit).
 - **User answers (2026-11-03):** go ahead, one PR per step merged by Claude after CI; `SALES_` settings at once; `sales_*` database names with one fresh baseline (local data recreated); repository renamed by the user; offline evaluation removed. See ADR 0026.
-- **Next:** ADR 0026 steps 1-14 in order.
+- **Step 0** merged (PR #13, `1ed59ca`, CI green).
+- **Step 1 (guard rails):** `composition.build_core` builds the 20 shared stores and services once for the API and the worker; the API's sign-in route depends on a new `IdentityProvider` port instead of the dev adapter; the architecture test now covers `persistence` and `api` (named exceptions listed in the test) and fails if anything but the wiring builds a SQL store. Checks: Ruff, strict mypy (194 files), 952 unit tests, `check_database.py` 1113 passed / 14 skipped. A first `check_database.py` run failed and the second passed: a flaky test is possible; its output was not kept, so watch the next runs.
+- **Next:** ADR 0026 step 2 onwards.
 
 ## Latest: friendly portal design (2026-10-30, ADR 0025)
 - **User decisions (2026-10-30):** see [ADR 0025](adr/0025-friendly-portal-design.md). New look, a sidebar/bottom-bar menu with icons, a Home page with to-do cards, a one-line hint on each main page, plain words on screen (codes unchanged), `lucide-react` 1.60.0, "friendly and clean" style. No backend change.

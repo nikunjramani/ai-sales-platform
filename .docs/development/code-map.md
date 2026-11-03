@@ -40,7 +40,7 @@ Dependency direction: application -> ports -> domain; adapters and persistence i
 | [tests/integration/persistence/test_tenancy.py](../../tests/integration/persistence/test_tenancy.py) | Two-tenant negative tests through the PostgreSQL runtime role |
 
 ## Implemented M2 intake, jobs and attachments
-Entry points: the HTTP API ([api/app.py](../../src/quotation_app/api/app.py)) and the worker process ([worker.py](../../src/quotation_app/worker.py)). Both are composition roots that wire adapters to application services. See [enquiry intake](../features/enquiry-intake.md).
+Entry points: the HTTP API ([api/app.py](../../src/quotation_app/api/app.py)) and the worker process ([worker.py](../../src/quotation_app/worker.py)). Both are composition roots that wire adapters to application services; the services both use are built once by `composition.build_core` (ADR 0026 step 1). See [enquiry intake](../features/enquiry-intake.md).
 
 | Actual file | Responsibility |
 |---|---|
@@ -165,7 +165,7 @@ See the [phase 1 plan](../plan/platform/implementation/phase-1-foundations.md).
 | [application/messaging.py](../../src/quotation_app/application/messaging.py) | OutboundService (render a template, store the message) and SendMessageHandler (`send_message` job) |
 | [application/delivery.py](../../src/quotation_app/application/delivery.py) | `deliver_quotation`: prepare the PDF, queue the outbox message; QuotationDocumentHook attaches the verified PDF at send time |
 | [application/notifications.py](../../src/quotation_app/application/notifications.py) | `notify_approvers` queues approval requests; ApprovalRequestHook creates the single-use token at send time |
-| [composition.py](../../src/quotation_app/composition.py) | Composition root shared by the API, worker and tests: secret store (built lazily), provider registry, mailer, `build_job_handlers` for every job kind (each wrapped so a suspended business's jobs wait) |
+| [composition.py](../../src/quotation_app/composition.py) | Composition root shared by the API, worker and tests: secret store (built lazily), provider registry, mailer, `build_core` (the stores and services the API and the worker share, built once per process: connections, product source, pricing, customer answers, approvals, channel actions, connection lifecycle, orders, outbox...), `build_job_handlers` for every job kind (each wrapped so a suspended business's jobs wait) |
 
 ## Phase 2 accounts and onboarding (ADR 0019)
 See the [phase 2 plan](../plan/platform/implementation/phase-2-accounts.md) and [accounts and onboarding](../features/accounts-and-onboarding.md).
