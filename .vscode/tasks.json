@@ -21,7 +21,7 @@
     },
     {
       "label": "dev: migrate",
-      "detail": "Apply database migrations to quotation_dev",
+      "detail": "Apply database migrations to sales_dev",
       "type": "shell",
       "command": "uv run alembic upgrade head",
       "options": { "cwd": "${workspaceFolder}" },

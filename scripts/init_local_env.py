@@ -10,7 +10,7 @@ from base64 import urlsafe_b64encode
 from pathlib import Path
 from secrets import token_bytes, token_hex
 
-DATABASE = "@127.0.0.1:55432/quotation_dev"
+DATABASE = "@127.0.0.1:55432/sales_dev"
 
 
 def _read_existing(path: Path) -> dict[str, str]:
@@ -37,9 +37,9 @@ def _wanted(existing: dict[str, str]) -> dict[str, str]:
         "POSTGRES_APP_PASSWORD": app,
         "POSTGRES_WORKER_PASSWORD": worker,
         "SALES_ENVIRONMENT": "development",
-        "SALES_DATABASE_URL": f"postgresql+psycopg://quotation_app:{app}{DATABASE}",
-        "SALES_MIGRATION_DATABASE_URL": f"postgresql+psycopg://quotation_owner:{owner}{DATABASE}",
-        "SALES_WORKER_DATABASE_URL": f"postgresql+psycopg://quotation_worker:{worker}{DATABASE}",
+        "SALES_DATABASE_URL": f"postgresql+psycopg://sales_app:{app}{DATABASE}",
+        "SALES_MIGRATION_DATABASE_URL": f"postgresql+psycopg://sales_owner:{owner}{DATABASE}",
+        "SALES_WORKER_DATABASE_URL": f"postgresql+psycopg://sales_worker:{worker}{DATABASE}",
         # Signs simulated manager-channel events (M4); development only.
         "SALES_SIMULATED_CHANNEL_SECRET": secret("SALES_SIMULATED_CHANNEL_SECRET"),
         # Encrypts provider secrets in the local secret store (phase 1, ADR 0018); 32 bytes.

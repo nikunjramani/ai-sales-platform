@@ -8,9 +8,6 @@ isolation through the real roles.
 
 import hashlib
 import json
-import os
-import subprocess
-import sys
 import threading
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
@@ -785,46 +782,6 @@ def test_answers_are_append_only_and_tenant_isolated(
             assert (
                 connection.execute(text("SELECT count(*) FROM quotation_responses")).scalar() == 0
             )
-
-
-def alembic(*arguments: str) -> None:
-    environment = {
-        **os.environ,
-        "SALES_ENVIRONMENT": "test",
-        "SALES_DATABASE_URL": os.environ["TEST_DATABASE_URL"],
-        "SALES_MIGRATION_DATABASE_URL": os.environ["TEST_MIGRATION_DATABASE_URL"],
-    }
-    subprocess.run([sys.executable, "-m", "alembic", *arguments], check=True, env=environment)
-
-
-def test_migration_0009_round_trip_with_a_delivered_quotation(
-    make_client: Callable[[], TestClient],
-    make_api_key: ApiKeyFactory,
-    settings: Settings,
-    worker_engine: Engine,
-    owner_engine: Engine,
-) -> None:
-    issued_quotation(make_client, make_api_key, settings, worker_engine)
-
-    def scalar(query: str) -> Any:
-        with tenant_transaction(owner_engine, INDUSTRIAL_TENANT) as db:
-            return db.execute(text(query)).scalar_one()
-
-    alembic("downgrade", "0008_connections")
-    try:
-        assert scalar("SELECT status FROM quotation_deliveries") == "available"
-        assert scalar("SELECT count(*) FROM jobs WHERE kind = 'send_message'") == 0
-    finally:
-        alembic("upgrade", "head")
-    # The backfill gives the delivery its message again, with the same status.
-    assert (
-        scalar(
-            "SELECT count(*) FROM quotation_deliveries d JOIN outbound_messages m "
-            "ON m.id = d.outbound_message_id WHERE m.status = d.status "
-            "AND m.template_key = 'quotation_document' AND m.recipient = d.recipient"
-        )
-        == 1
-    )
 
 
 def test_every_linked_phone_gets_a_working_request(

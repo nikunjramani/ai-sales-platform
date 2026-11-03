@@ -85,7 +85,7 @@ The existing files move as follows. The list is indicative; each step checks it 
 | 1 | Guard rails: the architecture test also covers `persistence` and `api`; one shared `bootstrap` used by the API and worker (removes the 20 double constructions). No files move | low |
 | 2 | Leftovers: remove the empty folders, the deprecated simulated route (demo page and scripts move to the hook route) and the whole offline evaluation (Q4) | low |
 | 3 | Rename the package `quotation_app` → `sales_platform`, the entry-point groups, the project name, the portal title, and the settings prefix `QUOTATION_` → `SALES_` (Q1) | medium (wide diff) |
-| 4 | Database: one fresh baseline migration with `sales_*` role and database names, replacing 0001–0015; init scripts, `.env.example`, CI and a one-command "recreate local database" script (Q2) | high (local data is recreated) |
+| 4 | Database: one fresh baseline migration with `sales_*` role and database names, replacing 0001–0015; init scripts, `.env.example`, CI and a one-command "recreate local database" script (Q2). Done: the baseline is the pg_dump of the old head with the roles renamed, proven equal by comparing dumps; schema-rule tests kept in `test_schema_rules.py` | high (local data is recreated) |
 | 5 | Create `platform/` and move the shared core; split `models.py` so each module owns its tables (Alembic still sees one metadata) | medium |
 | 6–12 | Move one module per PR: accounts, integrations, catalogue, enquiries, conversations, quotations, orders. Turn on the module-boundary rule for each module as it lands | medium |
 | 13 | Interface names: `ErpReader` → `ProductSource`, `ErpWriter` → `OrderWriter` (with the catalogue/orders moves if simpler) | low |
@@ -109,3 +109,27 @@ Q1–Q4 were answered on 2026-11-03 (see the decision table). Still open:
 - Finding a feature means opening one folder; module boundaries are visible and tested.
 - About 14 PRs of mostly mechanical moves; each is reviewable on its own and can be paused between steps.
 - Old import paths in notes, branches and docs break after step 3; the docs are updated in the same PRs.
+
+## Addendum: the module order (user approved, 2026-11-03)
+An analysis before step 6 showed that moving the files as planned would leave 18 pairs of modules that depend on each other both ways (13 even with 17 shared contract files in the core). The user chose to untangle every link now, and approved this order. A module may use only the modules above it, and only through their public names:
+
+| # | Module | Owns |
+|---|---|---|
+| 1 | `platform` | tenancy context and permissions, money, validation (with email checks), jobs and the job runner, storage, secrets, rate limits, secret hashing, text safety, web sign-in and sessions (`PortalAuth`), LangGraph checkpoints, the message engine (each module registers its templates) |
+| 2 | `integrations` | connections, the provider registry and the generic provider contract (messages, webhooks), the webhook route, inbound event types and the router (routes are registered by modules), the outbox and sending, website-chat connection settings |
+| 3 | `accounts` | users, businesses, members, invitations, API keys (and their API connection), the business logo, account emails |
+| 4 | `catalogue` | products, prices, stock, the `ProductSource` port and its provider contract, sync |
+| 5 | `conversations` | contacts, threads, consent, the customer messenger, staff messages |
+| 6 | `enquiries` | intake, attachments, requirement extraction, the enquiry workflow, reading document text |
+| 7 | `quotations` | pricing and the pricing policy, versions, approvals (portal, linked manager phones, by message, signed link), PDFs and delivery, acceptance, manager replies, the quotation workflow |
+| 8 | `orders` | orders, the `OrderWriter` port and its provider contract, "track my order" |
+| 9 | `customer_channels` | the website chat service, the customer inbox and the customer API (they combine enquiries, quotations and orders for one customer) |
+| – | `providers/` | the plug-in packages (api, simulated, web_chat, telegram, erpnext, local_catalogue): may use any module; nothing imports them (entry points only) |
+
+Key moves that break the links:
+- Each module defines its own plug-in contract (catalogue: `ProductSource`; orders: `OrderWriter`); the integrations provider contract covers messaging and webhooks only.
+- Inbound routes (approve, accept, consent, track my order...) live in their own module; integrations only dispatches to the routes the wiring registers.
+- Outbox status changes notify modules through hooks in the same transaction (quotation delivery status, the conversation thread, the expiry job) instead of the outbox writing their tables.
+- Manager phone links and approval notices move to quotations.
+
+Delivery: one PR per module group, in the order above; the architecture test gains the module order and enforces it as each module lands. Behaviour does not change.

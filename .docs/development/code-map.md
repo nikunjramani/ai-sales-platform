@@ -9,7 +9,7 @@ Status: the M0 foundation, M1 domain/tenancy, M2 intake/jobs, M3 extraction, M4 
 | [app.py](../../src/sales_platform/api/app.py) | Application factory, lifecycle and health routes |
 | [database.py](../../src/sales_platform/persistence/database.py) | Bounded connection pool and schema/runtime-role readiness |
 | [models.py](../../src/sales_platform/persistence/models.py) | Tenant, Membership and TenantPricingPolicy table metadata |
-| [0001_tenants.py](../../migrations/versions/0001_tenants.py) | Initial schema, forced RLS and runtime read grants |
+| [0001_baseline](../../migrations/versions/0001_baseline.py) (formerly `0001_tenants`) | Initial schema, forced RLS and runtime read grants |
 | [env.py](../../migrations/env.py) | Alembic execution with separate owner credentials |
 | [seed.py](../../src/sales_platform/persistence/seed.py) | Idempotent development/test-only fictional tenants, memberships and policies |
 | [compose.yaml](../../compose.yaml) / [init.sql](../../infra/postgres/init.sql) | Local database container, persistent volume and role bootstrap |
@@ -33,13 +33,15 @@ Dependency direction: application -> ports -> domain; adapters and persistence i
 | [application/pricing.py](../../src/sales_platform/application/pricing.py) | QuotationPricingService use case (read-only) |
 | [adapters/erp/simulated.py](../../src/sales_platform/adapters/erp/simulated.py) | Per-tenant in-memory ERP, failure injection, synthetic demo catalogues |
 | [persistence/tenancy.py](../../src/sales_platform/persistence/tenancy.py) | `tenant_transaction` and SQL membership/policy readers |
-| [0002_memberships_policies.py](../../migrations/versions/0002_memberships_policies.py) | Membership and pricing-policy tables, forced RLS, runtime SELECT grants |
+| [0001_baseline](../../migrations/versions/0001_baseline.py) (formerly `0002_memberships_policies`) | Membership and pricing-policy tables, forced RLS, runtime SELECT grants |
 | [demo_quotation.py](../../scripts/demo_quotation.py) | Prints a pricing trace and access-denial examples |
 | [tests/unit/domain/](../../tests/unit/domain/test_pricing.py) | Rule tests: rounding, quantities, units, prices, stock, roles |
 | [tests/unit/application/](../../tests/unit/application/test_pricing.py) / [test_erp_contract.py](../../tests/unit/ports/test_erp_contract.py) | Use-case behaviour and the shared ERP adapter contract suite |
 | [tests/integration/persistence/test_tenancy.py](../../tests/integration/persistence/test_tenancy.py) | Two-tenant negative tests through the PostgreSQL runtime role |
 
 ## Implemented M2 intake, jobs and attachments
+Migrations: one baseline, [0001_baseline.py](../../migrations/versions/0001_baseline.py) + [.sql](../../migrations/versions/0001_baseline.sql), replaced the 15 earlier migrations (ADR 0026 step 4); the rows below say what each former migration created.
+
 Entry points: the HTTP API ([api/app.py](../../src/sales_platform/api/app.py)) and the worker process ([worker.py](../../src/sales_platform/worker.py)). Both are composition roots that wire adapters to application services; the services both use are built once by `composition.build_core` (ADR 0026 step 1). See [enquiry intake](../features/enquiry-intake.md).
 
 | Actual file | Responsibility |
@@ -58,7 +60,7 @@ Entry points: the HTTP API ([api/app.py](../../src/sales_platform/api/app.py)) a
 | [persistence/jobs.py](../../src/sales_platform/persistence/jobs.py) | SKIP LOCKED claims, leases, fenced completion |
 | [persistence/api_keys.py](../../src/sales_platform/persistence/api_keys.py) | Key lookup via the narrow RLS policy; owner-only create/revoke |
 | [adapters/storage/local.py](../../src/sales_platform/adapters/storage/local.py) | Local disk storage with strict keys and atomic writes |
-| [0003_intake.py](../../migrations/versions/0003_intake.py) | Intake/job tables, composite tenant FKs, RLS, worker/API grants |
+| [0001_baseline](../../migrations/versions/0001_baseline.py) (formerly `0003_intake`) | Intake/job tables, composite tenant FKs, RLS, worker/API grants |
 | [tests/unit/application/](../../tests/unit/application/test_intake.py), [tests/unit/api/test_enquiries.py](../../tests/unit/api/test_enquiries.py) | Use-case and HTTP contract tests over in-memory fakes |
 | [tests/integration/api/test_enquiries.py](../../tests/integration/api/test_enquiries.py), [test_jobs.py](../../tests/integration/persistence/test_jobs.py) | End-to-end intake, races, durability, crash recovery and role isolation on PostgreSQL |
 
@@ -76,7 +78,7 @@ Entry point: `extract_requirements` jobs in the worker ([worker.py](../../src/sa
 | [adapters/interpreters/factory.py](../../src/sales_platform/adapters/interpreters/factory.py) | Generic interpreter selection: no model = rules; `<provider>:<model>` = any LangChain chat model via `init_chat_model` (ADR 0017) |
 | [adapters/documents/text.py](../../src/sales_platform/adapters/documents/text.py) | Bounded PDF/text reading; unsupported reasons instead of empty text |
 | [persistence/workflow.py](../../src/sales_platform/persistence/workflow.py) | SqlWorkflowStore and the worker-role PostgreSQL checkpointer |
-| [0004_workflow.py](../../migrations/versions/0004_workflow.py) | workflow_runs, frozen LangGraph checkpoint tables, M3 enquiry statuses, worker grants |
+| [0001_baseline](../../migrations/versions/0001_baseline.py) (formerly `0004_workflow`) | workflow_runs, frozen LangGraph checkpoint tables, M3 enquiry statuses, worker grants |
 | [tests/unit/workflows/test_enquiry.py](../../tests/unit/workflows/test_enquiry.py), [tests/integration/workflows/test_enquiry.py](../../tests/integration/workflows/test_enquiry.py) | Branches, invented facts, crash/resume, isolation; Postgres end to end including M1 pricing |
 
 ## Implemented M4 drafting, approval and portal
@@ -100,7 +102,7 @@ See [quotation approval](../features/quotation-approval.md).
 | [adapters/providers/simulated/](../../src/sales_platform/adapters/providers/simulated/provider.py) | Simulated provider (phase 1): outbox files, HMAC signatures |
 | [api/auth.py](../../src/sales_platform/api/auth.py), [api/portal.py](../../src/sales_platform/api/portal.py), [api/channels.py](../../src/sales_platform/api/channels.py) | Sign-in and session dependencies, tenant routes, signed webhook |
 | [persistence/quotations.py](../../src/sales_platform/persistence/quotations.py), [channels.py](../../src/sales_platform/persistence/channels.py), [sessions.py](../../src/sales_platform/persistence/sessions.py) | SQL stores, advisory run lock, job queuing in the same transaction |
-| [0005_approvals.py](../../migrations/versions/0005_approvals.py) | M4 tables, append-only triggers, column grants, narrow RLS policies |
+| [0001_baseline](../../migrations/versions/0001_baseline.py) (formerly `0005_approvals`) | M4 tables, append-only triggers, column grants, narrow RLS policies |
 | [scripts/simulated_channel.py](../../scripts/simulated_channel.py) | Play the manager's phone: inbox, enroll, decide |
 | [portal/src/](../../portal/src/app/App.tsx) | React portal organised by feature (auth, tenant, quotations, enquiries, channels) and layer (model, api, services, store, hooks, ui, routes). See [portal architecture](portal-architecture.md). Tests live in [portal/tests/](../../portal/tests/architecture.test.ts), mirroring src |
 | [tests/unit/conftest.py](../../tests/unit/conftest.py) | In-memory M4/M5 "database" and harness used by unit tests |
@@ -123,7 +125,7 @@ See [quotation delivery](../features/quotation-delivery.md) and [adding provider
 | [adapters/providers/api/](../../src/sales_platform/adapters/providers/api/__init__.py) | API provider (pull: makes the document available) |
 | [api/pdf.py](../../src/sales_platform/api/pdf.py) | Download response headers, integrity-failure response |
 | [persistence/documents.py](../../src/sales_platform/persistence/documents.py) | `queue_delivery` (outbox row + job), SqlDeliveryStore, SqlDocumentReader |
-| [0006_documents.py](../../migrations/versions/0006_documents.py) | quotation_documents (append-only) and quotation_deliveries, RLS, column grants |
+| [0001_baseline](../../migrations/versions/0001_baseline.py) (formerly `0006_documents`) | quotation_documents (append-only) and quotation_deliveries, RLS, column grants |
 | portal `features/quotations` | `DocumentPanel`, `DeliveryList`, `deliveryService.ts`, `useQuotationDocuments.ts` |
 
 ## Implemented M6 customer acceptance
@@ -135,7 +137,7 @@ See [customer acceptance](../features/customer-acceptance.md).
 | [ports/acceptance.py](../../src/sales_platform/ports/acceptance.py) | ResponseStore (offers, atomic recording under a lock) |
 | [application/acceptance.py](../../src/sales_platform/application/acceptance.py) | QuotationResponseService (respond/withdraw/expire), expiry and notice job handlers |
 | [persistence/acceptance.py](../../src/sales_platform/persistence/acceptance.py) | SqlResponseStore: row-locked recording, revised version, resume/notice jobs |
-| [0007_acceptance.py](../../migrations/versions/0007_acceptance.py) | Validity setting and column, quotation_responses (append-only), new statuses |
+| [0001_baseline](../../migrations/versions/0001_baseline.py) (formerly `0007_acceptance`) | Validity setting and column, quotation_responses (append-only), new statuses |
 | portal `features/quotations` | `CustomerPanel`, `customerService.ts`, `useCustomerAnswer.ts`, list filters |
 
 ## Phase 1 connector framework (merged, ADR 0018)
@@ -150,7 +152,7 @@ See the [phase 1 plan](../plan/platform/implementation/phase-1-foundations.md).
 | [ports/connections.py](../../src/sales_platform/ports/connections.py), [ports/secrets.py](../../src/sales_platform/ports/secrets.py), [ports/messages.py](../../src/sales_platform/ports/messages.py) | ConnectionStore and HookLookup; SecretStore; MessageOutbox and SendHook |
 | [adapters/secrets/](../../src/sales_platform/adapters/secrets/local.py) | `local` (AES-256-GCM files bound to tenant and reference) and `none` secret stores, registered as entry points |
 | [application/plugins.py](../../src/sales_platform/application/plugins.py) | Load a pluggable part by entry point name, with clear errors |
-| [0008_connections.py](../../migrations/versions/0008_connections.py) | connections, connection_events, inbox/binding/enrollment `connection_ref`, lookup policy, worker grants, backfill and downgrade |
+| [0001_baseline](../../migrations/versions/0001_baseline.py) (formerly `0008_connections`) | connections, connection_events, inbox/binding/enrollment `connection_ref`, lookup policy, worker grants, backfill and downgrade |
 | [persistence/connections.py](../../src/sales_platform/persistence/connections.py) | SqlConnectionStore, SqlHookLookup, owner-only `ensure_connection`/`set_status` with audit events; API keys and the seed use them |
 | [application/providers.py](../../src/sales_platform/application/providers.py) | ProviderRegistry: loads `sales_platform.providers` entry points, checks keys, skips dev-only providers in production |
 | [application/inbound.py](../../src/sales_platform/application/inbound.py) | InboundService (token, size, verify-before-parse, store once), ManagerActionRoute, ProcessInboundHandler (`process_inbound` job), `routes_for` |
@@ -159,7 +161,7 @@ See the [phase 1 plan](../plan/platform/implementation/phase-1-foundations.md).
 | [api/channels.py](../../src/sales_platform/api/channels.py) | Deprecated simulated route, now finding the business's connection and routing through ManagerActionRoute |
 | [adapters/providers/api/](../../src/sales_platform/adapters/providers/api/__init__.py) | Provider `api` (pull: send = available) |
 | [adapters/providers/simulated/](../../src/sales_platform/adapters/providers/simulated/provider.py) | Provider `simulated` (dev only): outbox files, per-connection HMAC signing, manager actions, demo catalogue reader; `signing.py` (incl. `hook_token`), `outbox.py` |
-| [0009_outbound_messages.py](../../migrations/versions/0009_outbound_messages.py) | outbound_messages (forced RLS, column grants), `quotation_deliveries.outbound_message_id`, backfill and downgrade |
+| [0001_baseline](../../migrations/versions/0001_baseline.py) (formerly `0009_outbound_messages`) | outbound_messages (forced RLS, column grants), `quotation_deliveries.outbound_message_id`, backfill and downgrade |
 | [persistence/messages.py](../../src/sales_platform/persistence/messages.py) | SqlMessageOutbox: idempotent enqueue with the send job, compare-and-set status mirrored onto a linked delivery, provider receipts |
 | [application/messaging.py](../../src/sales_platform/application/messaging.py) | OutboundService (render a template, store the message) and SendMessageHandler (`send_message` job) |
 | [application/delivery.py](../../src/sales_platform/application/delivery.py) | `deliver_quotation`: prepare the PDF, queue the outbox message; QuotationDocumentHook attaches the verified PDF at send time |
@@ -176,7 +178,7 @@ See the [phase 2 plan](../plan/platform/implementation/phase-2-accounts.md) and 
 | [domain/messages.py](../../src/sales_platform/domain/messages.py) | Also the five account email templates (single-line subjects) |
 | [domain/documents.py](../../src/sales_platform/domain/documents.py) | Also SellerDetails and `printable_text` (shared by the renderer and the profile form) |
 | [ports/accounts.py](../../src/sales_platform/ports/accounts.py) | UserStore, BusinessStore, MemberStore, InvitationStore, ApiKeyAdminStore, AccountEmailStore, Mailer, RateLimiter, LogoNormalizer, PasswordHasher |
-| [0010_accounts.py](../../migrations/versions/0010_accounts.py) | All phase 2 tables, policies, grants, the status trigger and the four SECURITY DEFINER functions, with backfill and downgrade |
+| [0001_baseline](../../migrations/versions/0001_baseline.py) (formerly `0010_accounts`) | All phase 2 tables, policies, grants, the status trigger and the four SECURITY DEFINER functions, with backfill and downgrade |
 | [persistence/accounts.py](../../src/sales_platform/persistence/accounts.py) | SQL stores for people, businesses, members, invitations and account emails; maps the functions' SQLSTATEs to port errors |
 | [persistence/rate_limits.py](../../src/sales_platform/persistence/rate_limits.py) | SqlRateLimiter: fixed windows in one atomic upsert, hashed keys |
 | [persistence/api_keys.py](../../src/sales_platform/persistence/api_keys.py) | Also SqlApiKeyAdminStore (portal keys with their connection and audit) |
@@ -199,7 +201,7 @@ See the [phase 3 plan](../plan/platform/implementation/phase-3-catalogue.md) and
 | [domain/connections.py](../../src/sales_platform/domain/connections.py) | Also the `catalogue_editable` capability |
 | [ports/catalogue_admin.py](../../src/sales_platform/ports/catalogue_admin.py) | CatalogueReadStore (for LocalCatalogue) and CatalogueStore (for the screens), queries, pages, counts, errors |
 | [ports/providers.py](../../src/sales_platform/ports/providers.py) | Also `ProviderEnvironment.catalogue_store` |
-| [0011_catalogue.py](../../migrations/versions/0011_catalogue.py) | Catalogue tables, indexes, RLS, triggers, grants; `create_business` with the default source; backfill and downgrade |
+| [0001_baseline](../../migrations/versions/0001_baseline.py) (formerly `0011_catalogue`) | Catalogue tables, indexes, RLS, triggers, grants; `create_business` with the default source; backfill and downgrade |
 | [persistence/catalogue.py](../../src/sales_platform/persistence/catalogue.py) | SqlCatalogueStore: both ports, best-match search in one query, row locks for revisions, replays by request ID, change log |
 | [persistence/seed.py](../../src/sales_platform/persistence/seed.py) | Also the Demo Local Catalogue business and `seed_local_catalogue` |
 | [adapters/catalogue/local.py](../../src/sales_platform/adapters/catalogue/local.py) | LocalCatalogue: our list as an `ErpReader` (evidence rules of Q10) |
@@ -221,7 +223,7 @@ See the [phase 3 plan](../plan/platform/implementation/phase-3-catalogue.md) and
 | Website chat | `adapters/providers/web_chat`, `application/chat.py`, `persistence/chat.py`, `api/public_chat.py`, `application/connections.py` + `persistence/connections.SqlHostedChatAdmin` |
 | Staff | `application/contacts.py`, `persistence/contacts.py`, `api/conversations.py`; portal `features/conversations`, `features/connections/ui/components/HostedChatCard.tsx` |
 | Widget | `portal/src/widget/` (`api/chatClient.ts`, `state/session.ts`, `ui/chatView.ts`, `main.ts`), `portal/vite.widget.config.ts` |
-| Migration | `migrations/versions/0012_conversations.py` |
+| Migration | [0001_baseline](../../migrations/versions/0001_baseline.py) (formerly `0012_conversations`) |
 
 ## Phase 5 one-click tools, platform webhooks and approval by message (ADR 0022)
 | Area | Files |
@@ -236,7 +238,7 @@ See the [phase 3 plan](../plan/platform/implementation/phase-3-catalogue.md) and
 | Email helpers | `adapters/providers/email_common/__init__.py` (unused until an email package) |
 | Operators | `ops.py` (`platform-config`, `platform-setup`) |
 | Portal | `features/connections` (`OneClickToolsCard`, `PendingActionPanel`, `ConnectionList` test/disable, `store/connectionSetup.ts`), `features/conversations` (Send again), `features/approvals` |
-| Migration | `migrations/versions/0013_provider_state.py` |
+| Migration | [0001_baseline](../../migrations/versions/0001_baseline.py) (formerly `0013_provider_state`) |
 
 ## Phases 6 and 7: ERPNext product source and orders (ADR 0023, 0024)
 | Area | Files |
@@ -250,7 +252,7 @@ See the [phase 3 plan](../plan/platform/implementation/phase-3-catalogue.md) and
 | Test doubles | `adapters/erp/simulated_orders.py` (fault modes) |
 | Sandbox | `infra/erpnext/compose.yaml`, `scripts/seed_erpnext_sandbox.py` |
 | Portal | `features/orders` (list, detail, `QuotationOrderPanel`), `features/catalogue/ui/components/CatalogueSyncPanel.tsx`, `features/connections/services/connectionService.formDefaults` |
-| Migrations | `0014_catalogue_sync.py`, `0015_orders.py` |
+| Migrations | [0001_baseline](../../migrations/versions/0001_baseline.py) (formerly `0014_catalogue_sync`, `0015_orders`) |
 
 ## Planned modules
 

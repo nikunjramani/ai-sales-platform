@@ -220,7 +220,7 @@ def test_create_business_cannot_be_abused(
         ).all()
     assert len(rows) == 4
     for row in rows:
-        assert row.prosecdef and row.rolname == "quotation_owner"
+        assert row.prosecdef and row.rolname == "sales_owner"
         assert row.proconfig == ["search_path=pg_catalog, public"]
     # The caller's business context is restored after the call.
     with runtime_engine.begin() as connection:

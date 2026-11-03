@@ -77,7 +77,7 @@ uv run ruff format --check .        # formatting
 uv run mypy                         # strict type checking
 uv run pytest                       # unit tests (integration tests are skipped)
 uv run pytest tests/unit            # unit tests only
-uv run python scripts/check_database.py   # migrate both DBs + all tests on quotation_test
+uv run python scripts/check_database.py   # migrate both DBs + all tests on sales_test
 ```
 Integration tests never touch your development data: they need `--run-integration` plus explicit `TEST_*` URLs that must name a `*_test` database, which `check_database.py` supplies. CI runs everything on every push. See [testing](.docs/development/testing.md).
 
@@ -99,7 +99,7 @@ evals/           Synthetic evaluation dataset for enquiry interpreters
 scripts/         Local helpers: credentials, database checks, pricing demo, API keys
 tests/
   conftest.py    Shared fixtures (tenants, contexts, policies, simulated ERP)
-  unit/          Offline tests; folders mirror src/quotation_app
+  unit/          Offline tests; folders mirror src/sales_app
   integration/   PostgreSQL tests; run with --run-integration
 infra/           PostgreSQL role bootstrap for Docker Compose
 .docs/           Architecture, plans, decisions (ADRs), guides and handoff

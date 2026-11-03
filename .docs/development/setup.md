@@ -38,15 +38,15 @@ uv run python scripts/demo_quotation.py
 ```
 
 **Two databases:**
-- `quotation_dev` holds your development data.
-- `quotation_test` is used only by integration tests, which empty the intake and job tables before each test. They refuse to run against a database whose name doesn't end in `_test`.
+- `sales_dev` holds your development data.
+- `sales_test` is used only by integration tests, which empty the intake and job tables before each test. They refuse to run against a database whose name doesn't end in `_test`.
 
 **`check_database.py`:**
-- Migrates and checks both databases, then runs every test against `quotation_test`.
-- `--cycle` also downgrades the test database to empty, upgrades it again and retests. CI uses this mode.
+- Migrates and checks both databases, then runs every test against `sales_test`.
+- `--cycle` also downgrades the test database to empty (the baseline's downgrade drops everything it created), upgrades it again and retests. CI uses this mode.
 - Credentials travel only in child-process environments and are never printed.
 
-The seed and the M1 pricing demo use `quotation_dev`; the demo stores and sends nothing.
+The seed and the M1 pricing demo use `sales_dev`; the demo stores and sends nothing.
 
 **Local database details:**
 - Compose binds PostgreSQL to loopback port 55432.
@@ -54,15 +54,16 @@ The seed and the M1 pricing demo use `quotation_dev`; the demo stores and sends 
 - Editing `.env` later does not change passwords in an existing database; that needs an explicit rotation.
 - `docker compose down` stops the database and keeps its named volume. Don't casually add `-v`, which deletes the local data.
 
-### Upgrading an existing local database (M0/M1 to M2)
-M2 adds a worker role and a test database. To add them without losing data:
+### Coming from before the baseline (ADR 0026 step 4, 2026-11-03)
+The 15 old migrations were replaced by one baseline, and the database roles and databases were renamed (`sales_owner`, `sales_app`, `sales_worker`, `sales_dev`, `sales_test`; Compose project `sales-local`). An old local database is not upgraded; it is recreated (all local data is synthetic and is lost):
 ```powershell
-uv run python scripts/init_local_env.py --add-missing   # appends worker password and URL to .env
-docker compose up -d --wait                              # recreates the container with the new env; volume kept
-docker compose exec -T postgres psql -U postgres -d quotation_dev -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/01-roles.sql
+uv sync --all-extras
+# In .env: the setting names start with SALES_ and the database URLs use the sales_* names
+# (steps 3-4 renamed them); a new checkout runs scripts/init_local_env.py instead.
+uv run python scripts/recreate_local_database.py --remove-old-project quotation-local
 uv run python scripts/check_database.py
 ```
-In Git Bash, set `MSYS_NO_PATHCONV=1` before the `docker compose exec` line, otherwise the container path is rewritten into a Windows path. PowerShell needs no change.
+Add `--delete-volume quotation-local_quotation_pgdata` to delete the old data volume too. Restart the API and the worker afterwards.
 
 ## API
 ```powershell
@@ -150,7 +151,7 @@ Migrate first (`uv run alembic upgrade head`, or `check_database.py`). No new se
    The JSON shows the approved lines and totals and the PDF's SHA-256. Before approval both calls return 404. The portal then shows when the customer first downloaded it.
 4. PDFs are stored under `var/storage/tenants/<tenant>/documents/`.
 
-**Verified 2026-10-23** (real uvicorn + worker processes on `quotation_dev`, HTTP only):
+**Verified 2026-10-23** (real uvicorn + worker processes on `sales_dev`, HTTP only):
 - **Before approval:** a pending quotation gives the customer 404, the preview was marked, and the approved PDF gave 404.
 - **After approval and one worker pass:**
   - The delivery was `available`.
@@ -180,7 +181,7 @@ Migrate first (`check_database.py` or `uv run alembic upgrade head`). Each busin
 4. **Withdraw:** on an open quotation, the Customer box has a Withdraw form (reason required). The customer then gets 409 "withdrawn".
 5. **Price change:** if the ERP price differs when the customer accepts, they get 409 with the differences, and a new version appears for manager approval. (The demo ERP has fixed prices, so this is shown by the tests.)
 
-**Verified 2026-10-23** (real uvicorn + worker processes on `quotation_dev`, HTTP only):
+**Verified 2026-10-23** (real uvicorn + worker processes on `sales_dev`, HTTP only):
 - **Issue:** the offer was `open`, valid 7 days, with "Valid until" on the PDF.
 - **Accept:** a wrong hash got 409; accepting got 200 `accepted`; the replay returned `replayed=true`.
 - **After the worker:** the customer saw `accepted`, the portal showed the answer, and the linked manager phone got "the customer accepted quotation Q-... version 1 (total 10030.00 INR)".
@@ -201,7 +202,7 @@ Run once:
 ```
 uv sync --all-extras                                   # registers the providers and secret stores
 uv run python scripts/init_local_env.py --add-missing  # adds SALES_SECRET_STORE_KEY
-uv run alembic upgrade head                            # 0008 connections, 0009 outbound messages
+uv run alembic upgrade head
 uv run python -m sales_platform.persistence.seed        # demo connections (phone, catalogue, webhook)
 ```
 The VS Code "Run all" task migrates and seeds for you; `uv sync` and the key are still manual.
@@ -211,7 +212,7 @@ After pulling phase 2, run once:
 ```
 uv sync --all-extras                                   # argon2-cffi and the console mailer entry point
 uv run python scripts/init_local_env.py --add-missing  # adds SALES_DEMO_PASSWORD
-uv run alembic upgrade head                            # 0010 accounts
+uv run alembic upgrade head
 uv run python -m sales_platform.persistence.seed        # demo people become verified users with that password
 ```
 Then, with the API, the worker and the portal running ("Run all" in VS Code):
@@ -232,30 +233,28 @@ After pulling:
 ```powershell
 uv sync --all-extras                                   # registers the web_chat provider
 uv run python scripts/init_local_env.py --add-missing  # adds SALES_CHAT_IP_KEY
-uv run alembic upgrade head                            # 0012_conversations
+uv run alembic upgrade head
 cd portal; npm ci; npm run build; cd ..                # portal + dist/widget/widget.js
 ```
 - **Try the chat:** sign in as `admin@local.example` (or an industrial demo administrator), open **Connections**, press **Enable Website chat** and open the chat link (`/chat/<handle>`). The API serves the widget when `SALES_PORTAL_DIST_DIR` points at `portal/dist` (the demo runner sets it).
 - **Watch staff screens:** the **Inbox** and **Contacts** show conversations; the quotation page shows the enquiry's messages.
 - **Demo:** `uv run python demo/run_demo.py` shows the industrial business's website chat next to the API customer and the manager phone. Try "We need 5 boxes of 2-core cable", then "10 metres" (rules reader), or "can you get cables price?" then "10 meter?" (Gemini).
-- **Downgrading 0012** loses follow-up rounds and follow-up message text; back up first.
 
 ## One-click tools, Telegram and approval by message (phase 5)
 After pulling:
 ```powershell
 uv sync --all-extras                                   # registers the telegram provider, httpx
-uv run alembic upgrade head                            # 0013_provider_state
+uv run alembic upgrade head
 cd portal; npm ci; npm run build; cd ..
 ```
 - **No accounts are needed for development.** The simulated phone shows approval by message: approval requests, questions and confirmations are files under `var/storage/simulated-channel/`, each with its `message_id`. A `reply` event answers one of them (see the [PostgreSQL test](../../tests/integration/workflows/test_manager_replies.py)). Written replies are read only with `SALES_MODEL` set; without it the phone gets "written replies are not read here".
 - **Signed link:** every approval request carries `<portal>#/approve/<token>`. Open it signed in as the approver it was sent to.
 - **Telegram for real** needs a bot, a public HTTPS address (a tunnel) and the operator command: [provider setup](../operations/provider-setup.md#telegram). Without settings the Telegram card still shows, but Enable fails with "Telegram is not set up for this platform".
-- **Downgrading 0013** deletes routes, prompts, the reply audit, media links and the new event types; back up first.
 
 ## Product catalogue (phase 3)
-After pulling phase 3, run once. The first command gives the migration role CREATE on `quotation_dev` (needed for the `pg_trgm` extension; user decision 2026-10-28); it re-runs the idempotent role script (in Git Bash, prefix it with `MSYS_NO_PATHCONV=1`):
+After pulling phase 3, run once. The first command gives the migration role CREATE on `sales_dev` (needed for the `pg_trgm` extension; user decision 2026-10-28); it re-runs the idempotent role script (in Git Bash, prefix it with `MSYS_NO_PATHCONV=1`):
 ```
-docker compose exec -T postgres psql -U postgres -d quotation_dev -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/01-roles.sql
+docker compose exec -T postgres psql -U postgres -d sales_dev -v ON_ERROR_STOP=1 -f /docker-entrypoint-initdb.d/01-roles.sql
 uv sync --all-extras                                   # registers the local_catalogue provider
 uv run alembic upgrade head                            # 0011 catalogue (pg_trgm, our list as default source)
 uv run python -m sales_platform.persistence.seed        # adds the Demo Local Catalogue business

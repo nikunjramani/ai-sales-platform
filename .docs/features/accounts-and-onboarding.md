@@ -51,7 +51,7 @@ A refused request answers 429 with `Retry-After`.
 
 Suspension is set only by the operator with owner credentials:
 ```sql
--- with the owner role, e.g. psql as quotation_owner
+-- with the owner role, e.g. psql as sales_owner
 SELECT set_config('app.tenant_id', '<tenant id>', false);
 UPDATE tenants SET status = 'suspended' WHERE id = '<tenant id>';  -- or 'active' to lift it
 ```

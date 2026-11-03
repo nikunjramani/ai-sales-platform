@@ -10,7 +10,7 @@ tests/
     adapters/identity/  (covered through application/api tests)
     adapters/providers/simulated/  providers/ (provider contract suite for every provider)
     test_config.py  test_architecture.py
-  integration/         Real PostgreSQL (quotation_test only); auto-marked `integration`
+  integration/         Real PostgreSQL (sales_test only); auto-marked `integration`
     conftest.py        Database settings, engines, cleanup, API-key and storage fixtures
     api/  persistence/  workflows/
 
@@ -29,7 +29,7 @@ Rules:
 - `tests/` has no `__init__.py` files. Pytest runs with `--import-mode=importlib` and mypy with `explicit_package_bases`, so names such as `domain/test_pricing.py` and `application/test_pricing.py` can coexist.
 - Shared setup lives in fixtures, not copied helpers. Test modules never import `conftest.py`.
 - Every test under `tests/integration/` is marked `integration` automatically. A test elsewhere can opt in with the marker, for example a future real-ERP contract case.
-- **Safety:** integration tests empty the intake and job tables before each test, so every `TEST_*` URL must name a database ending in `_test`. Otherwise the run fails immediately. Development data in `quotation_dev` is never touched.
+- **Safety:** integration tests empty the intake and job tables before each test, so every `TEST_*` URL must name a database ending in `_test`. Otherwise the run fails immediately. Development data in `sales_dev` is never touched.
 
 Shared fixtures in [tests/conftest.py](../../tests/conftest.py):
 
@@ -123,7 +123,7 @@ M5 adds:
 | [integration/workflows/test_quotation.py](../../tests/integration/workflows/test_quotation.py) | Enquiry, draft, portal approval, resume; manager/sales revision loop; simulated channel enroll/deliver/approve with forwarded refusal and replay; two concurrent decisions record one; resume after worker restart; pricing failure revised; other tenant 404; versions and decisions append-only (grants and trigger); session and membership RLS |
 | [integration/persistence/test_database.py](../../tests/integration/persistence/test_database.py), [test_seed.py](../../tests/integration/persistence/test_seed.py), [integration/api/test_app.py](../../tests/integration/api/test_app.py) | Readiness and owner-role rejection, idempotent seed, tenant visibility, context cleared on pooled connections, denied runtime writes |
 
-Run [check_database.py](../../scripts/check_database.py) only after local PostgreSQL starts. It migrates and checks `quotation_dev` and `quotation_test`, then runs every test against `quotation_test`. With integration tests enabled, missing or non-`_test` URLs make the run fail; by default they are skipped visibly.
+Run [check_database.py](../../scripts/check_database.py) only after local PostgreSQL starts. It migrates and checks `sales_dev` and `sales_test`, then runs every test against `sales_test`. With integration tests enabled, missing or non-`_test` URLs make the run fail; by default they are skipped visibly.
 
 CI runs `check_database.py --cycle` on a fresh environment. Remote GitHub Actions [run 39734937763](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39734937763) passed the M0 sequence; [CI run 39738532222](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39738532222) and [CI run 39741408875](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39741408875) passed for M1 and M2, and [CI run 39747434193](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39747434193) passed for M3. [CI run 39900219005](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39900219005) passed for M4, in both the `verify` and the new `portal` job. [CI run 39903715921](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39903715921) passed for M5 (both jobs). [CI run 39907493342](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39907493342) passed for M6 (both jobs).
 
@@ -137,7 +137,6 @@ CI runs `check_database.py --cycle` on a fresh environment. Remote GitHub Action
 | [unit/application/test_catalogue_admin.py](../../tests/unit/application/test_catalogue_admin.py) | Who may read and edit, read-only sources, suspended business, currency and minor units, replays, staleness, unit lock, archive/restore/delete, list with prices and stock, categories |
 | [unit/providers/test_provider_contract.py](../../tests/unit/providers/test_provider_contract.py) | Also `local_catalogue` (no webhooks, no sending, a working reader) |
 | [integration/persistence/test_catalogue.py](../../tests/integration/persistence/test_catalogue.py) | Seeded local demo reads like the simulated ERP; RLS on every table and WITH CHECK; cross-business category refused; worker read-only; prices and stock cannot change (grants and trigger); create/update/archive and audit; unit lock and delete rule; concurrent prices get revisions 1 and 2; replays; decimals kept exactly; counts; limit; category rename/archive refresh search words |
-| [integration/persistence/test_migrations_0011.py](../../tests/integration/persistence/test_migrations_0011.py) | `create_business` with and without the default source; downgrade drops the catalogue and local sources, keeps the simulated one, restores the 0010 function; upgrade backfills |
 | [integration/adapters/catalogue/test_local_catalogue.py](../../tests/integration/adapters/catalogue/test_local_catalogue.py) | Search cases and contract checks on PostgreSQL with both roles; each business routed to its own source |
 | [integration/api/test_catalogue.py](../../tests/integration/api/test_catalogue.py) | Real session and CSRF; products, prices (replay 200), stock, unit lock, version conflict, delete refused, archive, changes; paging and search; other businesses 404; read-only source 409; viewer 403; checklist step |
 | [integration/workflows/test_local_catalogue_quotation.py](../../tests/integration/workflows/test_local_catalogue_quotation.py) | Enquiry priced from our list (evidence standard/2), approval, a portal price change makes acceptance revise to version 2 at the new price; an 8-day-old count is stale with stock review; an archived product is never quoted or offered |
@@ -146,7 +145,6 @@ CI runs `check_database.py --cycle` on a fresh environment. Remote GitHub Action
 ### Phase 4 customers and conversations (ADR 0021)
 - **Unit:** `tests/unit/domain/test_conversations.py` (follow-up rule, 7-day boundary), `test_contacts.py` (consent words, masking), `test_requirements.py` (`quantity_quote`), `test_messages.py` (confirmed wording); `tests/unit/application/test_conversations.py`, `test_customer_messages.py`, `test_customer_actions.py`, `test_contacts.py`, `test_intake.py` (follow-ups); interpreter tests (markers, binding).
 - **PostgreSQL:**
-  - `tests/integration/persistence/test_migrations_0012.py` (backfill, downgrade, reopen guard);
   - `test_conversations.py` (races: answers at once reopen once; one contact for simultaneous first messages);
   - `tests/integration/workflows/test_enquiry.py` (round 2, re-read when a message arrives mid-round);
   - `tests/integration/api/test_public_chat.py` (chat end to end, refusals, daily cap, secure link, staff inbox/merge/acknowledgement, hosted page, old-envelope delivery regression).
@@ -163,7 +161,6 @@ CI runs `check_database.py --cycle` on a fresh environment. Remote GitHub Action
   - `tests/unit/adapters/providers/telegram/test_telegram.py`: documented updates in `tests/data/providers/telegram/updates.json`, a fake Bot API through `httpx.MockTransport`, send outcome mapping, linking, and the whole link flow through the core.
   - `tests/unit/adapters/providers/email_common/`, `tests/unit/test_ops.py`; the provider contract test covers platform-webhook providers.
 - **PostgreSQL:**
-  - `tests/integration/persistence/test_migrations_0013.py` (exact-key lookup, global uniqueness, append-only audit, downgrade);
   - `test_provider_state.py` (both roles apply steps, rollback, message routes, staff messages, webhook customer messages with limits);
   - `test_messages.py` (Resend as the API role);
   - `tests/integration/workflows/test_manager_replies.py` (written approval only after YES, reason prompt after Reject, unclear reply asks, rules mode does not read, the signed link with sign-in and CSRF).
@@ -179,7 +176,6 @@ CI runs `check_database.py --cycle` on a fresh environment. Remote GitHub Action
 - **Writer contract:** `tests/unit/ports/test_erp_writer_contract.py`, with the simulated writer and the ERPNext sandbox (integration marker).
 - **PostgreSQL:**
   - `tests/integration/persistence/test_catalogue_sync.py` (copy, change-only rows, currency issue, interrupted runs, "Sync now", replace and restore);
-  - `test_migrations_0015.py` (down to 0013 with phase 6/7 data);
   - `test_provider_state.py` (an order question is not an enquiry);
   - `tests/integration/workflows/test_orders.py` (automatic and staff creation, the customer's pull view, moves, a create race, compare-and-set steps, append-only history, grants, isolation).
 - **Sandbox (integration marker, needs `SALES_TEST_ERPNEXT_*`):** `tests/unit/adapters/providers/erpnext/test_erpnext_sandbox.py` and the writer contract. See [provider setup](../operations/provider-setup.md#erpnext).
@@ -222,3 +218,5 @@ Keep prompt/model/version and dataset version with results. Use deterministic st
 A test that mirrors implementation without asserting business behaviour is insufficient.
 
 Test doubles shared by several files live in `tests/support/` (`catalogue_store.py`, `workflow_store.py`), never in `src/` (ADR 0026 step 2).
+
+Migrations: one baseline (`0001_baseline`, ADR 0026 step 4). The per-migration round-trip tests (`test_migrations_0008/0010/0011/0012/0013/0015.py` and the 0009 round trip in `test_quotation.py`) were removed with the old migrations; the schema rules they also checked (default product source in `create_business`, the enquiry reopen guard, exact-key platform routes, one routing key per connection, append-only reply classifications) moved to [integration/persistence/test_schema_rules.py](../../tests/integration/persistence/test_schema_rules.py). `check_database.py --cycle` still downgrades the baseline to empty and upgrades again.

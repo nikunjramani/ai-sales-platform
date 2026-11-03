@@ -11,7 +11,7 @@ from sales_platform.persistence.models import Base
 target_metadata = Base.metadata
 url = Settings().migration_url()
 
-# LangGraph checkpoint tables are created by migration 0004 from the library's own schema and
+# LangGraph checkpoint tables come from the library's own schema (in the baseline) and
 # are not described by our models, so schema comparison (alembic check) must skip them.
 CHECKPOINT_TABLES = frozenset(
     {"checkpoint_migrations", "checkpoints", "checkpoint_blobs", "checkpoint_writes"}

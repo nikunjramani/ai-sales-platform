@@ -24,7 +24,7 @@ jobs:
       - name: Start disposable database
         run: docker compose up -d --wait
       - name: Check migrations and integration behaviour
-        # Migrates quotation_dev and quotation_test, runs integration tests on quotation_test,
+        # Migrates sales_dev and sales_test, runs integration tests on sales_test,
         # then downgrades the test database to empty, upgrades again and repeats the tests.
         run: uv run python scripts/check_database.py --cycle
       - name: Stop CI database

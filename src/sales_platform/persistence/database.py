@@ -3,7 +3,7 @@
 from sqlalchemy import Engine, create_engine, text
 
 # Readiness requires exactly this migration head; update it with every new migration.
-EXPECTED_REVISION = "0015_orders"
+EXPECTED_REVISION = "0001_baseline"
 
 
 def build_engine(url: str) -> Engine:
@@ -27,7 +27,7 @@ def database_ready(engine: Engine) -> bool:
         role = connection.execute(
             text(
                 "SELECT rolsuper, rolbypassrls, "
-                "pg_has_role(current_user, 'quotation_owner', 'MEMBER') "
+                "pg_has_role(current_user, 'sales_owner', 'MEMBER') "
                 "FROM pg_roles WHERE rolname = current_user"
             )
         ).one()

@@ -1,6 +1,6 @@
-"""Migrate and check the local databases, then run all tests against quotation_test.
+"""Migrate and check the local databases, then run all tests against sales_test.
 
-quotation_dev keeps your development data; integration tests only ever use quotation_test,
+sales_dev keeps your development data; integration tests only ever use sales_test,
 because they clear intake and job tables between tests. Use --cycle to also downgrade the test
 database to empty, upgrade again and repeat the tests (CI does this).
 """
@@ -14,8 +14,8 @@ from sqlalchemy.engine import make_url
 
 from sales_platform.config import Settings
 
-DEV_DATABASE = "quotation_dev"
-TEST_DATABASE = "quotation_test"
+DEV_DATABASE = "sales_dev"
+TEST_DATABASE = "sales_test"
 
 
 def _with_database(url: str, database: str) -> str:
@@ -38,9 +38,7 @@ def main() -> None:
         or make_url(url).database != DEV_DATABASE
         for url in dev_urls.values()
     ):
-        raise SystemExit(
-            "This helper only targets the local quotation_dev/quotation_test databases."
-        )
+        raise SystemExit("This helper only targets the local sales_dev/sales_test databases.")
     test_urls = {role: _with_database(url, TEST_DATABASE) for role, url in dev_urls.items()}
 
     def run(command: list[str], **overrides: str) -> None:

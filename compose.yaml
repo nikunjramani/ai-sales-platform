@@ -1,9 +1,9 @@
-name: quotation-local
+name: sales-local
 services:
   postgres:
     image: postgres:17.11-bookworm
     environment:
-      POSTGRES_DB: quotation_dev
+      POSTGRES_DB: sales_dev
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run the local environment setup script first}
       POSTGRES_OWNER_PASSWORD: ${POSTGRES_OWNER_PASSWORD:?Missing owner password}
       POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:?Missing app password}
@@ -11,13 +11,13 @@ services:
     ports:
       - "127.0.0.1:55432:5432"
     volumes:
-      - quotation_pgdata:/var/lib/postgresql/data
+      - sales_pgdata:/var/lib/postgresql/data
       - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/01-roles.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d quotation_dev"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sales_dev"]
       interval: 5s
       timeout: 3s
       retries: 12
 
 volumes:
-  quotation_pgdata:
+  sales_pgdata:

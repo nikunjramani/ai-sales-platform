@@ -14,7 +14,7 @@ def local_store(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     # Settings needs a database URL even though this command never connects (CI has no .env).
     monkeypatch.setenv(
         "SALES_DATABASE_URL",
-        "postgresql+psycopg://quotation_app:unused@127.0.0.1/quotation_dev",
+        "postgresql+psycopg://sales_app:unused@127.0.0.1/sales_dev",
     )
     monkeypatch.setenv("SALES_ENVIRONMENT", "development")
     monkeypatch.setenv("SALES_SECRET_STORE", "local")
