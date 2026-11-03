@@ -21,7 +21,6 @@ from quotation_app.api.approval_links import build_approval_link_router
 from quotation_app.api.auth import PortalAuth, SessionView, build_auth_router
 from quotation_app.api.business import build_business_router
 from quotation_app.api.catalogue import build_catalogue_router
-from quotation_app.api.channels import build_channel_router
 from quotation_app.api.connections import build_connection_router
 from quotation_app.api.conversations import build_conversation_router
 from quotation_app.api.enquiries import build_enquiry_router
@@ -49,7 +48,7 @@ from quotation_app.application.contacts import ContactService
 from quotation_app.application.conversations import default_router
 from quotation_app.application.customer_inbox import CustomerInbox
 from quotation_app.application.documents import QuotationDocumentService
-from quotation_app.application.inbound import InboundService, ManagerActionRoute
+from quotation_app.application.inbound import InboundService
 from quotation_app.application.intake import EnquiryIntakeService, EnquiryListService
 from quotation_app.application.media import MediaService
 from quotation_app.application.quotations import QuotationService
@@ -328,16 +327,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 routes=SqlRouteLookup(engine),
                 connections=connections,
             )
-        )
-    )
-    # Deprecated alias for the demo page and scripts (removed in phase 4/5).
-    secret = configuration.simulated_channel_secret
-    app.include_router(
-        build_channel_router(
-            ManagerActionRoute(channels),
-            connections,
-            inbox,
-            None if secret is None else secret.get_secret_value(),
         )
     )
     if configuration.portal_dist_dir is not None and configuration.portal_dist_dir.is_dir():

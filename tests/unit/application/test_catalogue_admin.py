@@ -7,7 +7,6 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.adapters.catalogue.memory import InMemoryCatalogueStore
 from quotation_app.adapters.erp.simulated import demo_catalogue
 from quotation_app.adapters.providers.local_catalogue import LocalCatalogueProvider
 from quotation_app.adapters.providers.simulated import SimulatedProvider
@@ -27,6 +26,7 @@ from quotation_app.ports.catalogue_admin import (
     ProductReferenced,
     VersionConflict,
 )
+from tests.support.catalogue_store import InMemoryCatalogueStore
 
 TENANT = UUID("00000000-0000-4000-8000-000000000001")
 NOW = datetime(2026, 10, 28, 12, 0, tzinfo=UTC)

@@ -59,4 +59,3 @@ Spreadsheet import, ERP/shop connectors and sync, stock movements and reservatio
 
 ## Development
 - Demo: sign in as `sales@local.example` (dev login or demo password) and open **Products**.
-- Offline evaluation over our list: `uv run python scripts/evaluate_extraction.py --source local`.

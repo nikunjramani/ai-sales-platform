@@ -30,9 +30,6 @@ LAYER_EXCEPTIONS = {
     ("persistence/api_keys.py", "quotation_app.adapters.providers.api"): "API keys are the api "
     "provider's accounts (see PROVIDER_NAME_EXCEPTIONS)",
     ("api/enquiries.py", "quotation_app.adapters.providers.api"): "the API provider's own routes",
-    ("api/channels.py", "quotation_app.adapters.providers.simulated"): "deprecated route, removed "
-    "in ADR 0026 step 2",
-    ("api/channels.py", "quotation_app.adapters.providers.simulated.signing"): "same",
 }
 # Layer -> third-party packages it may import. Domain, ports and application use only stdlib,
 # so business rules never depend on a framework, database or AI provider.
@@ -122,7 +119,6 @@ def test_http_clients_stay_inside_provider_packages() -> None:
 # purposes and capabilities, so adding a provider needs no core change.
 PROVIDER_NAME_EXCEPTIONS = {
     "api/enquiries.py": "the API provider's own routes",
-    "api/channels.py": "the deprecated simulated route (removed in phase 4/5)",
     "persistence/api_keys.py": "API keys are the api provider's accounts",
     "persistence/seed.py": "synthetic demo data for development",
     "config.py": "the default product source setting (QUOTATION_DEFAULT_CATALOGUE_PROVIDER)",

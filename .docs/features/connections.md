@@ -61,9 +61,9 @@ Each business's tools are **connections**. A connection is one use of a **provid
 Settings shared by every business, such as our bot's token, live in the secret store's platform namespace and never in the business portal. See [provider setup](../operations/provider-setup.md).
 
 ## Development
-- **Signing and tokens:** `QUOTATION_SIMULATED_CHANNEL_SECRET` (development) signs the deprecated `/api/v1/channels/simulated/events` route. Through the seed, it is also the demo phone's signing secret, stored in the local secret store. The demo phone's webhook token is derived from it.
+- **Signing and tokens:** `QUOTATION_SIMULATED_CHANNEL_SECRET` (development) is, through the seed, the demo phone's signing secret, stored in the local secret store. The demo phone's webhook token is derived from it.
 - **The simulated phone (phase 5)** receives every manager message as a file with its `message_id`. A `reply` event answers one of them by that ID, which exercises approval by message without a real tool.
-- **Tools:** `scripts/simulated_channel.py --via hooks` uses the generic route; the demo page uses the old one.
+- **Tools:** `scripts/simulated_channel.py` and the demo page both use the generic hook route (the old alias was removed in ADR 0026 step 2).
 - **Secret store:** `QUOTATION_SECRET_STORE_KEY` encrypts the local secret store. `init_local_env.py --add-missing` creates it.
 
 ## Security

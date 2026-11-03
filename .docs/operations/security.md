@@ -81,7 +81,6 @@
 - **Disabled connections** get no approval requests, and their webhooks answer 404. API keys disable their `api` connection when revoked.
 - **Worker grants (0008):** the worker may record approval decisions, because manager actions arriving on webhooks are routed in the `process_inbound` job. The grants are column-level, and the checks in `ApprovalService` are unchanged.
 - **Known weaknesses, accepted:**
-  - The deprecated `/api/v1/channels/simulated/events` alias still takes the business from the body, signed with the one shared development secret. It is development-only, refused in production, and removed in phase 4/5.
   - P1-Q9: any API key of a business can read every API enquiry and quotation of that business. This is unchanged; the user decides it in phase 2 with API key management.
 
 ## Implemented controls (M6)

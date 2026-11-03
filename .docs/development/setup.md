@@ -94,7 +94,6 @@ Attachments go in `attachments: [{filename, content_type, content_base64}]` and 
 The worker now also runs `extract_requirements` jobs: after attachments pass inspection, the enquiry is read, matched to ERP products and ends as `ready_for_quotation`, `needs_clarification` (with questions) or `needs_review`. `GET /api/v1/enquiries/<id>` shows this under `extraction`.
 
 - Default interpreter `rules`: free, offline, nothing to install.
-- Score any interpreter: `uv run python scripts/evaluate_extraction.py` (12 synthetic cases).
 - Optional AI reader: set `QUOTATION_MODEL=<provider>:<model>` and `QUOTATION_MODEL_API_KEY` in `.env` (e.g. the Gemini free tier, synthetic data only). See [enquiry extraction](../features/enquiry-extraction.md#configuration-names-only).
 - Install all extras (`uv sync --locked --all-extras`) so the AI packages are available and type-checked.
 
@@ -124,7 +123,7 @@ Alternatively, run `npm run build` once and start the API with `$env:QUOTATION_P
    - As the manager, open Channels and choose "Link a simulated channel account". Then run:
    ```powershell
    uv run python scripts/simulated_channel.py enroll --code <CODE> --user manager-phone
-   # add --via hooks (before the command) to use the generic webhook route instead (ADR 0018)
+   # events go to the generic webhook route (ADR 0018); the worker records them
    uv run python scripts/simulated_channel.py inbox --user manager-phone     # after the worker ran
    uv run python scripts/simulated_channel.py decide --user manager-phone --task <TASK> --action approve
    ```
@@ -267,4 +266,3 @@ Then ("Run all" in VS Code):
 3. Raise the price, then accept the quotation as the customer (`POST .../quotation/response`): it is refused and version 2 goes to the manager.
 4. The demo businesses still use the simulated ERP; their **Products** page is read-only.
 
-Offline check of our list: `uv run python scripts/evaluate_extraction.py --source local` (14/14 expected).

@@ -1,4 +1,4 @@
-"""Our own catalogue kept in memory, for tests and offline evaluation (never for real data).
+"""Test double: our own catalogue kept in memory (moved from src, ADR 0026 step 2; never real data).
 
 It implements both catalogue ports with the same rules as the PostgreSQL store: one business
 never sees another's rows, prices and counts are only added, row versions guard edits, and

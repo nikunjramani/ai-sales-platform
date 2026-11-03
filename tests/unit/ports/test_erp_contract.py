@@ -17,7 +17,6 @@ from uuid import UUID, uuid4
 import pytest
 
 from quotation_app.adapters.catalogue.local import LocalCatalogue
-from quotation_app.adapters.catalogue.memory import InMemoryCatalogueStore
 from quotation_app.adapters.erp.simulated import SimulatedErp, demo_catalogues
 from quotation_app.adapters.providers.simulated import SimulatedProvider
 from quotation_app.application.catalogue_sources import CatalogueSourceResolver, TenantCatalogue
@@ -26,6 +25,7 @@ from quotation_app.domain.connections import Connection, ConnectionStatus, Purpo
 from quotation_app.domain.tenancy import Role, TenantContext
 from quotation_app.persistence.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
 from quotation_app.ports.erp import ErpError, ErpErrorCode, ErpReader
+from tests.support.catalogue_store import InMemoryCatalogueStore
 
 SEARCH_CASES = json.loads(
     (Path(__file__).parents[2] / "data" / "catalogue_search_cases.json").read_text("utf-8")

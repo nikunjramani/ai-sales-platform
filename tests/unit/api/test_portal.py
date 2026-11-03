@@ -1,11 +1,10 @@
-"""HTTP contract of portal sign-in, quotation/approval routes and the simulated channel webhook.
+"""HTTP contract of portal sign-in and the quotation/approval routes.
 
 Real routers and services over the in-memory fakes; tests/integration repeats the key flows on
 PostgreSQL.
 """
 
 import hashlib
-import json
 from collections.abc import Iterator
 from typing import Any
 from uuid import UUID, uuid4
@@ -15,11 +14,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from quotation_app.adapters.identity.dev import DevIdentityProvider
-from quotation_app.adapters.providers.simulated.signing import SIGNATURE_HEADER, sign
 from quotation_app.api.auth import CSRF_HEADER, SESSION_COOKIE, PortalAuth, build_auth_router
-from quotation_app.api.channels import build_channel_router
 from quotation_app.api.portal import build_portal_router
-from quotation_app.application.inbound import ManagerActionRoute
 from quotation_app.application.intake import EnquiryListService
 from quotation_app.application.sessions import SessionService
 from quotation_app.application.tenancy import TenantContextResolver
@@ -27,7 +23,6 @@ from quotation_app.domain.quotations import ApprovalAction
 
 MANAGER = "manager@industrial.example"
 SALES = "sales@industrial.example"
-SECRET = "unit-test-channel-secret"
 
 
 class NoEnquiries:
@@ -54,11 +49,6 @@ def build_app(harness: Any, sessions: Any, directory: Any, view: Any, dev: bool 
             harness.responses(),
             harness.connections,
             clock=harness.clock,
-        )
-    )
-    app.include_router(
-        build_channel_router(
-            ManagerActionRoute(harness.channels), harness.connections, harness.inbox, SECRET
         )
     )
     return app
@@ -209,81 +199,6 @@ def test_sales_cannot_decide_but_can_revise_when_asked(
     assert client.post(revise, json=good, headers=headers).status_code == 200  # replay
     stale = {**good, "command_id": str(uuid4())}
     assert client.post(revise, json=stale, headers=headers).status_code == 409
-
-
-def test_channel_linking_through_portal_and_signed_webhook(
-    client: TestClient, harness: Any
-) -> None:
-    headers = login(client, MANAGER)
-    code = client.post(
-        f"{base(harness)}/channel-enrollments", json={"channel": "simulated"}, headers=headers
-    ).json()["code"]
-    event = {
-        "event_id": "evt-1",
-        "tenant_id": str(harness.tenant_id),
-        "connection_id": "simulated-local",
-        "external_user_id": "phone-manager",
-        "type": "enroll",
-        "code": code,
-    }
-    raw = json.dumps(event).encode()
-    url = "/api/v1/channels/simulated/events"
-    assert client.post(url, content=raw).status_code == 401
-    assert client.post(url, content=raw, headers={SIGNATURE_HEADER: "0" * 64}).status_code == 401
-    tampered = raw.replace(b"phone-manager", b"phone-attacker")
-    assert (
-        client.post(
-            url, content=tampered, headers={SIGNATURE_HEADER: sign(SECRET, raw)}
-        ).status_code
-        == 401
-    )
-    enrolled = client.post(url, content=raw, headers={SIGNATURE_HEADER: sign(SECRET, raw)})
-    assert enrolled.status_code == 200 and enrolled.json()["result"] == "enrolled"
-    assert set(enrolled.json()) == {"result", "binding_id", "decision_id", "action"}
-    assert enrolled.json()["decision_id"] is None and enrolled.json()["action"] is None
-    bindings = client.get(f"{base(harness)}/channel-bindings").json()
-    assert [item["external_user_id"] for item in bindings] == ["phone-manager"]
-
-    harness.enquiry(("IND-FAN-450", "2", "each"))
-    harness.run_jobs()
-    reference = harness.notifier.sent[0][2]
-    decision = {**event, "event_id": "evt-2", "type": "decision", "code": None,
-                "action_reference": reference, "action": "approve"}  # fmt: skip
-    raw = json.dumps(decision).encode()
-    recorded = client.post(url, content=raw, headers={SIGNATURE_HEADER: sign(SECRET, raw)})
-    assert recorded.json()["result"] == "recorded"
-    assert recorded.json()["action"] == "approve" and recorded.json()["binding_id"] is None
-    replay = client.post(url, content=raw, headers={SIGNATURE_HEADER: sign(SECRET, raw)})
-    assert replay.json()["result"] == "replayed"
-    assert replay.json()["decision_id"] == recorded.json()["decision_id"]
-    conflict = json.dumps({**decision, "event_id": "evt-2b", "action": "reject",
-                           "reason": "Too expensive"}).encode()  # fmt: skip
-    answer = client.post(url, content=conflict, headers={SIGNATURE_HEADER: sign(SECRET, conflict)})
-    assert (answer.status_code, answer.json()) == (409, {"detail": "Already decided"})
-    forged = json.dumps({**decision, "event_id": "evt-3", "external_user_id": "other"}).encode()
-    assert (
-        client.post(
-            url, content=forged, headers={SIGNATURE_HEADER: sign(SECRET, forged)}
-        ).status_code
-        == 403
-    )
-
-    revoke = client.delete(
-        f"{base(harness)}/channel-bindings/{bindings[0]['binding_id']}", headers=headers
-    )
-    assert revoke.status_code == 204
-    assert client.get(f"{base(harness)}/channel-bindings").json()[0]["revoked_at"] is not None
-
-
-def test_webhook_is_off_without_a_secret(harness: Any) -> None:
-    app = FastAPI()
-    app.include_router(
-        build_channel_router(
-            ManagerActionRoute(harness.channels), harness.connections, harness.inbox, None
-        )
-    )
-    with TestClient(app) as http:
-        assert http.post("/api/v1/channels/simulated/events", content=b"{}").status_code == 404
 
 
 def assert_pdf_download(response: Any, filename_suffix: str) -> None:

@@ -77,7 +77,6 @@ Entry point: `extract_requirements` jobs in the worker ([worker.py](../../src/qu
 | [adapters/documents/text.py](../../src/quotation_app/adapters/documents/text.py) | Bounded PDF/text reading; unsupported reasons instead of empty text |
 | [persistence/workflow.py](../../src/quotation_app/persistence/workflow.py) | SqlWorkflowStore and the worker-role PostgreSQL checkpointer |
 | [0004_workflow.py](../../migrations/versions/0004_workflow.py) | workflow_runs, frozen LangGraph checkpoint tables, M3 enquiry statuses, worker grants |
-| [evaluation.py](../../src/quotation_app/evaluation.py) / [evaluate_extraction.py](../../scripts/evaluate_extraction.py) / [dataset](../../evals/enquiry_extraction.jsonl) | Provider evaluation through the real graph |
 | [tests/unit/workflows/test_enquiry.py](../../tests/unit/workflows/test_enquiry.py), [tests/integration/workflows/test_enquiry.py](../../tests/integration/workflows/test_enquiry.py) | Branches, invented facts, crash/resume, isolation; Postgres end to end including M1 pricing |
 
 ## Implemented M4 drafting, approval and portal
@@ -204,7 +203,7 @@ See the [phase 3 plan](../plan/platform/implementation/phase-3-catalogue.md) and
 | [persistence/catalogue.py](../../src/quotation_app/persistence/catalogue.py) | SqlCatalogueStore: both ports, best-match search in one query, row locks for revisions, replays by request ID, change log |
 | [persistence/seed.py](../../src/quotation_app/persistence/seed.py) | Also the Demo Local Catalogue business and `seed_local_catalogue` |
 | [adapters/catalogue/local.py](../../src/quotation_app/adapters/catalogue/local.py) | LocalCatalogue: our list as an `ErpReader` (evidence rules of Q10) |
-| [adapters/catalogue/memory.py](../../src/quotation_app/adapters/catalogue/memory.py) | InMemoryCatalogueStore for tests and offline evaluation |
+| [tests/support/catalogue_store.py](../../tests/support/catalogue_store.py) | InMemoryCatalogueStore, a test double (moved out of `src/` in ADR 0026 step 2) |
 | [adapters/providers/local_catalogue/](../../src/quotation_app/adapters/providers/local_catalogue/__init__.py) | Provider `local_catalogue` ("Our product list"), entry point in `pyproject.toml` |
 | [application/catalogue_admin.py](../../src/quotation_app/application/catalogue_admin.py) | ProductService: permissions, read-only sources, currency, request IDs, summary, the checklist's product step |
 | [composition.py](../../src/quotation_app/composition.py) | Also `default_catalogue_source` and the store given to providers |

@@ -18,7 +18,6 @@ import httpx
 import pytest
 
 from quotation_app.adapters.catalogue.local import LocalCatalogue
-from quotation_app.adapters.catalogue.memory import InMemoryCatalogueStore
 from quotation_app.adapters.erp.simulated import SimulatedCatalogue
 from quotation_app.adapters.providers.erpnext.catalogue import ErpnextCatalogue, build_feed
 from quotation_app.adapters.providers.erpnext.client import FrappeClient
@@ -36,6 +35,7 @@ from quotation_app.ports.erp import (
     SalesOrderRequest,
 )
 from quotation_app.ports.providers import OperationUnsupported, ProvisionStatus
+from tests.support.catalogue_store import InMemoryCatalogueStore
 
 NOW = datetime(2026, 10, 29, 10, tzinfo=UTC)
 BASE = "https://erp.example"

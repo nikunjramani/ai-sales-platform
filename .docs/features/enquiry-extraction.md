@@ -20,7 +20,7 @@
 - **Interpreters:** [rules.py](../../src/quotation_app/adapters/interpreters/rules.py), [langchain.py](../../src/quotation_app/adapters/interpreters/langchain.py) and [factory.py](../../src/quotation_app/adapters/interpreters/factory.py).
 - **Documents:** [adapters/documents/text.py](../../src/quotation_app/adapters/documents/text.py).
 - **Storage:** [persistence/workflow.py](../../src/quotation_app/persistence/workflow.py) and [migration 0004](../../migrations/versions/0004_workflow.py).
-- **Evaluation:** [evaluation.py](../../src/quotation_app/evaluation.py), [scripts/evaluate_extraction.py](../../scripts/evaluate_extraction.py) and [the dataset](../../evals/enquiry_extraction.jsonl).
+- **Evaluation:** the offline evaluation was removed (user, 2026-11-03, ADR 0026 step 2); the unit tests cover the reader.
 
 ## How it starts
 When the preparation job finds every attachment clean, it sets the enquiry to `ready_for_extraction` **and** queues an `extract_requirements` job in the same transaction. Enquiries with rejected attachments stay at `needs_review`.
@@ -82,7 +82,7 @@ The reader is generic ([factory.py](../../src/quotation_app/adapters/interpreter
 1. Make sure its LangChain package is in the `ai` extra in `pyproject.toml` (today: `langchain-google-genai`). Adding another provider is a package line, not code.
 2. `uv sync --extra ai` (CI and `--all-extras` already include it).
 3. Set `QUOTATION_MODEL` and `QUOTATION_MODEL_API_KEY` in `.env`, e.g. `google_genai:gemini-3.5-flash-lite` with a key from aistudio.google.com (free tier: synthetic data only).
-4. Run `uv run python scripts/evaluate_extraction.py --model <provider>:<model>`, then restart the worker.
+4. Restart the worker and try a few synthetic enquiries (the demo page is quickest).
 
 ## Tests and evaluation
 See [testing](../development/testing.md). Rules interpreter on 2026-10-22: 12/12 cases, 0 invented facts, about 0.01 s per case; on 2026-10-23: 14/14 (two "unsold product" cases check the category reply via `expected_question`).

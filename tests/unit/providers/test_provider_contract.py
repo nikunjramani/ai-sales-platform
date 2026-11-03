@@ -19,7 +19,6 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from quotation_app.adapters.catalogue.memory import InMemoryCatalogueStore
 from quotation_app.adapters.erp.simulated import demo_catalogue
 from quotation_app.application.inbound import InboundService
 from quotation_app.application.providers import ProviderRegistry
@@ -46,6 +45,7 @@ from quotation_app.ports.providers import (
     TestResult,
 )
 from quotation_app.ports.secrets import SecretNotFound
+from tests.support.catalogue_store import InMemoryCatalogueStore
 
 NOW = datetime(2026, 10, 27, tzinfo=UTC)
 A = UUID("00000000-0000-4000-8000-00000000000a")
