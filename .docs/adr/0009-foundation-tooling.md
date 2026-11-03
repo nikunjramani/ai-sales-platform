@@ -20,4 +20,4 @@ Synchronous access is sufficient for initial bounded health checks; revisit befo
 No public business-data routes exist. Model libraries arrive at their planned milestones.
 
 ## Verification
-Locked install, Ruff, mypy, offline pytest, offline migration generation and in-process health smoke checks pass. Update 2026-10-22: live local PostgreSQL migrations, downgrade/re-upgrade, seed, integration tests and API readiness passed after Docker Desktop was enabled. Remote GitHub Actions [run 39734937763](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39734937763) passed the same checks from a fresh environment. See setup/handoff for results.
+Locked install, Ruff, mypy, offline pytest, offline migration generation and in-process health smoke checks pass. Update 2026-10-22: live local PostgreSQL migrations, downgrade/re-upgrade, seed, integration tests and API readiness passed after Docker Desktop was enabled. Remote GitHub Actions [run 39734937763](https://github.com/nikunjramani/ai-sales-platform/actions/runs/39734937763) passed the same checks from a fresh environment. See setup/handoff for results.

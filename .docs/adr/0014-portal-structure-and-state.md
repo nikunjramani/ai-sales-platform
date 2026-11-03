@@ -1,6 +1,6 @@
 # 0014: Portal structure by feature and layer, with TanStack Query and Zustand
 Date: 2026-10-23
-Status: accepted; implemented (commit 21f0ba5, [CI run 39900219005](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39900219005) portal job passed)
+Status: accepted; implemented (commit 21f0ba5, [CI run 39900219005](https://github.com/nikunjramani/ai-sales-platform/actions/runs/39900219005) portal job passed)
 
 ## Context
 The first M4 portal kept UI, data fetching and rules together in a few large components, with hand-written routing and ad-hoc state. The user asked for:

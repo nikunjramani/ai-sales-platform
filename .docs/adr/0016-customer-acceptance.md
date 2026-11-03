@@ -1,7 +1,7 @@
 # 0016: Customer acceptance through the API, with validity, price re-check and automatic revision
 Date: 2026-10-23
 Extended by [0021](0021-customers-conversations-and-website-chat.md): Customers may also answer with a chat button or a secure link (phase 4, ADR 0021).
-Status: accepted; implemented in M6 (commit f545201, [CI run 39907493342](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39907493342) passed)
+Status: accepted; implemented in M6 (commit f545201, [CI run 39907493342](https://github.com/nikunjramani/ai-sales-platform/actions/runs/39907493342) passed)
 Changes the M6 scope in the [roadmap](../plan/roadmap.md); builds on [0013](0013-portal-identity-and-approval-core.md) and [0015](0015-quotation-documents-and-delivery.md)
 Extended by [0018](0018-connector-framework.md) (phase 1): notices to managers go through the outbox (one per response and account, never repeated on retry); prices come from each business's own product source.
 

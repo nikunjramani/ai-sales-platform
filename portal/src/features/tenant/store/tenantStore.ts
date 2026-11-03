@@ -20,7 +20,7 @@ const memoryStorage: StateStorage = {
 function browserStorage(): StateStorage {
   try {
     const storage = window.localStorage;
-    storage.getItem("quotation-portal.probe");
+    storage.getItem("sales-portal.probe");
     return storage;
   } catch {
     return memoryStorage;
@@ -34,6 +34,6 @@ export const useTenantStore = create<TenantState>()(
       selectTenant: (tenantId) => set({ selectedTenantId: tenantId }),
       clear: () => set({ selectedTenantId: null }),
     }),
-    { name: "quotation-portal.tenant", storage: createJSONStorage(browserStorage) },
+    { name: "sales-portal.tenant", storage: createJSONStorage(browserStorage) },
   ),
 );

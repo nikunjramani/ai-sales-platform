@@ -28,7 +28,7 @@ from sales_platform.platform.domain.security import AuthenticationFailed
 from sales_platform.platform.domain.tenancy import AccessDenied, TenantContext
 from sales_platform.platform.ports.identity import SessionRecord
 
-SESSION_COOKIE = "quotation_session"
+SESSION_COOKIE = "sales_session"
 CSRF_HEADER = "X-CSRF-Token"
 COOKIE_PATH = "/api"
 _UNAVAILABLE = "Temporarily unavailable; try again"

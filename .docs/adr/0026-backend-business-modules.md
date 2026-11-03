@@ -144,4 +144,5 @@ Delivery: one PR per module group, in the order above; the architecture test gai
   - `models.py` is split: `platform/persistence/models.py` keeps `Base` and the platform tables; each module has `persistence/tables.py`.
   - `ErpReader`/`ErpWriter` are now `ProductSource`/`OrderWriter` (still defined in `catalogue/ports/erp.py`).
   - Tests mirror the modules (`tests/unit/<module>/...`).
-- **Q3 (repository rename):** waits for the user to rename the GitHub repository; links are updated after that.
+- **Q3 (repository rename):** done on 2026-11-03 at the user's request: `nikunjramani/ai-sales-platform` (chosen by the user; GitHub redirects the old URL). Links in the docs were updated.
+- **Two more old names, renamed after the audit (user, 2026-11-03):** the session cookie `quotation_session` -> `sales_session` (everyone signs in once more), and the portal package `quotation-portal` -> `sales-portal` (with its browser storage keys, so the remembered business is chosen once more).

@@ -1,6 +1,6 @@
 # 0010: Deterministic pricing and trusted tenant context
 Date: 2026-10-22
-Status: implemented in M1; verified locally and in CI ([CI run 39738532222](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39738532222))
+Status: implemented in M1; verified locally and in CI ([CI run 39738532222](https://github.com/nikunjramani/ai-sales-platform/actions/runs/39738532222))
 
 ## Context
 M1 needs commercial arithmetic that is exact and explainable, tenant context that cannot be forged from request data, and an ERP contract that real adapters can later satisfy.

@@ -129,4 +129,4 @@ Read [AGENTS.md](AGENTS.md) before changing code; it applies to people and AI to
 
 No licence file has been added yet, so default copyright applies until one is chosen.
 
-Repository: [nikunjramani/ai-sales-quotation-order-processing](https://github.com/nikunjramani/ai-sales-quotation-order-processing)
+Repository: [nikunjramani/ai-sales-platform](https://github.com/nikunjramani/ai-sales-platform)

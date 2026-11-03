@@ -1,5 +1,5 @@
 # Quotation drafting, approval and the portal (M4)
-**Status:** M4 is complete: verified locally on PostgreSQL, by a live run and in [CI run 39900219005](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39900219005).
+**Status:** M4 is complete: verified locally on PostgreSQL, by a live run and in [CI run 39900219005](https://github.com/nikunjramani/ai-sales-platform/actions/runs/39900219005).
 
 **Business purpose:** every quotation is checked by a person with approval rights before it can go to a customer. Managers can decide in the portal or from an enrolled messaging account, under exactly the same rules.
 

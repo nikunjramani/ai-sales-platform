@@ -1,6 +1,6 @@
 # 0015: Approved quotation PDFs and an honest delivery outbox; email approval deferred
 Date: 2026-10-23
-Status: accepted; implemented in M5 (commit 6f951ec, [CI run 39903715921](https://github.com/nikunjramani/ai-sales-quotation-order-processing/actions/runs/39903715921) passed)
+Status: accepted; implemented in M5 (commit 6f951ec, [CI run 39903715921](https://github.com/nikunjramani/ai-sales-platform/actions/runs/39903715921) passed)
 Changes the M5 plan in the [roadmap](../plan/roadmap.md); builds on [0004](0004-durable-execution.md), [0007](0007-channel-independent-approval.md) and [0013](0013-portal-identity-and-approval-core.md)
 Extended by [0018](0018-connector-framework.md) (phase 1): `DeliveryChannel` is replaced by the outbox; a delivery mirrors the status of the message that carries it (same honesty rules).
 
