@@ -75,7 +75,6 @@
 | `POST .../connections/{id}/enrollments` | `quotations:approve` | Code that links only on that connection; 404 / 422 |
 | `POST .../channel-enrollments` (deprecated), `GET`/`DELETE .../channel-bindings` | approver / own (admin: all) | Link and revoke accounts; bindings show `connection_ref` and `connection_name` |
 | `POST /api/v1/hooks/{connection_id}/{webhook_token}` | token + provider signature | Generic callbacks (phase 1); 200 `{received, duplicates}`, routed by the `process_inbound` job |
-| `POST /api/v1/channels/simulated/events` (deprecated, dev only) | signed with the dev secret | `X-Simulated-Signature`; enroll or decision; synchronous answers; removed in phase 4/5 |
 
 Non-members get 404 for any tenant URL. Missing or invalid CSRF gets 403, and no session gets 401.
 

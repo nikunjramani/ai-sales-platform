@@ -9,7 +9,7 @@ tests/
     adapters/erp/  adapters/storage/  adapters/documents/  adapters/interpreters/
     adapters/identity/  (covered through application/api tests)
     adapters/providers/simulated/  providers/ (provider contract suite for every provider)
-    test_config.py  test_architecture.py  test_evaluation.py
+    test_config.py  test_architecture.py
   integration/         Real PostgreSQL (quotation_test only); auto-marked `integration`
     conftest.py        Database settings, engines, cleanup, API-key and storage fixtures
     api/  persistence/  workflows/
@@ -105,7 +105,6 @@ M5 adds:
 | [unit/adapters/interpreters/](../../tests/unit/adapters/interpreters/test_rules.py) | Rules phrasing and verbatim quotes; LangChain adapter with a scripted fake model (valid JSON, price/discount fields rejected, tag break-out neutralised); provider factory |
 | [unit/adapters/documents/test_text.py](../../tests/unit/adapters/documents/test_text.py) | PDF text read; scanned, encrypted, broken PDFs, images and oversized text reported, never emptied |
 | [unit/workflows/test_enquiry.py](../../tests/unit/workflows/test_enquiry.py) | Graph branches, PDF attachment reading, invented item and invalid answer go to review, crash resumes without a second model call, finished runs not repeated, other tenant's products and enquiries invisible |
-| [unit/test_evaluation.py](../../tests/unit/test_evaluation.py) | Synthetic dataset passes 12/12 with the rules interpreter and 0 invented facts; evaluation detects failures |
 | [unit/persistence/test_checkpoint_schema.py](../../tests/unit/persistence/test_checkpoint_schema.py) | Frozen LangGraph checkpoint schema equals the installed library's |
 | [unit/domain/test_quotations.py](../../tests/unit/domain/test_quotations.py) | Exact version content, stable content hash, decision command validation, review text |
 | [unit/workflows/test_quotation.py](../../tests/unit/workflows/test_quotation.py) | Draft, interrupt, approve and reject; revision loop; pricing failure waits for a revision; duplicate and stale resumes ignored; early resume and run lock retried; crash resumes without re-pricing; ERP outage retried |
@@ -137,7 +136,6 @@ CI runs `check_database.py --cycle` on a fresh environment. Remote GitHub Action
 | [unit/adapters/catalogue/test_local.py](../../tests/unit/adapters/catalogue/test_local.py) | Evidence (standard list, revision, read time; stock as of), scheduled price ends the current one, archived products and categories disappear, staff notes never searched, store failure is a retryable ERP error, the provider |
 | [unit/application/test_catalogue_admin.py](../../tests/unit/application/test_catalogue_admin.py) | Who may read and edit, read-only sources, suspended business, currency and minor units, replays, staleness, unit lock, archive/restore/delete, list with prices and stock, categories |
 | [unit/providers/test_provider_contract.py](../../tests/unit/providers/test_provider_contract.py) | Also `local_catalogue` (no webhooks, no sending, a working reader) |
-| [unit/test_evaluation.py](../../tests/unit/test_evaluation.py) | The dataset on both the simulated ERP and our own catalogue: 14/14, 0 invented facts |
 | [integration/persistence/test_catalogue.py](../../tests/integration/persistence/test_catalogue.py) | Seeded local demo reads like the simulated ERP; RLS on every table and WITH CHECK; cross-business category refused; worker read-only; prices and stock cannot change (grants and trigger); create/update/archive and audit; unit lock and delete rule; concurrent prices get revisions 1 and 2; replays; decimals kept exactly; counts; limit; category rename/archive refresh search words |
 | [integration/persistence/test_migrations_0011.py](../../tests/integration/persistence/test_migrations_0011.py) | `create_business` with and without the default source; downgrade drops the catalogue and local sources, keeps the simulated one, restores the 0010 function; upgrade backfills |
 | [integration/adapters/catalogue/test_local_catalogue.py](../../tests/integration/adapters/catalogue/test_local_catalogue.py) | Search cases and contract checks on PostgreSQL with both roles; each business routed to its own source |
@@ -213,7 +211,7 @@ CI runs `check_database.py --cycle` on a fresh environment. Remote GitHub Action
 - Order confirmation requires confirmed ERP success; failed confirmation retries must never create another order.
 
 ## AI evaluation dataset
-Implemented in M3: [evals/enquiry_extraction.jsonl](../../evals/enquiry_extraction.jsonl) (12 synthetic cases: single and multiple items, units, ambiguous and unknown products, missing quantity, fractional counts, prompt injection, no items, cross-tenant product, measurements that are not quantities). `uv run python scripts/evaluate_extraction.py [--model <provider>:<model>]` runs them through the real graph and reports pass/fail, invented facts, errors and latency. Rules interpreter 2026-10-22: 12/12, 0 invented facts, about 0.01 s per case. Ollama was never run (could not be installed on this corporate VM; its adapter was removed in favour of the generic reader, ADR 0017), 2026-10-22).
+The offline extraction evaluation (dataset `evals/enquiry_extraction.jsonl`, `scripts/evaluate_extraction.py`, `test_evaluation.py`) was removed by the user's decision on 2026-11-03 (ADR 0026 step 2). The enquiry reader is covered by its unit tests (`tests/unit/workflows/test_enquiry.py`, the interpreter tests) and by trying enquiries with a model key. `scripts/evaluate_replies.py` (manager replies, model only) stays.
 Planned extensions follow below.
 
 Synthetic cases include aliases, misspellings, ambiguous SKUs, multiple items, missing quantities, conflicting dates, units, currencies, malicious instructions and unsupported attachment formats.
@@ -222,3 +220,5 @@ Release blocking invariants: no model-origin price/stock accepted as authoritati
 Set measured extraction/latency targets before pilot; do not invent passing scores in advance.
 Keep prompt/model/version and dataset version with results. Use deterministic stubs for routine tests and opt-in bounded live model evaluations.
 A test that mirrors implementation without asserting business behaviour is insufficient.
+
+Test doubles shared by several files live in `tests/support/` (`catalogue_store.py`, `workflow_store.py`), never in `src/` (ADR 0026 step 2).

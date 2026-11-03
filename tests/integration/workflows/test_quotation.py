@@ -249,51 +249,6 @@ def test_revision_loop_between_manager_and_sales(
     assert run_status(owner_engine, quotation_id) == APPROVED_WAITING
 
 
-def test_manager_approves_from_the_simulated_channel(
-    make_client: Callable[[], TestClient],
-    make_api_key: ApiKeyFactory,
-    settings: Settings,
-    worker_engine: Engine,
-    owner_engine: Engine,
-) -> None:
-    manager = make_client()
-    headers = login(manager, MANAGER)
-    code = manager.post(
-        f"{base()}/channel-enrollments", json={"channel": "simulated"}, headers=headers
-    ).json()["code"]
-
-    def post(event: dict[str, Any]) -> Any:
-        raw = json.dumps(event).encode()
-        return manager.post(
-            "/api/v1/channels/simulated/events",
-            content=raw,
-            headers={SIGNATURE_HEADER: sign(SECRET, raw)},
-        )
-
-    common = {"tenant_id": str(INDUSTRIAL_TENANT), "connection_id": "simulated-local"}
-    enrolled = post({**common, "event_id": "e1", "external_user_id": "phone-1", "type": "enroll",
-                     "code": code})  # fmt: skip
-    assert enrolled.json()["result"] == "enrolled"
-
-    submit(make_client(), make_api_key(INDUSTRIAL_TENANT, Role.INTAKE_SERVICE), ENQUIRY)
-    drain(settings, worker_engine)
-    [message_file] = list(Path(settings.storage_dir / "simulated-channel").rglob("*.json"))
-    message = json.loads(message_file.read_text(encoding="utf-8"))
-    assert message["to"] == "phone-1" and "total 10450.38 INR" in message["text"]
-
-    decision = {**common, "external_user_id": "phone-1", "type": "decision",
-                "action_reference": message["action_reference"], "action": "approve"}  # fmt: skip
-    forwarded = post({**decision, "event_id": "e2", "external_user_id": "phone-2"})
-    assert forwarded.status_code == 403
-    assert post({**decision, "event_id": "e3"}).json()["result"] == "recorded"
-    assert post({**decision, "event_id": "e3"}).json()["result"] == "replayed"
-    drain(settings, worker_engine)
-    listed = manager.get(f"{base()}/quotations").json()
-    assert run_status(owner_engine, listed[0]["quotation_id"]) == APPROVED_WAITING
-    detail = manager.get(f"{base()}/quotations/{listed[0]['quotation_id']}").json()
-    assert detail["decisions"][0]["transport"] == "simulated"
-
-
 def test_manager_approves_through_the_generic_hook(
     make_client: Callable[[], TestClient],
     make_api_key: ApiKeyFactory,
@@ -312,10 +267,10 @@ def test_manager_approves_through_the_generic_hook(
     client = TestClient(create_app(keyed))
     client.__enter__()
     manager = make_client()
+    session = login(manager, MANAGER)
     code = manager.post(
-        f"{base()}/channel-enrollments", json={"channel": "simulated"},
-        headers=login(manager, MANAGER),
-    ).json()["code"]  # fmt: skip
+        f"{base()}/channel-enrollments", json={"channel": "simulated"}, headers=session
+    ).json()["code"]
 
     def post(event: dict[str, Any], secret: str = SECRET, to: str = url) -> Any:
         raw = json.dumps(event).encode()
@@ -349,6 +304,12 @@ def test_manager_approves_through_the_generic_hook(
                      "ORDER BY received_at")
             ).scalars().all()  # fmt: skip
         assert outcomes == ["enrolled", "recorded"]
+        # The manager can unlink the phone in the portal (moved from the removed alias test).
+        revoke = manager.delete(
+            f"{base()}/channel-bindings/{bindings[0]['binding_id']}", headers=session
+        )
+        assert revoke.status_code == 204
+        assert manager.get(f"{base()}/channel-bindings").json()[0]["revoked_at"] is not None
 
         with tenant_transaction(owner_engine, INDUSTRIAL_TENANT) as db:
             set_status(db, INDUSTRIAL_TENANT, connection.connection_id,
@@ -874,35 +835,53 @@ def test_every_linked_phone_gets_a_working_request(
     owner_engine: Engine,
 ) -> None:
     """Regression (phase 1 live run): two accounts get the same task file name; both messages
-    must be recorded as sent and both tokens must work."""
+    must be recorded as sent and both tokens must work (through the generic hook route)."""
+    keyed = settings.model_copy(update={"secret_store_key": SecretStr(new_key())})
+    seed_demo_tenants(keyed)
+    connection = SqlConnectionStore(owner_engine).find_by_account(
+        INDUSTRIAL_TENANT, "simulated", "simulated-local"
+    )
+    assert connection is not None
+    url = f"/api/v1/hooks/{connection.connection_id}/{hook_token(SECRET, connection.connection_id)}"
+    client = TestClient(create_app(keyed))
+    client.__enter__()
     manager = make_client()
     headers = login(manager, MANAGER)
 
     def post(event: dict[str, Any]) -> Any:
         raw = json.dumps(event).encode()
-        return manager.post("/api/v1/channels/simulated/events", content=raw,
-                            headers={SIGNATURE_HEADER: sign(SECRET, raw)})  # fmt: skip
+        return client.post(url, content=raw, headers={SIGNATURE_HEADER: sign(SECRET, raw)})
 
-    common = {"tenant_id": str(INDUSTRIAL_TENANT), "connection_id": "simulated-local"}
-    for phone in ("phone-a", "phone-b"):
-        code = manager.post(f"{base()}/channel-enrollments", json={"channel": "simulated"},
-                            headers=headers).json()["code"]  # fmt: skip
-        enroll = {**common, "event_id": f"e-{phone}", "external_user_id": phone,
-                  "type": "enroll", "code": code}  # fmt: skip
-        assert post(enroll).json()["result"] == "enrolled"
-    submit(make_client(), make_api_key(INDUSTRIAL_TENANT, Role.INTAKE_SERVICE), ENQUIRY)
-    drain(settings, worker_engine)
-    with tenant_transaction(owner_engine, INDUSTRIAL_TENANT) as db:
-        statuses = db.execute(
-            text("SELECT status FROM outbound_messages WHERE template_key = 'approval_request'")
-        ).scalars().all()  # fmt: skip
-    assert statuses == ["sent", "sent"]
-    files = sorted(Path(settings.storage_dir / "simulated-channel").rglob("*.json"))
-    assert [path.parent.name for path in files] == ["phone-a", "phone-b"]
-    reference = json.loads(files[1].read_text(encoding="utf-8"))["action_reference"]
-    decision = {**common, "event_id": "d-b", "external_user_id": "phone-b", "type": "decision",
-                "action_reference": reference, "action": "approve"}  # fmt: skip
-    assert post(decision).json()["result"] == "recorded"
+    try:
+        for phone in ("phone-a", "phone-b"):
+            code = manager.post(f"{base()}/channel-enrollments", json={"channel": "simulated"},
+                                headers=headers).json()["code"]  # fmt: skip
+            enroll = {"event_id": f"e-{phone}", "external_user_id": phone, "type": "enroll",
+                      "code": code}  # fmt: skip
+            assert post(enroll).status_code == 200
+            drain(keyed, worker_engine)
+        submit(make_client(), make_api_key(INDUSTRIAL_TENANT, Role.INTAKE_SERVICE), ENQUIRY)
+        drain(keyed, worker_engine)
+        with tenant_transaction(owner_engine, INDUSTRIAL_TENANT) as db:
+            statuses = db.execute(
+                text("SELECT status FROM outbound_messages WHERE template_key = 'approval_request'")
+            ).scalars().all()  # fmt: skip
+        assert statuses == ["sent", "sent"]
+        files = sorted(Path(keyed.storage_dir / "simulated-channel").rglob("*.json"))
+        assert [path.parent.name for path in files] == ["phone-a", "phone-b"]
+        reference = json.loads(files[1].read_text(encoding="utf-8"))["action_reference"]
+        decision = {"event_id": "d-b", "external_user_id": "phone-b", "type": "decision",
+                    "action_reference": reference, "action": "approve"}  # fmt: skip
+        assert post(decision).status_code == 200
+        drain(keyed, worker_engine)
+        with tenant_transaction(owner_engine, INDUSTRIAL_TENANT) as db:
+            outcomes = db.execute(
+                text("SELECT outcome FROM inbox_events WHERE event_type = 'manager_action' "
+                     "ORDER BY received_at")
+            ).scalars().all()  # fmt: skip
+        assert outcomes == ["enrolled", "enrolled", "recorded"]
+    finally:
+        client.__exit__(None, None, None)
 
 
 def test_a_business_without_a_product_source_gets_a_clear_outcome_at_once(

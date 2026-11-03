@@ -58,8 +58,6 @@ uv run python scripts/demo_quotation.py
 # 7. Run the background worker (API keys are created in the portal: Settings -> API keys)
 uv run python -m quotation_app.worker
 
-# 8. Score the enquiry interpreter on the synthetic dataset (free rules interpreter by default)
-uv run python scripts/evaluate_extraction.py
 ```
 Submitting an enquiry with the key is shown in the [setup guide](.docs/development/setup.md#enquiry-intake-m2). An existing M0/M1 database needs a one-time [upgrade step](.docs/development/setup.md#upgrading-an-existing-local-database-m0m1-to-m2).
 

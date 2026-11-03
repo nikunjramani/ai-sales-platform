@@ -8,7 +8,7 @@
 
 Adding a provider (OpenAI, Claude, Groq, Ollama...): add its LangChain package to the "ai" extra
 and set QUOTATION_MODEL / QUOTATION_MODEL_API_KEY in .env, then run
-scripts/evaluate_extraction.py and scripts/evaluate_replies.py. Nothing else changes.
+scripts/evaluate_replies.py (and try a few enquiries in the demo). Nothing else changes.
 """
 
 from collections.abc import Mapping

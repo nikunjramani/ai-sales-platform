@@ -19,7 +19,6 @@ from quotation_app.domain.requirements import (
     ExtractionOutcome,
     RequestedItem,
 )
-from quotation_app.evaluation import InMemoryWorkflowStore
 from quotation_app.ports.erp import CatalogueSourceMissing, ErpError, ErpErrorCode
 from quotation_app.ports.interpretation import (
     DocumentText,
@@ -33,6 +32,7 @@ from quotation_app.workflows.enquiry import (
     ExtractionJobHandler,
     build_enquiry_graph,
 )
+from tests.support.workflow_store import InMemoryWorkflowStore
 
 
 class CountingInterpreter:

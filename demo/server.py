@@ -4,13 +4,16 @@ Development only. It talks to the real running API (default http://127.0.0.1:800
 - the customer side uses an intake API key that this server creates and keeps in
   var/demo/state.json, so the browser never sees a key;
 - the manager side is the simulated messaging channel: review messages are read from the local
-  outbox and decisions are sent as signed channel events, exactly like scripts/simulated_channel.py.
+  outbox and decisions are sent as signed events to the generic hook route
+  (/api/v1/hooks/{connection}/{token}), exactly like scripts/simulated_channel.py; the worker
+  records them a moment later.
 
 Start everything with: uv run python demo/run_demo.py   then open http://127.0.0.1:8001
 """
 
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -21,8 +24,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
-from quotation_app.adapters.providers.simulated import DEFAULT_CONNECTION_ID
-from quotation_app.adapters.providers.simulated.signing import SIGNATURE_HEADER, sign
+from quotation_app.adapters.providers.simulated import DEFAULT_CONNECTION_ID, PROVIDER_KEY
+from quotation_app.adapters.providers.simulated.signing import SIGNATURE_HEADER, hook_token, sign
 from quotation_app.application.api_keys import generate_api_key
 from quotation_app.config import Settings
 from quotation_app.domain.tenancy import Role
@@ -110,20 +113,37 @@ def secret() -> str:
     return settings.simulated_channel_secret.get_secret_value()
 
 
-def send_event(event: dict[str, Any]) -> tuple[int, Any]:
-    body = json.dumps(
-        {
-            "event_id": f"demo-{uuid4()}",
-            "tenant_id": str(INDUSTRIAL_TENANT),
-            "connection_id": DEFAULT_CONNECTION_ID,
-            "external_user_id": PHONE,
-            **event,
-        }
-    ).encode()
-    status, raw, _ = call(
-        "POST", "/api/v1/channels/simulated/events", body, {SIGNATURE_HEADER: sign(secret(), body)}
+def hook_path() -> str:
+    """The demo phone connection's webhook path (the seed gives it its token)."""
+    engine = build_engine(settings.migration_url())
+    try:
+        connection = SqlConnectionStore(engine).find_by_account(
+            INDUSTRIAL_TENANT, PROVIDER_KEY, DEFAULT_CONNECTION_ID
+        )
+    finally:
+        engine.dispose()
+    if connection is None:
+        raise HTTPException(500, "No demo phone connection; run the seed first")
+    return (
+        f"/api/v1/hooks/{connection.connection_id}/{hook_token(secret(), connection.connection_id)}"
     )
+
+
+def send_event(event: dict[str, Any]) -> tuple[int, Any]:
+    """Send one signed phone event; the API answers "received" and the worker records it."""
+    body = json.dumps({"event_id": f"demo-{uuid4()}", "external_user_id": PHONE, **event}).encode()
+    status, raw, _ = call("POST", hook_path(), body, {SIGNATURE_HEADER: sign(secret(), body)})
     return status, as_json(raw)
+
+
+def wait_until(check: Any, seconds: float = 15) -> bool:
+    """The worker processes events within a few seconds; wait for the result to appear."""
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        if check():
+            return True
+        time.sleep(0.5)
+    return False
 
 
 def link_manager_phone(state: dict[str, Any]) -> None:
@@ -147,6 +167,14 @@ def link_manager_phone(state: dict[str, Any]) -> None:
         status, result = send_event({"type": "enroll", "code": as_json(raw)["code"]})
         if status != 200:
             raise HTTPException(502, f"Could not link the manager phone ({status}): {result}")
+
+        def linked() -> bool:
+            _, listed, _ = call("GET", f"{tenant}/channel-bindings", headers=session)
+            items = as_json(listed)
+            return any(b["external_user_id"] == PHONE and not b["revoked_at"] for b in items)
+
+        if not wait_until(linked):
+            raise HTTPException(504, "The worker did not link the phone; is it running?")
     call("POST", "/api/v1/auth/logout", headers=session)
     state["linked"] = True
     save_state(state)

@@ -9,10 +9,10 @@ Events are signed with QUOTATION_SIMULATED_CHANNEL_SECRET from .env, exactly as 
 them, and sent to the running API (default http://127.0.0.1:8000). Action references are read
 from the outbox file and never printed.
 
---via alias (default) posts to the deprecated /api/v1/channels/simulated/events and prints the
-synchronous result. --via hooks posts to the generic /api/v1/hooks/{connection}/{token} route
-(ADR 0018; run the seed first so the demo connection has its webhook): the answer only says
-"received", and the worker records the outcome.
+Events go to the generic /api/v1/hooks/{connection}/{token} route every tool uses (ADR 0018;
+run the seed first so the demo connection has its webhook): the answer only says "received",
+and the worker records the outcome (see the portal). The old synchronous alias route was
+removed in ADR 0026 step 2.
 """
 
 import argparse
@@ -81,7 +81,6 @@ def main() -> None:
     )
     parser.add_argument("--api", default="http://127.0.0.1:8000")
     parser.add_argument("--tenant", type=UUID, default=INDUSTRIAL_TENANT)
-    parser.add_argument("--via", choices=["alias", "hooks"], default="alias")
     commands = parser.add_subparsers(dest="command", required=True)
     inbox = commands.add_parser("inbox")
     inbox.add_argument("--user")
@@ -117,11 +116,7 @@ def main() -> None:
         )
     secret = settings.simulated_channel_secret.get_secret_value()
     event: dict[str, Any] = {"event_id": f"cli-{uuid4()}", "external_user_id": arguments.user}
-    if arguments.via == "hooks":
-        url = _hook_url(arguments.api, settings, arguments.tenant, secret)
-    else:  # the alias finds the business from the body
-        url = f"{arguments.api}/api/v1/channels/simulated/events"
-        event.update(tenant_id=str(arguments.tenant), connection_id=DEFAULT_CONNECTION_ID)
+    url = _hook_url(arguments.api, settings, arguments.tenant, secret)
     if arguments.command == "enroll":
         _send(url, secret, {**event, "type": "enroll", "code": arguments.code})
         return
