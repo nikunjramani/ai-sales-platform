@@ -9,7 +9,7 @@ import pytest
 from langgraph.checkpoint.memory import InMemorySaver
 
 from sales_platform.catalogue.domain.catalogue import Product
-from sales_platform.catalogue.ports.erp import CatalogueSourceMissing, ErpError, ErpErrorCode
+from sales_platform.catalogue.ports.sources import CatalogueSourceMissing, ErpError, ErpErrorCode
 from sales_platform.enquiries.adapters.documents.text import PdfAndTextReader
 from sales_platform.enquiries.adapters.interpreters.rules import RulesInterpreter
 from sales_platform.enquiries.domain.attachments import StorageArea, attachment_key

@@ -18,7 +18,7 @@
 | 6 | [Future commerce](06-future-commerce.md) | Orders, tracking, status updates, payments, own inventory: the extension points to build in now |
 | 7 | [Decisions needed](07-decisions-needed.md) | Every open question, with options and a recommendation |
 | 8 | [Phases](08-phases.md) | The order of work, what each phase delivers and how it is verified |
-| — | [**Detailed implementation plan**](implementation/README.md) | Step-by-step work per phase: files, tables, APIs, screens, tests, docs, risks |
+| — | **Detailed implementation plan** (git history) | Step-by-step work per phase: files, tables, APIs, screens, tests, docs, risks |
 | 9 | [One-click integrations](09-one-click-integrations.md) | The business presses **Enable** and we create every account the tool needs (per business); what each platform still requires; company setup tasks |
 
 ## Principles (from AGENTS.md and earlier ADRs, still binding)

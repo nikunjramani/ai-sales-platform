@@ -25,7 +25,7 @@ from sales_platform.catalogue.application.catalogue_sources import (
     TenantCatalogue,
 )
 from sales_platform.catalogue.persistence.catalogue import SqlCatalogueStore
-from sales_platform.catalogue.ports.erp import ProductSource
+from sales_platform.catalogue.ports.sources import ProductSource
 from sales_platform.conversations.application.customer_messages import (
     CustomerConsentHook,
     CustomerMessenger,

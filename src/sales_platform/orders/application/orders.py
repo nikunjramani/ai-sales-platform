@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sales_platform.catalogue.ports.erp import ErpError, ErpErrorCode, ProductSource
+from sales_platform.catalogue.ports.sources import ErpError, ErpErrorCode, ProductSource
 from sales_platform.conversations.application.customer_messages import CustomerMessenger
 from sales_platform.conversations.ports.conversations import CustomerTargets
 from sales_platform.integrations.domain.connections import Connection

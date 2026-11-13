@@ -25,7 +25,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
-from sqlalchemy.exc import SQLAlchemyError
 
 from sales_platform.accounts.ports.accounts import NotAllowed
 from sales_platform.catalogue.application.catalogue_admin import (
@@ -62,7 +61,7 @@ from sales_platform.catalogue.ports.catalogue_admin import (
     VersionConflict,
 )
 from sales_platform.platform.api.auth import PortalAuth
-from sales_platform.platform.domain.tenancy import PermissionDenied, TenantContext
+from sales_platform.platform.domain.tenancy import TenantContext
 
 logger = logging.getLogger(__name__)
 _UNAVAILABLE = "Temporarily unavailable; try again"
@@ -75,7 +74,7 @@ def _conflict(code: str, error: Exception) -> HTTPException:
 def guarded[T](action: Callable[[], T]) -> T:
     try:
         return action()
-    except (PermissionDenied, NotAllowed) as error:
+    except NotAllowed as error:
         raise HTTPException(status.HTTP_403_FORBIDDEN, str(error) or "Not permitted") from None
     except (ProductNotFound, CategoryNotFound):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found") from None
@@ -98,9 +97,7 @@ def guarded[T](action: Callable[[], T]) -> T:
         raise _conflict("product_archived", error) from None
     except CurrencyNotSet as error:
         raise _conflict("currency_not_set", error) from None
-    except ValueError as error:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
-    except (CatalogueUnavailable, SQLAlchemyError):
+    except CatalogueUnavailable:
         logger.exception("Catalogue request failed")
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, _UNAVAILABLE) from None
 

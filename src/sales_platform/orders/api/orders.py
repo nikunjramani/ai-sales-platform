@@ -16,7 +16,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy.exc import SQLAlchemyError
 
 from sales_platform.orders.application.orders import (
     OrderDetail,
@@ -33,7 +32,8 @@ from sales_platform.orders.domain.orders import (
 )
 from sales_platform.orders.ports.orders import OrderExists, OrderFilter
 from sales_platform.platform.api.auth import PortalAuth
-from sales_platform.platform.domain.tenancy import PermissionDenied, TenantContext
+from sales_platform.platform.api.errors import UNAVAILABLE
+from sales_platform.platform.domain.tenancy import TenantContext
 from sales_platform.quotations.domain.quotations import quotation_number
 
 
@@ -145,8 +145,6 @@ def _detail(detail: OrderDetail) -> OrderDetailOut:
 def guarded[T](action: Callable[[], T]) -> T:
     try:
         return action()
-    except PermissionDenied as error:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, str(error) or "Not permitted") from None
     except OrderNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found") from None
     except OrderExists as error:
@@ -155,10 +153,8 @@ def guarded[T](action: Callable[[], T]) -> T:
     except OrderNotAllowed as error:
         detail = {"code": "not_allowed", "message": str(error)}
         raise HTTPException(status.HTTP_409_CONFLICT, detail) from None
-    except ValueError as error:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
-    except (OrderUnavailable, SQLAlchemyError):
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Try again later") from None
+    except OrderUnavailable:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, UNAVAILABLE) from None
 
 
 def build_order_router(auth: PortalAuth, orders: OrderService) -> APIRouter:

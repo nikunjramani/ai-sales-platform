@@ -21,7 +21,7 @@ from sales_platform.catalogue.application.catalogue_sources import (
     CatalogueSourceResolver,
     TenantCatalogue,
 )
-from sales_platform.catalogue.ports.erp import ErpError, ErpErrorCode, ProductSource
+from sales_platform.catalogue.ports.sources import ErpError, ErpErrorCode, ProductSource
 from sales_platform.integrations.application.providers import ProviderRegistry
 from sales_platform.integrations.domain.connections import Connection, ConnectionStatus, Purpose
 from sales_platform.platform.domain.tenancy import Role, TenantContext

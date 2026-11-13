@@ -15,7 +15,7 @@ import { messagePreview } from "@/features/conversations";
 import { dateTime } from "@/shared/lib/format";
 import { QueryState } from "@/shared/ui/QueryState";
 
-import { useHomeSummary } from "../../hooks/useHomeSummary";
+import { useHomeSummary } from "../../hooks/useHomeSummary";   
 import { allDone, countText, greeting, type HomeCard, type HomeCardId } from "../../services/homeCards";
 
 const CARD_ICONS: Record<HomeCardId, { icon: LucideIcon; tone: string }> = {
@@ -34,7 +34,7 @@ export function HomePage() {
       <header className="home-hello">
         <h1>
           {hello}
-          {summary.name ? `, ${summary.name}` : ""}!
+          {summary.name ? `, ${summary.name}` :""}!
         </h1>
         <p className="hint">Here is what needs you today at {summary.businessName}.</p>
       </header>

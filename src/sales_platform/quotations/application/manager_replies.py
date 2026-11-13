@@ -59,12 +59,12 @@ from sales_platform.quotations.domain.quotations import (
     TaskNotFound,
     TaskStatus,
 )
+from sales_platform.quotations.persistence.manager_replies import SqlReplyStore
 from sales_platform.quotations.ports.channels import ChannelBinding
 from sales_platform.quotations.ports.manager_replies import (
     ApprovalRequestState,
     PromptKind,
     ReplyPrompt,
-    ReplyStore,
 )
 from sales_platform.quotations.ports.reply_classification import ReplyClassifier
 
@@ -89,7 +89,7 @@ def utc_now() -> datetime:
 class ManagerReplyService:
     def __init__(
         self,
-        store: ReplyStore,
+        store: SqlReplyStore,
         actions: ChannelActionService,
         outbound: OutboundService,
         connections: ConnectionStore,
@@ -460,7 +460,7 @@ class ApprovalPromptHook:
 
     def __init__(
         self,
-        store: ReplyStore,
+        store: SqlReplyStore,
         token_factory: Callable[[], str] = lambda: secrets.token_urlsafe(24),
     ) -> None:
         self._store = store

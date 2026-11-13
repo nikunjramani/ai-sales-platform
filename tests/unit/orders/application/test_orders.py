@@ -12,7 +12,7 @@ from uuid import UUID, uuid4
 import pytest
 
 from sales_platform.catalogue.domain.catalogue import StockLevel
-from sales_platform.catalogue.ports.erp import ErpError, ErpErrorCode
+from sales_platform.catalogue.ports.sources import ErpError, ErpErrorCode
 from sales_platform.integrations.domain.connections import (
     Connection,
     ConnectionStatus,

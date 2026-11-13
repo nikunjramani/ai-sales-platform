@@ -8,7 +8,7 @@ from uuid import UUID
 
 import pytest
 
-from sales_platform.catalogue.ports.erp import ErpError, ErpErrorCode
+from sales_platform.catalogue.ports.sources import ErpError, ErpErrorCode
 from sales_platform.enquiries.domain.requirements import RequestedLine
 from sales_platform.platform.domain.money import Money
 from sales_platform.platform.domain.tenancy import PermissionDenied, Role, TenantContext

@@ -12,7 +12,7 @@ from sqlalchemy.exc import ProgrammingError
 
 from sales_platform.api_app import create_app
 from sales_platform.catalogue.domain.catalogue import Product
-from sales_platform.catalogue.ports.erp import ErpError, ErpErrorCode
+from sales_platform.catalogue.ports.sources import ErpError, ErpErrorCode
 from sales_platform.enquiries.adapters.documents.text import PdfAndTextReader
 from sales_platform.enquiries.adapters.interpreters.rules import RulesInterpreter
 from sales_platform.enquiries.application.preparation import EnquiryPreparationHandler

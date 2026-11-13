@@ -19,8 +19,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from sales_platform.catalogue.ports.erp import ProductSource
-from sales_platform.catalogue.ports.sources import product_source_of
+from sales_platform.catalogue.ports.sources import ProductSource, product_source_of
 from sales_platform.integrations.application.inbound import InboundService
 from sales_platform.integrations.application.providers import ProviderRegistry
 from sales_platform.integrations.domain.connections import (

@@ -9,7 +9,7 @@ import pytest
 
 from sales_platform.catalogue.adapters.catalogue.local import LocalCatalogue
 from sales_platform.catalogue.domain.catalogue_admin import ProductFields
-from sales_platform.catalogue.ports.erp import ErpError, ErpErrorCode
+from sales_platform.catalogue.ports.sources import ErpError, ErpErrorCode
 from sales_platform.integrations.domain.connections import Connection, ConnectionStatus, Purpose
 from sales_platform.integrations.ports.providers import OperationUnsupported, ProviderEnvironment
 from sales_platform.platform.domain.tenancy import Role, TenantContext

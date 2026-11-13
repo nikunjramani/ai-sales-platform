@@ -15,7 +15,7 @@ Status: everything listed here exists. Since ADR 0026 (2026-11-03) the code is g
 | 7 | `quotations/` | pricing and pricing policy, versions, approvals (portal, linked phones, by message, signed link), inbound routes for managers and customer buttons, PDFs, delivery and the delivery outbox listener, acceptance, media links, manager replies, the quotation workflow, quotation message texts | `application/approvals.py`, `workflows/quotation.py` |
 | 8 | `orders/` | orders, the `OrderWriter` provider contract (`ports/writers.py`), reconciliation, "track my order" | `application/orders.py` |
 | 9 | `customer_channels/` | website chat, the customer inbox, the customer API (`api/enquiries.py`) | `application/chat.py`, `api/public_chat.py` |
-| – | `providers/` | plug-in packages (api, simulated, web_chat, telegram, erpnext, local_catalogue); loaded only by entry point | `providers/*/` |
+| – | `providers/` | plug-in packages (api, simulated, web_chat, telegram, local_catalogue); loaded only by entry point | `providers/*/` |
 | – | wiring | `composition.py` (`build_core`, `build_outbox`, `build_catalogue_store`, job handlers), `api_app.py`, `worker.py`, `seed.py`, `ops.py` | |
 
 Each module's tables are in `<module>/persistence/tables.py`; `migrations/env.py` imports them all so Alembic sees one metadata. Tests mirror this layout under `tests/unit/<module>/...` and `tests/integration/<module>/...`.
@@ -160,7 +160,6 @@ See [customer acceptance](../features/customer-acceptance.md).
 | portal `features/quotations` | `CustomerPanel`, `customerService.ts`, `useCustomerAnswer.ts`, list filters |
 
 ## Phase 1 connector framework (merged, ADR 0018)
-See the [phase 1 plan](../plan/platform/implementation/phase-1-foundations.md).
 
 | Actual file | Responsibility |
 |---|---|
@@ -188,7 +187,6 @@ See the [phase 1 plan](../plan/platform/implementation/phase-1-foundations.md).
 | [composition.py](../../src/sales_platform/composition.py) | Composition root shared by the API, worker and tests: secret store (built lazily), provider registry, mailer, `build_core` (the stores and services the API and the worker share, built once per process: connections, product source, pricing, customer answers, approvals, channel actions, connection lifecycle, orders, outbox...), `build_job_handlers` for every job kind (each wrapped so a suspended business's jobs wait) |
 
 ## Phase 2 accounts and onboarding (ADR 0019)
-See the [phase 2 plan](../plan/platform/implementation/phase-2-accounts.md) and [accounts and onboarding](../features/accounts-and-onboarding.md).
 
 | Actual file | Responsibility |
 |---|---|
@@ -210,11 +208,10 @@ See the [phase 2 plan](../plan/platform/implementation/phase-2-accounts.md) and 
 | portal `features/account`, `features/business` | Sign-up, login, links, profile, invitations; create a business, setup and Go live, settings, people, API keys |
 
 ## Phase 3 product catalogue (ADR 0020)
-See the [phase 3 plan](../plan/platform/implementation/phase-3-catalogue.md) and [product catalogue](../features/product-catalogue.md).
 
 | Actual file | Responsibility |
 |---|---|
-| [domain/catalogue_search.py](../../src/sales_platform/catalogue/domain/catalogue_search.py) | The one word-matching rule for product search (moved out of the simulated ERP): words, query and product terms, best matches only |
+| [domain/catalogue_search.py](../../src/sales_platform/catalogue/domain/catalogue_search.py) | The one word-matching rule for product search: words, query and product terms, best matches only |
 | [domain/catalogue_admin.py](../../src/sales_platform/catalogue/domain/catalogue_admin.py) | Editing rules (SKU, units, decimals, price start, stock "as of"), price and stock selection, staleness, change lists; product, category, price and stock records |
 | [domain/tenancy.py](../../src/sales_platform/platform/domain/tenancy.py) | Also `catalogue:view` and `catalogue:manage` |
 | [domain/connections.py](../../src/sales_platform/integrations/domain/connections.py) | Also the `catalogue_editable` capability |
@@ -259,19 +256,12 @@ See the [phase 3 plan](../plan/platform/implementation/phase-3-catalogue.md) and
 | Portal | `features/connections` (`OneClickToolsCard`, `PendingActionPanel`, `ConnectionList` test/disable, `store/connectionSetup.ts`), `features/conversations` (Send again), `features/approvals` |
 | Migration | [0001_baseline](../../migrations/versions/0001_baseline.py) (formerly `0013_provider_state`) |
 
-## Phases 6 and 7: ERPNext product source and orders (ADR 0023, 0024)
+## Orders (ADR 0024, local only since ADR 0027)
 | Area | Files |
 |---|---|
-| Contract | `domain/connections.py` (`CatalogueCapabilities`, `OrderCapabilities`, `StockSemantics`, purpose `orders`), `ports/providers.py` (`fetch_catalogue`, `order_writer`), `ports/erp.py` (`OrderWriter`, `SalesOrderRequest`, `ErpOrder`, `ErpOrderState`) |
-| ERPNext package | `adapters/providers/erpnext/` (`provider.py` form and checks, `config.py` form and settings, `client.py` Frappe REST and error mapping, `catalogue.py` hybrid reader and feed, `orders.py` writer) |
-| Sync | `domain/catalogue_sync.py` (feed, unit map, stock sums, runs), `ports/catalogue_sync.py`, `persistence/catalogue_sync.py`, `application/catalogue_sync.py` (handler, "Sync now"), `api/catalogue.py` (`/sync`) |
-| One source per business | `application/lifecycle.py` (`EXCLUSIVE_PURPOSES`, first copy), `persistence/provider_state.py` (`_replace_others`, `_restore_replaced`), `ports/connections.ConnectionChange` |
-| Orders | `domain/orders.py`, `ports/orders.py`, `persistence/orders.py`, `application/orders.py` (service, five job handlers, `OrderStatusRoute`, `OrderDestinations`), `api/orders.py`, `api/enquiries.py` (`/order`), `domain/messages.py` (order templates), `persistence/acceptance.py` (queues `create_order`) |
-| Track my order | `domain/orders.order_status_command`, `domain/intake.OrderStatusRequest`, `application/customer_inbox.py`, `application/chat.py`, `application/inbound.routes_for(orders=...)` |
-| Test doubles | `adapters/erp/simulated_orders.py` (fault modes) |
-| Sandbox | `infra/erpnext/compose.yaml`, `scripts/seed_erpnext_sandbox.py` |
-| Portal | `features/orders` (list, detail, `QuotationOrderPanel`), `features/catalogue/ui/components/CatalogueSyncPanel.tsx`, `features/connections/services/connectionService.formDefaults` |
-| Migrations | [0001_baseline](../../migrations/versions/0001_baseline.py) (formerly `0014_catalogue_sync`, `0015_orders`) |
+| Orders | `orders/domain/orders.py`, `orders/ports/orders.py`, `orders/persistence/orders.py`, `orders/application/orders.py` (`OrderService`, `CreateOrderHandler`, `OrderNotificationHandler`, `OrderStatusRoute`), `orders/api/orders.py` |
+| Track my order | `orders/domain/orders.order_status_command`, `customer_channels/application/customer_inbox.py`, `customer_channels/application/chat.py` |
+| Portal | `features/orders` (list, detail, `QuotationOrderPanel`) |
 
 ## Planned modules
 
@@ -283,7 +273,6 @@ See the [phase 3 plan](../plan/platform/implementation/phase-3-catalogue.md) and
 | src/sales_platform/application/manager_commands/ (later) | Verified stock enquiries and scoped change requests through existing services; deferred |
 | src/sales_platform/workflows/ | LangGraph state, nodes, routing and versioning |
 | src/sales_platform/ports/ | Typed interfaces for channels, ERP, model and storage |
-| src/sales_platform/adapters/ | Provider-specific implementations and simulated ERP |
 | src/sales_platform/persistence/ | Repositories, tables, tenant context and checkpoint access |
 | src/sales_platform/workers/ | Jobs, scheduler, outbox and reconciliation |
 | src/sales_platform/observability/ | Logging, tracing and metrics configuration |

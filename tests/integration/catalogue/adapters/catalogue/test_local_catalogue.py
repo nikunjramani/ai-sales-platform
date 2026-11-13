@@ -9,7 +9,7 @@ import pytest
 from sqlalchemy import Engine
 
 from sales_platform.catalogue.adapters.catalogue.local import LocalCatalogue
-from sales_platform.catalogue.ports.erp import ErpError, ErpErrorCode, ProductSource
+from sales_platform.catalogue.ports.sources import ErpError, ErpErrorCode, ProductSource
 from sales_platform.composition import build_catalogue, build_catalogue_store, build_runtime
 from sales_platform.platform.config import Settings
 from sales_platform.platform.domain.tenancy import Role, TenantContext

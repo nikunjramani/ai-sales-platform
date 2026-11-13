@@ -2291,70 +2291,53 @@ GRANT SELECT,INSERT ON TABLE public.attachments TO sales_app;
 GRANT SELECT,UPDATE ON TABLE public.attachments TO sales_worker;
 
 GRANT SELECT,INSERT ON TABLE public.catalogue_categories TO sales_app;
-GRANT SELECT,INSERT ON TABLE public.catalogue_categories TO sales_worker;
+GRANT SELECT ON TABLE public.catalogue_categories TO sales_worker;
 
 GRANT UPDATE(name) ON TABLE public.catalogue_categories TO sales_app;
 
 GRANT UPDATE(archived_at) ON TABLE public.catalogue_categories TO sales_app;
-GRANT UPDATE(archived_at) ON TABLE public.catalogue_categories TO sales_worker;
 
 GRANT UPDATE(row_version) ON TABLE public.catalogue_categories TO sales_app;
-GRANT UPDATE(row_version) ON TABLE public.catalogue_categories TO sales_worker;
 
 GRANT UPDATE(updated_at) ON TABLE public.catalogue_categories TO sales_app;
-GRANT UPDATE(updated_at) ON TABLE public.catalogue_categories TO sales_worker;
 
 GRANT UPDATE(updated_by) ON TABLE public.catalogue_categories TO sales_app;
-GRANT UPDATE(updated_by) ON TABLE public.catalogue_categories TO sales_worker;
 
 GRANT SELECT,INSERT ON TABLE public.catalogue_changes TO sales_app;
-GRANT INSERT ON TABLE public.catalogue_changes TO sales_worker;
 
 GRANT SELECT,INSERT ON TABLE public.catalogue_prices TO sales_app;
-GRANT SELECT,INSERT ON TABLE public.catalogue_prices TO sales_worker;
+GRANT SELECT ON TABLE public.catalogue_prices TO sales_worker;
 
 GRANT SELECT,INSERT,DELETE ON TABLE public.catalogue_products TO sales_app;
-GRANT SELECT,INSERT ON TABLE public.catalogue_products TO sales_worker;
+GRANT SELECT ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(name) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(name) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(description) ON TABLE public.catalogue_products TO sales_app;
 
 GRANT UPDATE(category_id) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(category_id) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(unit) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(unit) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(minimum_quantity) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(minimum_quantity) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(quantity_step) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(quantity_step) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(search_terms) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(search_terms) ON TABLE public.catalogue_products TO sales_worker;
 
-GRANT UPDATE(source) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(archived_at) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(archived_at) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(archived_by) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(archived_by) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(row_version) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(row_version) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(updated_at) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(updated_at) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(updated_by) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(updated_by) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT SELECT,INSERT ON TABLE public.catalogue_stock TO sales_app;
-GRANT SELECT,INSERT ON TABLE public.catalogue_stock TO sales_worker;
+GRANT SELECT ON TABLE public.catalogue_stock TO sales_worker;
 
 GRANT SELECT,INSERT ON TABLE public.channel_bindings TO sales_app;
 GRANT SELECT,INSERT ON TABLE public.channel_bindings TO sales_worker;

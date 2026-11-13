@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from sales_platform.catalogue.ports.erp import ErpError, ErpErrorCode
+from sales_platform.catalogue.ports.sources import ErpError, ErpErrorCode
 from sales_platform.platform.domain.jobs import JobKind
 from sales_platform.platform.domain.tenancy import PermissionDenied, Role, TenantContext
 from sales_platform.quotations.application.acceptance import NotDueYet, NotIssued

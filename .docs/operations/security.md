@@ -32,16 +32,11 @@
 - **API keys:** created in the portal, shown once with `no-store`, audited; each key reads only its own enquiries.
 - **Release gate:** production refuses the console mailer, so phase 2 cannot be deployed before a real sender exists (phase 5).
 
-## Implemented controls (phases 6 and 7, ERPNext and orders)
-- **ERP credentials:** the API key and secret go to the SecretStore; the connection keeps only references; they never appear in config, logs or answers (`FrappeClient` hides them in its repr).
-- **Outbound address check:** in production the ERPNext address must be `https://` and resolve to public addresses only, so a business cannot make our server call internal hosts.
-- **No invented facts:** prices only in the business currency and only when tax-exclusive; units renamed, never converted; unknown stock stays unknown.
+## Implemented controls (orders)
 - **Orders:**
   - one per quotation (database);
-  - the ERP write records intent before the call; an unknown outcome is never resent automatically;
-  - staff resolution needs `orders:manage` and a confirmation;
   - lines and events are immutable for every role (trigger), and order rows change only in progress columns.
-- **Customers:** "track my order" answers only the asking contact's orders; the API view never shows ERP or staff details.
+- **Customers:** "track my order" answers only the asking contact's orders; the API view never shows staff details.
 
 ## Implemented controls (phase 5, one-click tools and approval by message)
 - **Platform webhooks:**

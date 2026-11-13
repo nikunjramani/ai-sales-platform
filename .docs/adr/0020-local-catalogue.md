@@ -1,7 +1,7 @@
 # 0020: Our own product catalogue as a product source
 Date: 2026-10-28
 Status: accepted; implemented on branch `feat/phase-3-catalogue` (phase 3 of the [platform plan](../plan/platform/README.md), verified locally)
-Amends [0003](0003-erp-authority.md). Extends [0010](0010-deterministic-pricing-and-tenant-context.md), [0016](0016-customer-acceptance.md), [0017](0017-gemini-reader-and-category-replies.md) and [0018](0018-connector-framework.md). Plan: [phase 3](../plan/platform/implementation/phase-3-catalogue.md); answers in its [user answers](../plan/platform/implementation/phase-3-catalogue.md#user-answers-2026-10-28).
+Amends [0003](0003-erp-authority.md). Extends [0010](0010-deterministic-pricing-and-tenant-context.md), [0016](0016-customer-acceptance.md), [0017](0017-gemini-reader-and-category-replies.md) and [0018](0018-connector-framework.md). Plan: phase 3 (git history); answers in its user answers (git history).
 
 ## Context
 Until phase 3 every product, price and stock figure came from an ERP (in practice the simulated one). A self-service business without an ERP had nothing to quote from (phase 1: "No product source is connected"). D18 decided that products are typed into the portal for now; D19 that we may store a business's catalogue.

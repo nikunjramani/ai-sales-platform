@@ -15,9 +15,10 @@ from sqlalchemy.exc import OperationalError
 
 from sales_platform.accounts.application.api_keys import ApiKeyAuthenticator, generate_api_key
 from sales_platform.accounts.ports.api_keys import ApiKeyRecord
-from sales_platform.catalogue.ports.erp import ErpError, ErpErrorCode
+from sales_platform.catalogue.ports.sources import ErpError, ErpErrorCode
 from sales_platform.customer_channels.api.enquiries import MAX_REQUEST_BYTES, build_enquiry_router
 from sales_platform.enquiries.application.intake import EnquiryIntakeService
+from sales_platform.platform.api.errors import add_error_handlers
 from sales_platform.platform.domain.tenancy import Role
 
 BODY = {"text": "Please quote 50 industrial fans for Pune", "customer_reference": "CUST-1"}
@@ -37,6 +38,7 @@ def client(
     harness: Any,
 ) -> Iterator[TestClient]:
     app = FastAPI()
+    add_error_handlers(app)
     intake = EnquiryIntakeService(
         intake_store, memory_storage, connection_store, provider_registry, clock=lambda: now
     )

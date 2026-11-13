@@ -74,6 +74,7 @@ from sales_platform.orders.api.orders import build_order_router
 from sales_platform.platform.adapters.identity.dev import DevIdentityProvider
 from sales_platform.platform.adapters.storage.local import LocalObjectStorage
 from sales_platform.platform.api.auth import PortalAuth
+from sales_platform.platform.api.errors import add_error_handlers
 from sales_platform.platform.application.sessions import SessionService
 from sales_platform.platform.config import Settings
 from sales_platform.platform.persistence.database import build_engine, database_ready
@@ -114,6 +115,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             engine.dispose()
 
     app = FastAPI(title="Sales Platform", version="0.1.0", lifespan=lifespan)
+    add_error_handlers(app)
 
     @app.get("/health/live", response_model=HealthResponse, tags=["health"])
     def live() -> HealthResponse:

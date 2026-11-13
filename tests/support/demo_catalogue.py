@@ -13,7 +13,7 @@ from uuid import UUID, uuid4
 from sales_platform.catalogue.adapters.catalogue.local import LocalCatalogue
 from sales_platform.catalogue.domain.catalogue import PriceQuote, Product, StockLevel
 from sales_platform.catalogue.domain.catalogue_admin import DEFAULT_LOCATION, LOCAL_PRICE_LIST
-from sales_platform.catalogue.ports.erp import ErpError
+from sales_platform.catalogue.ports.sources import ErpError
 from sales_platform.platform.domain.tenancy import Role, TenantContext
 from sales_platform.seed import DEMO_CATALOGUES
 from tests.support.catalogue_store import InMemoryCatalogueStore
