@@ -18,7 +18,6 @@ from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 import pytest
 from langgraph.checkpoint.memory import InMemorySaver
 
-from sales_platform.catalogue.adapters.erp.simulated import SimulatedErp
 from sales_platform.enquiries.domain.requirements import RequestedLine
 from sales_platform.integrations.application.inbound import ProcessInboundHandler, routes_for
 from sales_platform.integrations.application.messaging import OutboundService, SendMessageHandler
@@ -111,6 +110,7 @@ from sales_platform.quotations.workflows.quotation import (
     QuotationWorkflowDeps,
     build_quotation_graph,
 )
+from tests.support.demo_catalogue import DemoCatalogue
 
 
 @dataclass
@@ -1486,7 +1486,7 @@ class QuotationHarness:
     """The real M4 services, graph and job handlers over MemoryQuotations."""
 
     db: MemoryQuotations
-    erp: SimulatedErp
+    erp: DemoCatalogue
     pricing: QuotationPricingService
     checkpointer: InMemorySaver
     notifier: RecordingProvider  # the managers' simulated phones
@@ -1657,7 +1657,7 @@ class QuotationHarness:
 @pytest.fixture
 def harness(
     quotation_db: MemoryQuotations,
-    simulated_erp: SimulatedErp,
+    demo_catalogue: DemoCatalogue,
     policy_reader: Any,
     now: datetime,
     industrial_tenant: UUID,
@@ -1671,14 +1671,14 @@ def harness(
 
     quotation_db.clock = clock
     resolver = TenantContextResolver(quotation_db)
-    pricing = QuotationPricingService(simulated_erp, policy_reader, clock=clock)
+    pricing = QuotationPricingService(demo_catalogue, policy_reader, clock=clock)
     approvals = ApprovalService(quotation_db, resolver, clock=clock)
     connections = MemoryConnections(now, industrial_tenant, office_tenant)
     notifier = RecordingProvider("simulated", Purpose.MANAGER_APPROVALS)
     email = RecordingProvider("email", Purpose.CUSTOMER_MESSAGES)
     return QuotationHarness(
         db=quotation_db,
-        erp=simulated_erp,
+        erp=demo_catalogue,
         pricing=pricing,
         checkpointer=InMemorySaver(),
         notifier=notifier,

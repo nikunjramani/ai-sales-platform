@@ -17,8 +17,11 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 from sales_platform.catalogue.domain.catalogue import PriceQuote, Product, StockLevel
-from sales_platform.catalogue.ports.erp import CatalogueSourceMissing, ProductSource
-from sales_platform.catalogue.ports.sources import product_source_of
+from sales_platform.catalogue.ports.sources import (
+    CatalogueSourceMissing,
+    ProductSource,
+    product_source_of,
+)
 from sales_platform.integrations.application.providers import ProviderRegistry
 from sales_platform.integrations.ports.connections import ConnectionStore
 from sales_platform.integrations.ports.providers import OperationUnsupported

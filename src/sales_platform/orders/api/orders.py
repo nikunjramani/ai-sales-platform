@@ -1,25 +1,21 @@
 """Portal routes for orders (phase 7, ADR 0024), session cookie + CSRF as usual.
 
-GET  /api/v1/tenants/{t}/orders?status=&needs_attention=&before=&limit=   newest first
-GET  /api/v1/tenants/{t}/orders/{id}                 lines, timeline, ERP write
-POST /api/v1/tenants/{t}/orders/{id}/status          {status, reason?} local orders; a held
-                                                     ERP order: placed (release) or cancelled
-POST /api/v1/tenants/{t}/orders/{id}/operations/{op}/resolve
-                                                     {resolution: found|not_found, erp_order_id?}
+GET  /api/v1/tenants/{t}/orders?status=&before=&limit=   newest first
+GET  /api/v1/tenants/{t}/orders/{id}                 lines and timeline
+POST /api/v1/tenants/{t}/orders/{id}/status          {status, reason?}
 GET  /api/v1/tenants/{t}/quotations/{id}/order       the quotation's order (404: none yet)
-POST /api/v1/tenants/{t}/quotations/{id}/order       201 {erp_customer?}; 409 exists/not allowed
+POST /api/v1/tenants/{t}/quotations/{id}/order       201; 409 exists/not allowed
 GET|PUT /api/v1/tenants/{t}/order-settings           {order_creation: staff|automatic}
 Decimals travel as strings. A non-member gets 404, like an unknown business.
 """
 
 from collections.abc import Callable
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy.exc import SQLAlchemyError
 
 from sales_platform.orders.application.orders import (
     OrderDetail,
@@ -32,13 +28,12 @@ from sales_platform.orders.domain.orders import (
     OrderCreation,
     OrderEvent,
     OrderNotAllowed,
-    OrderOperation,
     OrderStatus,
-    Resolution,
 )
-from sales_platform.orders.ports.orders import OrderExists, OrderFilter, OrderListItem
+from sales_platform.orders.ports.orders import OrderExists, OrderFilter
 from sales_platform.platform.api.auth import PortalAuth
-from sales_platform.platform.domain.tenancy import PermissionDenied, TenantContext
+from sales_platform.platform.api.errors import UNAVAILABLE
+from sales_platform.platform.domain.tenancy import TenantContext
 from sales_platform.quotations.domain.quotations import quotation_number
 
 
@@ -60,9 +55,6 @@ class OrderOut(BaseModel):
     version: int
     status: OrderStatus
     hold_reason: str | None
-    fulfilment: Literal["local", "erp"]
-    erp_customer: str | None
-    erp_order_id: str | None
     currency: str
     subtotal: str
     tax: str
@@ -71,7 +63,6 @@ class OrderOut(BaseModel):
     created_by: str
     created_at: datetime
     updated_at: datetime
-    operation_status: str | None = None
 
 
 class OrderEventOut(BaseModel):
@@ -85,25 +76,8 @@ class OrderEventOut(BaseModel):
     occurred_at: datetime
 
 
-class OrderOperationOut(BaseModel):
-    operation_id: UUID
-    external_reference: str
-    status: str
-    erp_order_id: str | None
-    attempts: int
-    last_error: str | None
-    unknown_since: datetime | None
-    updated_at: datetime
-
-
 class OrderDetailOut(OrderOut):
     events: list[OrderEventOut]
-    operations: list[OrderOperationOut]
-
-
-class CreateOrderIn(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    erp_customer: str | None = Field(default=None, max_length=140)
 
 
 class StatusIn(BaseModel):
@@ -112,18 +86,12 @@ class StatusIn(BaseModel):
     reason: str | None = Field(default=None, max_length=500)
 
 
-class ResolveIn(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    resolution: Resolution
-    erp_order_id: str | None = Field(default=None, max_length=140)
-
-
 class OrderSettingsIO(BaseModel):
     model_config = ConfigDict(extra="forbid")
     order_creation: OrderCreation
 
 
-def order_out(order: Order, operation_status: str | None = None) -> OrderOut:
+def order_out(order: Order) -> OrderOut:
     return OrderOut(
         order_id=order.order_id,
         order_number=order.order_number,
@@ -132,9 +100,6 @@ def order_out(order: Order, operation_status: str | None = None) -> OrderOut:
         version=order.version,
         status=order.status,
         hold_reason=order.hold_reason,
-        fulfilment=order.fulfilment.value,
-        erp_customer=order.erp_customer,
-        erp_order_id=order.erp_order_id,
         currency=order.currency,
         subtotal=str(order.subtotal),
         tax=str(order.tax),
@@ -154,7 +119,6 @@ def order_out(order: Order, operation_status: str | None = None) -> OrderOut:
         created_by=order.created_by,
         created_at=order.created_at,
         updated_at=order.updated_at,
-        operation_status=operation_status,
     )
 
 
@@ -171,39 +135,16 @@ def _event(event: OrderEvent) -> OrderEventOut:
     )
 
 
-def _operation(operation: OrderOperation) -> OrderOperationOut:
-    return OrderOperationOut(
-        operation_id=operation.operation_id,
-        external_reference=operation.external_reference,
-        status=operation.status.value,
-        erp_order_id=operation.erp_order_id,
-        attempts=operation.attempts,
-        last_error=operation.last_error,
-        unknown_since=operation.unknown_since,
-        updated_at=operation.updated_at,
-    )
-
-
 def _detail(detail: OrderDetail) -> OrderDetailOut:
-    latest = detail.operations[-1].status.value if detail.operations else None
     return OrderDetailOut(
-        **order_out(detail.order, latest).model_dump(),
+        **order_out(detail.order).model_dump(),
         events=[_event(event) for event in detail.events],
-        operations=[_operation(operation) for operation in detail.operations],
-    )
-
-
-def _item(item: OrderListItem) -> OrderOut:
-    return order_out(
-        item.order, None if item.operation_status is None else item.operation_status.value
     )
 
 
 def guarded[T](action: Callable[[], T]) -> T:
     try:
         return action()
-    except PermissionDenied as error:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, str(error) or "Not permitted") from None
     except OrderNotFound:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found") from None
     except OrderExists as error:
@@ -212,10 +153,8 @@ def guarded[T](action: Callable[[], T]) -> T:
     except OrderNotAllowed as error:
         detail = {"code": "not_allowed", "message": str(error)}
         raise HTTPException(status.HTTP_409_CONFLICT, detail) from None
-    except ValueError as error:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
-    except (OrderUnavailable, SQLAlchemyError):
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Try again later") from None
+    except OrderUnavailable:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, UNAVAILABLE) from None
 
 
 def build_order_router(auth: PortalAuth, orders: OrderService) -> APIRouter:
@@ -226,12 +165,11 @@ def build_order_router(auth: PortalAuth, orders: OrderService) -> APIRouter:
     def list_orders(
         context: Context,
         status_filter: Annotated[OrderStatus | None, Query(alias="status")] = None,
-        needs_attention: bool = False,
         before: datetime | None = None,
         limit: Annotated[int, Query(ge=1, le=100)] = 50,
     ) -> list[OrderOut]:
-        query = OrderFilter(status_filter, needs_attention, limit, before)
-        return [_item(item) for item in guarded(lambda: orders.list(context, query))]
+        query = OrderFilter(status_filter, limit, before)
+        return [order_out(item.order) for item in guarded(lambda: orders.list(context, query))]
 
     @router.get("/orders/{order_id}", response_model=OrderDetailOut, responses={404: {}})
     def order_detail(order_id: UUID, context: Context) -> OrderDetailOut:
@@ -244,20 +182,6 @@ def build_order_router(auth: PortalAuth, orders: OrderService) -> APIRouter:
     )
     def move(order_id: UUID, body: StatusIn, context: Context) -> OrderOut:
         return order_out(guarded(lambda: orders.move(context, order_id, body.status, body.reason)))
-
-    @router.post(
-        "/orders/{order_id}/operations/{operation_id}/resolve",
-        response_model=OrderOut,
-        responses={403: {}, 404: {}, 409: {}, 422: {}},
-    )
-    def resolve(order_id: UUID, operation_id: UUID, body: ResolveIn, context: Context) -> OrderOut:
-        return order_out(
-            guarded(
-                lambda: orders.resolve(
-                    context, order_id, operation_id, body.resolution, body.erp_order_id
-                )
-            )
-        )
 
     @router.get("/quotations/{quotation_id}/order", response_model=OrderOut, responses={404: {}})
     def quotation_order(quotation_id: UUID, context: Context) -> OrderOut:
@@ -272,8 +196,8 @@ def build_order_router(auth: PortalAuth, orders: OrderService) -> APIRouter:
         status_code=status.HTTP_201_CREATED,
         responses={403: {}, 404: {}, 409: {}, 503: {}},
     )
-    def create_order(quotation_id: UUID, body: CreateOrderIn, context: Context) -> OrderOut:
-        return order_out(guarded(lambda: orders.create(context, quotation_id, body.erp_customer)))
+    def create_order(quotation_id: UUID, context: Context) -> OrderOut:
+        return order_out(guarded(lambda: orders.create(context, quotation_id)))
 
     @router.get("/order-settings", response_model=OrderSettingsIO)
     def settings(context: Context) -> OrderSettingsIO:

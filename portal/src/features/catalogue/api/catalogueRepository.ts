@@ -13,7 +13,6 @@ import type {
   ProductQuery,
   StockCount,
   StockPayload,
-  SyncStatus,
 } from "../model/types";
 
 function path(tenantId: string, rest: string): string {
@@ -27,11 +26,6 @@ function product(tenantId: string, productId: string, rest = ""): string {
 export const catalogueRepository = {
   summary: (tenantId: string) => http<CatalogueSummary>(path(tenantId, "/summary")),
 
-  sync: (tenantId: string) => http<SyncStatus>(path(tenantId, "/sync")),
-
-  /** "Sync now": queued is false when one is already waiting. */
-  syncNow: (tenantId: string) =>
-    http<{ queued: boolean }>(path(tenantId, "/sync"), { method: "POST" }),
 
   products: (tenantId: string, query: ProductQuery) =>
     http<ProductPage>(path(tenantId, "/products"), {

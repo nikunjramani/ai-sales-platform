@@ -8,7 +8,6 @@ from uuid import UUID, uuid4
 import pytest
 
 from sales_platform.accounts.ports.accounts import NotAllowed, PricingSettings, StoredPricing
-from sales_platform.catalogue.adapters.erp.simulated import demo_catalogue
 from sales_platform.catalogue.application.catalogue_admin import (
     CurrencyNotSet,
     ProductService,
@@ -35,6 +34,7 @@ from sales_platform.platform.domain.tenancy import (
 )
 from sales_platform.providers.local_catalogue import LocalCatalogueProvider
 from sales_platform.providers.simulated import SimulatedProvider
+from sales_platform.seed import DEMO_CATALOGUES
 from tests.support.catalogue_store import InMemoryCatalogueStore
 
 TENANT = UUID("00000000-0000-4000-8000-000000000001")
@@ -83,9 +83,7 @@ class Harness:
 
 @pytest.fixture
 def harness() -> Harness:
-    store = InMemoryCatalogueStore.from_simulated(
-        {TENANT: demo_catalogue("industrial")}, lambda: NOW
-    )
+    store = InMemoryCatalogueStore.from_demo({TENANT: DEMO_CATALOGUES["industrial"]}, lambda: NOW)
     businesses, sources = Businesses(), Sources()
     registry = ProviderRegistry([LocalCatalogueProvider(store), SimulatedProvider(Path("unused"))])
     service = ProductService(store, store, businesses, sources, registry, lambda: NOW)  # type: ignore[arg-type]

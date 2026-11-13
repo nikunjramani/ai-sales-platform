@@ -34,7 +34,6 @@ Status 2026-10-27: M0-M6 and platform phase 1 are complete (local and CI); phase
 - [Adding a provider (email, Telegram, ERP...)](development/adding-providers.md)
 - [Connections (phases 1, 4 and 5)](features/connections.md)
 - [Telegram (phase 5)](features/telegram.md)
-- [ERPNext product source (phase 6)](features/erpnext.md)
 - [Orders (phase 7)](features/orders.md)
 - [Approval by message (phase 5)](features/approval-by-message.md)
 - [Accounts and onboarding (phase 2)](features/accounts-and-onboarding.md)

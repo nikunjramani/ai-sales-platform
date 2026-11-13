@@ -14,5 +14,4 @@ export const catalogueKeys = {
   changes: (tenantId: string, productId: string) =>
     ["tenants", tenantId, "catalogue", "product", productId, "changes"] as const,
   categories: (tenantId: string) => ["tenants", tenantId, "catalogue", "categories"] as const,
-  sync: (tenantId: string) => ["tenants", tenantId, "catalogue", "sync"] as const,
 };

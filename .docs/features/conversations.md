@@ -1,5 +1,5 @@
 # Customers and conversations (phase 4)
-Decisions: [ADR 0021](../adr/0021-customers-conversations-and-website-chat.md) and the [phase 4 user answers](../plan/platform/implementation/phase-4-conversations.md#user-answers-2026-10-28).
+Decisions: [ADR 0021](../adr/0021-customers-conversations-and-website-chat.md) and the phase 4 user answers (git history).
 
 ## In simple words
 - **Contact:** one customer of a business.

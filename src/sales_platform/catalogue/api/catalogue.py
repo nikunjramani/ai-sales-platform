@@ -14,8 +14,6 @@ GET    /products/{id}/prices  POST (201, 200 on a replayed command_id)
 GET    /products/{id}/stock   POST (201, 200 on a replayed command_id)
 GET    /products/{id}/changes
 GET    /categories  POST /categories  PATCH /categories/{id} {name?, archived?, expected_version}
-GET    /sync                             the copy from an ERP or shop: last run, next run (phase 6)
-POST   /sync                             202 "Sync now"; 409 not_synced (our own list)
 """
 
 import logging
@@ -27,7 +25,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
-from sqlalchemy.exc import SQLAlchemyError
 
 from sales_platform.accounts.ports.accounts import NotAllowed
 from sales_platform.catalogue.application.catalogue_admin import (
@@ -39,11 +36,6 @@ from sales_platform.catalogue.application.catalogue_admin import (
     ProductService,
     SourceNotEditable,
     StockView,
-)
-from sales_platform.catalogue.application.catalogue_sync import (
-    CatalogueSyncService,
-    SyncNotAvailable,
-    SyncStatusView,
 )
 from sales_platform.catalogue.domain.catalogue_admin import (
     Category,
@@ -69,7 +61,7 @@ from sales_platform.catalogue.ports.catalogue_admin import (
     VersionConflict,
 )
 from sales_platform.platform.api.auth import PortalAuth
-from sales_platform.platform.domain.tenancy import PermissionDenied, TenantContext
+from sales_platform.platform.domain.tenancy import TenantContext
 
 logger = logging.getLogger(__name__)
 _UNAVAILABLE = "Temporarily unavailable; try again"
@@ -82,7 +74,7 @@ def _conflict(code: str, error: Exception) -> HTTPException:
 def guarded[T](action: Callable[[], T]) -> T:
     try:
         return action()
-    except (PermissionDenied, NotAllowed) as error:
+    except NotAllowed as error:
         raise HTTPException(status.HTTP_403_FORBIDDEN, str(error) or "Not permitted") from None
     except (ProductNotFound, CategoryNotFound):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found") from None
@@ -105,11 +97,7 @@ def guarded[T](action: Callable[[], T]) -> T:
         raise _conflict("product_archived", error) from None
     except CurrencyNotSet as error:
         raise _conflict("currency_not_set", error) from None
-    except SyncNotAvailable as error:
-        raise _conflict("not_synced", error) from None
-    except ValueError as error:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
-    except (CatalogueUnavailable, SQLAlchemyError):
+    except CatalogueUnavailable:
         logger.exception("Catalogue request failed")
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, _UNAVAILABLE) from None
 
@@ -419,58 +407,7 @@ def _added[T](response: Response, added: AddedEntry[T]) -> T:
     return added.entry
 
 
-class SyncIssueOut(BaseModel):
-    code: str
-    message: str
-    sku: str | None
-
-
-class SyncRunOut(BaseModel):
-    trigger: str
-    status: str
-    started_at: datetime
-    finished_at: datetime | None
-    counts: dict[str, int] | None
-    issues: list[SyncIssueOut]
-    error: str | None
-    next_run_at: datetime | None
-
-
-class SyncOut(BaseModel):
-    synced: bool  # false: the products are our own list (nothing is copied)
-    every_minutes: int | None = None
-    latest: SyncRunOut | None = None
-
-
-class SyncRequestOut(BaseModel):
-    queued: bool  # false: a "Sync now" is already waiting
-
-
-def _sync(view: SyncStatusView | None) -> SyncOut:
-    if view is None:
-        return SyncOut(synced=False)
-    run = view.latest
-    return SyncOut(
-        synced=True,
-        every_minutes=view.every_minutes,
-        latest=None
-        if run is None
-        else SyncRunOut(
-            trigger=run.trigger.value,
-            status=run.status.value,
-            started_at=run.started_at,
-            finished_at=run.finished_at,
-            counts=None if run.counts is None else dict(vars(run.counts)),
-            issues=[SyncIssueOut(code=i.code, message=i.message, sku=i.sku) for i in run.issues],
-            error=run.error,
-            next_run_at=run.next_run_at,
-        ),
-    )
-
-
-def build_catalogue_router(
-    auth: PortalAuth, products: ProductService, sync: CatalogueSyncService | None = None
-) -> APIRouter:
+def build_catalogue_router(auth: PortalAuth, products: ProductService) -> APIRouter:
     router = APIRouter(prefix="/api/v1/tenants/{tenant_id}/catalogue", tags=["catalogue"])
     Context = Annotated[TenantContext, Depends(auth.tenant_context())]
 
@@ -600,23 +537,6 @@ def build_catalogue_router(
             return list(products.changes(context, product_id))
 
         return [_change(change) for change in guarded(load)]
-
-    @router.get("/sync", response_model=SyncOut)
-    def sync_status(context: Context) -> SyncOut:
-        if sync is None:
-            return SyncOut(synced=False)
-        return _sync(guarded(lambda: sync.status(context)))
-
-    @router.post(
-        "/sync",
-        response_model=SyncRequestOut,
-        status_code=status.HTTP_202_ACCEPTED,
-        responses={403: {}, 409: {}},
-    )
-    def sync_now(context: Context) -> SyncRequestOut:
-        if sync is None:
-            raise _conflict("not_synced", SyncNotAvailable("Nothing is copied here"))
-        return SyncRequestOut(queued=guarded(lambda: sync.request(context)))
 
     @router.get("/categories", response_model=list[CategoryOut])
     def list_categories(context: Context) -> list[CategoryOut]:

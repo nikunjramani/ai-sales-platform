@@ -6,7 +6,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from sales_platform.catalogue.ports.erp import ErpError, ErpErrorCode
+from sales_platform.catalogue.ports.sources import ErpError, ErpErrorCode
 from sales_platform.enquiries.domain.requirements import RequestedLine
 from sales_platform.platform.domain.jobs import JobKind, PermanentJobError
 from sales_platform.platform.ports.jobs import ClaimedJob

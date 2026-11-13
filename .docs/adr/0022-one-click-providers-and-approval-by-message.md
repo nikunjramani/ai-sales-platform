@@ -2,7 +2,7 @@
 **Status:** accepted (phase 5, user decisions 2026-10-29); implemented on `feat/phase-5-providers`. **Not live-verified:** there were no company accounts in this phase (user answer), so every provider path is checked against fixtures written from the providers' documentation and against fakes. Extends ADR 0007 (channel-independent approval), ADR 0013 (one approval core), ADR 0017 (the generic model loader) and ADR 0018 (connector framework). Supersedes ADR 0015's "email approval deferred" (D10 covers it; an email package plugs into the same pieces).
 
 ## Context
-Phase 5 was planned as six provider packages (SendGrid email, Twilio WhatsApp and SMS, Telegram, Instagram, Messenger). The user narrowed it on 2026-10-29 to the **generic framework plus Telegram**: "for now don't implement SendGrid related code; make the code so that we can easily integrate any third-party tool". Decisions in [phase 5 plan, user answers](../plan/platform/implementation/phase-5-one-click-providers.md#user-answers-2026-10-29) and [07 decisions](../plan/platform/07-decisions-needed.md) (D5, D9, D10).
+Phase 5 was planned as six provider packages (SendGrid email, Twilio WhatsApp and SMS, Telegram, Instagram, Messenger). The user narrowed it on 2026-10-29 to the **generic framework plus Telegram**: "for now don't implement SendGrid related code; make the code so that we can easily integrate any third-party tool". Decisions in phase 5 plan, user answers (git history) and [07 decisions](../plan/platform/07-decisions-needed.md) (D5, D9, D10).
 
 ## Decision
 1. **Provider contract** (`ports/providers.py`):

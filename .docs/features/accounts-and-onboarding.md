@@ -1,5 +1,5 @@
 # Accounts and onboarding (phase 2)
-A new business goes from zero to live in the portal, without scripts. Decisions: [ADR 0019](../adr/0019-accounts-and-onboarding.md); plan and user answers: [phase 2](../plan/platform/implementation/phase-2-accounts.md).
+A new business goes from zero to live in the portal, without scripts. Decisions: [ADR 0019](../adr/0019-accounts-and-onboarding.md); plan and user answers: phase 2 (git history).
 
 ## The flow, in simple words
 1. **Sign up** with an email and a password. The screen always says "check your email", so nobody can find out which addresses have accounts.

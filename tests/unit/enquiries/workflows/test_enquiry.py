@@ -8,9 +8,8 @@ from uuid import UUID, uuid4
 import pytest
 from langgraph.checkpoint.memory import InMemorySaver
 
-from sales_platform.catalogue.adapters.erp.simulated import SimulatedErp
 from sales_platform.catalogue.domain.catalogue import Product
-from sales_platform.catalogue.ports.erp import CatalogueSourceMissing, ErpError, ErpErrorCode
+from sales_platform.catalogue.ports.sources import CatalogueSourceMissing, ErpError, ErpErrorCode
 from sales_platform.enquiries.adapters.documents.text import PdfAndTextReader
 from sales_platform.enquiries.adapters.interpreters.rules import RulesInterpreter
 from sales_platform.enquiries.domain.attachments import StorageArea, attachment_key
@@ -32,6 +31,7 @@ from sales_platform.enquiries.workflows.enquiry import (
 )
 from sales_platform.platform.domain.jobs import JobKind, PermanentJobError
 from sales_platform.platform.ports.jobs import ClaimedJob
+from tests.support.demo_catalogue import DemoCatalogue
 from tests.support.workflow_store import InMemoryWorkflowStore
 
 
@@ -56,7 +56,7 @@ class CountingInterpreter:
 
 
 class Harness:
-    def __init__(self, erp: SimulatedErp, storage: Any, interpreter: CountingInterpreter) -> None:
+    def __init__(self, erp: DemoCatalogue, storage: Any, interpreter: CountingInterpreter) -> None:
         self.store = InMemoryWorkflowStore()
         self.storage = storage
         self.interpreter = interpreter
@@ -86,9 +86,9 @@ class Harness:
 
 
 @pytest.fixture
-def make_harness(simulated_erp: SimulatedErp, memory_storage: Any) -> Callable[..., Harness]:
+def make_harness(demo_catalogue: DemoCatalogue, memory_storage: Any) -> Callable[..., Harness]:
     def build(answer: ExtractedRequirements | Exception | None = None) -> Harness:
-        return Harness(simulated_erp, memory_storage, CountingInterpreter(answer))
+        return Harness(demo_catalogue, memory_storage, CountingInterpreter(answer))
 
     return build
 

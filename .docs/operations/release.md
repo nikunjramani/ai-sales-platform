@@ -28,14 +28,4 @@ Preserve old workflow compatibility until in-flight runs complete or are migrate
 | Bad model/prompt release | Disable affected model path, route to review, restore evaluated configuration |
 | Database incident | Stop external dispatch, restore and reconcile remote effects since restore point before resuming |
 
-## Order needs attention
-An order's ERP write is still unknown after an hour of look-ups (ADR 0024), or the ERP refused it. It shows under Orders → "Needs attention".
-1. Open the order. The ERP panel shows the reference (`QO-…`) and the ERP's last answer.
-2. In the ERP, search sales orders by that reference (ERPNext: the "Customer's Purchase Order" field, `po_no`). Include drafts and cancelled ones.
-3. **Found:** press "It is in the ERP", type its order number and confirm. The order is linked and its status is followed from now on.
-4. **Not found:** fix what the last answer names first (for example an unknown customer), then press "It is not in the ERP: send it again" and confirm. The same reference is used, and the writer searches for it before creating, so a late-appearing order is not duplicated.
-5. Never create the order in the ERP by hand and then press "send again". Use "It is in the ERP" instead.
-
-A sync run that fails (Products → "Copy from your ERP") keeps the last good copy. Fix the cause it names (key, price list, warehouse), then press "Sync now".
-
 At implementation, add actual commands, service names, dashboard links, backup schedules, escalation contacts, and tested restore results.

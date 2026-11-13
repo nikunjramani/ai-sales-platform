@@ -1,4 +1,4 @@
-"""Orders: what an accepted quotation becomes (phase 7, roadmap M6b, ADR 0024).
+"""Orders: what an accepted quotation becomes (phase 7, roadmap M6b, ADR 0024; ADR 0027).
 
 An order copies the accepted quotation version's lines and totals exactly (the version stays
 the signed evidence). One order per quotation, ever (the purchase guard, Q4). Its status says
@@ -6,40 +6,25 @@ what the business knows, never more:
 
   placed -> confirmed -> in_progress -> shipped -> delivered      plus cancelled and on_hold
 
-Where an order is kept (fulfilment):
-- local: the business has no ERP that takes orders; staff move the status in the portal;
-- erp:   the order is written to the business's ERP once, by an order operation; from then on
-         its status follows the ERP (the ERP is the authority, ADR 0003). Staff do not move it.
-
-Order operations (the ERP write) record intent before the call, like the outbox (ADR 0015):
-pending -> sending -> succeeded | failed | unknown -> (reconciled) succeeded | needs_attention.
-An unknown outcome is never sent again automatically unless the ERP itself refuses
-duplicates (OrderCapabilities.idempotency_key); otherwise the reference is looked up for a
-while, then staff decide.
+Orders are kept here and staff move their status in the portal (ADR 0027 removed the ERP
+write; a later ERP integration is a new decision).
 
 Decisions (user, 2026-10-29; Claude where the user delegated, ADR 0024): created automatically
 or by staff per business (default staff); stock is re-checked when the order is created and a
-shortfall holds the order for staff; no stock reservation; staff may cancel a local order before
-it ships (an ERP order is cancelled in the ERP); customers hear about confirmed, shipped,
-delivered and cancelled; "track my order" shows the asking contact's own orders only.
+shortfall holds the order for staff; no stock reservation; staff may cancel an order before it
+ships; customers hear about confirmed, shipped, delivered and cancelled; "track my order" shows
+the asking contact's own orders only.
 """
 
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
 from uuid import UUID
 
-from sales_platform.platform.domain.validation import require_text
-
 MAX_REASON = 500
-MAX_CUSTOMER_ACCOUNT = 140
-# An uncertain ERP write is looked up every RECONCILE_EVERY for RECONCILE_WINDOW (Q15).
-RECONCILE_EVERY = timedelta(minutes=5)
-RECONCILE_WINDOW = timedelta(hours=1)
-STATUS_REFRESH = timedelta(minutes=15)  # how often open ERP orders are asked for their status
 
 
 class OrderStatus(StrEnum):
@@ -54,7 +39,7 @@ class OrderStatus(StrEnum):
 
 FINAL_STATUSES = frozenset({OrderStatus.DELIVERED, OrderStatus.CANCELLED})
 
-# Staff moves of a local order (Q8). Cancelling is allowed until the order ships (Q7).
+# Staff moves of an order (Q8). Cancelling is allowed until the order ships (Q7).
 LOCAL_TRANSITIONS: Mapping[OrderStatus, frozenset[OrderStatus]] = {
     OrderStatus.PLACED: frozenset(
         {OrderStatus.CONFIRMED, OrderStatus.ON_HOLD, OrderStatus.CANCELLED}
@@ -78,7 +63,7 @@ LOCAL_TRANSITIONS: Mapping[OrderStatus, frozenset[OrderStatus]] = {
     OrderStatus.CANCELLED: frozenset(),
 }
 
-# The statuses customers are told about (Q9); wording in domain.messages.
+# The statuses customers are told about (Q9); wording in integrations.domain.messages.
 CUSTOMER_NOTICES = frozenset(
     {
         OrderStatus.CONFIRMED,
@@ -89,11 +74,6 @@ CUSTOMER_NOTICES = frozenset(
 )
 
 
-class Fulfilment(StrEnum):
-    LOCAL = "local"
-    ERP = "erp"
-
-
 class OrderCreation(StrEnum):
     """Per business (Q1): staff press "Create order" (default), or it happens on acceptance."""
 
@@ -101,49 +81,19 @@ class OrderCreation(StrEnum):
     AUTOMATIC = "automatic"
 
 
-class OperationStatus(StrEnum):
-    PENDING = "pending"
-    SENDING = "sending"  # a crash here means the ERP may or may not have the order
-    SUCCEEDED = "succeeded"
-    FAILED = "failed"  # the ERP certainly refused; staff fix the cause and retry
-    UNKNOWN = "unknown"  # may exist: looked up, never resent blindly
-    NEEDS_ATTENTION = "needs_attention"  # still unknown after the window: staff decide
-
-
-FINAL_OPERATION_STATUSES = frozenset(
-    {OperationStatus.SUCCEEDED, OperationStatus.FAILED, OperationStatus.NEEDS_ATTENTION}
-)
-
-
 class OrderEventType(StrEnum):
     CREATED = "created"
     STATUS_CHANGED = "status_changed"
     HELD = "held"  # stock short at creation (Q11)
-    ERP_WRITE_SUCCEEDED = "erp_write_succeeded"
-    ERP_WRITE_FAILED = "erp_write_failed"
-    ERP_WRITE_UNKNOWN = "erp_write_unknown"
-    RECONCILED = "reconciled"
-    NEEDS_ATTENTION = "needs_attention"
-    RESOLVED = "resolved"  # staff: "found in the ERP" or "not in the ERP, send again"
-    RETRIED = "retried"
-    IGNORED = "ignored"  # an ERP status that is not allowed from the current one
 
 
 class EventSource(StrEnum):
     SYSTEM = "system"
     STAFF = "staff"
-    ERP = "erp"
-
-
-class Resolution(StrEnum):
-    """Staff answer to an order operation that needs attention (both confirmed in the UI)."""
-
-    FOUND = "found"  # it is in the ERP: staff type its ERP order number
-    NOT_FOUND = "not_found"  # it is not in the ERP: send it again (same reference)
 
 
 class OrderNotAllowed(Exception):
-    """The order cannot do that now (wrong status, ERP order, already exists...)."""
+    """The order cannot do that now (wrong status, already exists...)."""
 
 
 @dataclass(frozen=True)
@@ -169,10 +119,6 @@ class Order:
     enquiry_id: UUID
     contact_id: UUID | None  # the customer who accepted, when known (track my order)
     status: OrderStatus
-    fulfilment: Fulfilment
-    erp_connection_id: UUID | None
-    erp_customer: str | None
-    erp_order_id: str | None
     currency: str
     subtotal: Decimal
     tax: Decimal
@@ -201,29 +147,9 @@ class OrderEvent:
     occurred_at: datetime
 
 
-@dataclass(frozen=True)
-class OrderOperation:
-    operation_id: UUID
-    order_id: UUID
-    external_reference: str
-    connection_id: UUID
-    status: OperationStatus
-    erp_order_id: str | None
-    attempts: int
-    last_error: str | None
-    created_at: datetime
-    updated_at: datetime
-    unknown_since: datetime | None = None
-
-
 def order_number(order_id: UUID) -> str:
     """Short human reference derived from the ID, e.g. O-1A2B3C4D (like Q- numbers)."""
     return f"O-{order_id.hex[:8].upper()}"
-
-
-def external_reference(order_id: UUID) -> str:
-    """The stable reference sent to the ERP; generated once, stored before any call."""
-    return f"QO-{order_id.hex}"
 
 
 def order_lines(content: Mapping[str, object]) -> tuple[OrderLine, ...]:
@@ -253,8 +179,8 @@ def stock_shortfall(
 ) -> tuple[str, ...]:
     """SKUs whose known stock is below the ordered quantity (Q5, Q11).
 
-    Unknown stock (not counted, or the source did not say) is not a shortfall: the quotation
-    was approved knowing it, and the hold is for numbers that say "not enough".
+    Unknown stock (not counted) is not a shortfall: the quotation was approved knowing it, and
+    the hold is for numbers that say "not enough".
     """
     needed: dict[str, Decimal] = {}
     for line in lines:
@@ -266,28 +192,9 @@ def stock_shortfall(
     )
 
 
-def check_local_move(order: Order, target: OrderStatus) -> None:
-    if order.fulfilment is not Fulfilment.LOCAL:
-        raise OrderNotAllowed("This order's status follows the ERP; change it there")
+def check_move(order: Order, target: OrderStatus) -> None:
     if target not in LOCAL_TRANSITIONS[order.status]:
         raise OrderNotAllowed(f"An order that is {order.status.value} cannot become {target.value}")
-
-
-def erp_status(state: str) -> OrderStatus:
-    """The ERP's state (ports.erp.ErpOrderState values) as our status."""
-    return {
-        "draft": OrderStatus.PLACED,
-        "confirmed": OrderStatus.CONFIRMED,
-        "in_progress": OrderStatus.IN_PROGRESS,
-        "delivered": OrderStatus.DELIVERED,
-        "on_hold": OrderStatus.ON_HOLD,
-        "cancelled": OrderStatus.CANCELLED,
-    }[state]
-
-
-def erp_move_allowed(current: OrderStatus, target: OrderStatus) -> bool:
-    """The ERP decides an ERP order's status, but a final status never reopens."""
-    return current != target and current not in FINAL_STATUSES
 
 
 def clean_reason(reason: str | None, *, required: bool) -> str | None:
@@ -298,15 +205,6 @@ def clean_reason(reason: str | None, *, required: bool) -> str | None:
         return None
     if len(text) > MAX_REASON or not text.isprintable():
         raise ValueError(f"A reason is at most {MAX_REASON} printable characters")
-    return text
-
-
-def clean_customer_account(value: str | None) -> str | None:
-    """The ERP customer staff chose (Q3); None means the connection's default."""
-    if value is None or not value.strip():
-        return None
-    text = value.strip()
-    require_text(text, "erp_customer", MAX_CUSTOMER_ACCOUNT)
     return text
 
 

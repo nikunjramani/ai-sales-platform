@@ -14,7 +14,7 @@ export function OrderTimeline({ events }: { events: OrderEvent[] }) {
             <strong>{eventLabel(event.type)}</strong>
             {event.to_status && <> → {STATUS_LABELS[event.to_status]}</>}{" "}
             <span className="muted small">
-              {dateTime(event.occurred_at)} · {event.source === "erp" ? "ERP" : event.actor}
+              {dateTime(event.occurred_at)} · {event.actor}
             </span>
             {typeof event.detail.reason === "string" && (
               <div className="quote">{event.detail.reason}</div>

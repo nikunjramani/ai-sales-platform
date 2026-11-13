@@ -19,9 +19,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from sales_platform.catalogue.adapters.erp.simulated import demo_catalogue
-from sales_platform.catalogue.ports.erp import ProductSource
-from sales_platform.catalogue.ports.sources import product_source_of
+from sales_platform.catalogue.ports.sources import ProductSource, product_source_of
 from sales_platform.integrations.application.inbound import InboundService
 from sales_platform.integrations.application.providers import ProviderRegistry
 from sales_platform.integrations.domain.connections import (
@@ -46,6 +44,7 @@ from sales_platform.integrations.ports.providers import (
 )
 from sales_platform.platform.domain.tenancy import Role, TenantContext
 from sales_platform.platform.ports.secrets import SecretNotFound
+from sales_platform.seed import DEMO_CATALOGUES
 from tests.support.catalogue_store import InMemoryCatalogueStore
 
 NOW = datetime(2026, 10, 27, tzinfo=UTC)
@@ -205,7 +204,7 @@ def installed() -> list[Provider]:
     environment = ProviderEnvironment(
         "development",
         Path(tempfile.mkdtemp(prefix="contract-")),
-        catalogue_store=InMemoryCatalogueStore.from_simulated({A: demo_catalogue("industrial")}),
+        catalogue_store=InMemoryCatalogueStore.from_demo({A: DEMO_CATALOGUES["industrial"]}),
     )
     registry = ProviderRegistry.load(environment)
     return [*registry.all(), EchoProvider()]

@@ -18,7 +18,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict
-from sqlalchemy.exc import SQLAlchemyError
 
 from sales_platform.conversations.application.contacts import ContactNotFound, ContactService
 from sales_platform.conversations.application.resend import MessageNotResendable, ResendService
@@ -30,7 +29,7 @@ from sales_platform.conversations.ports.contacts import (
     ThreadEntry,
 )
 from sales_platform.platform.api.auth import PortalAuth
-from sales_platform.platform.domain.tenancy import PermissionDenied, TenantContext
+from sales_platform.platform.domain.tenancy import TenantContext
 
 
 class ConversationOut(BaseModel):
@@ -154,12 +153,8 @@ def build_conversation_router(
     def guarded[T](action: Callable[[], T]) -> T:
         try:
             return action()
-        except PermissionDenied as error:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, str(error) or "Not permitted") from None
         except (ContactNotFound, MessageNotResendable):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found") from None
-        except SQLAlchemyError:
-            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Try again later") from None
 
     @router.get("/conversations", response_model=list[ConversationOut])
     def inbox(context: Context) -> list[ConversationOut]:

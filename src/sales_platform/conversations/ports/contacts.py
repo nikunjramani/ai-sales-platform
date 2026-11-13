@@ -80,24 +80,6 @@ class ContactDetail:
     suggestions: tuple[ContactSummary, ...]  # same verified email/phone (D13)
 
 
-class ContactReader(Protocol):
-    def conversations(self, tenant_id: UUID, limit: int) -> list[ConversationSummary]: ...
-
-    def conversation(
-        self, tenant_id: UUID, conversation_id: UUID
-    ) -> tuple[ConversationSummary, IdentityView, list[ThreadEntry]] | None: ...
-
-    def enquiry_thread(self, tenant_id: UUID, enquiry_id: UUID) -> list[ThreadEntry]:
-        """Every message of the enquiry's conversation that belongs to it."""
-        ...
-
-    def contacts(self, tenant_id: UUID, query: str | None, limit: int) -> list[ContactSummary]:
-        """Contacts that were not merged into another, newest activity first."""
-        ...
-
-    def contact(self, tenant_id: UUID, contact_id: UUID) -> ContactDetail | None: ...
-
-
 class ContactMerger(Protocol):
     def merge(self, tenant_id: UUID, source_id: UUID, target_id: UUID, actor: str) -> bool:
         """Move the source's identities, conversations and enquiries to the target and mark the

@@ -17,18 +17,18 @@ from uuid import UUID, uuid4
 import pytest
 
 from sales_platform.catalogue.adapters.catalogue.local import LocalCatalogue
-from sales_platform.catalogue.adapters.erp.simulated import SimulatedErp, demo_catalogues
 from sales_platform.catalogue.application.catalogue_sources import (
     CatalogueSourceResolver,
     TenantCatalogue,
 )
-from sales_platform.catalogue.ports.erp import ErpError, ErpErrorCode, ProductSource
+from sales_platform.catalogue.ports.sources import ErpError, ErpErrorCode, ProductSource
 from sales_platform.integrations.application.providers import ProviderRegistry
 from sales_platform.integrations.domain.connections import Connection, ConnectionStatus, Purpose
 from sales_platform.platform.domain.tenancy import Role, TenantContext
-from sales_platform.providers.simulated import SimulatedProvider
-from sales_platform.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
+from sales_platform.providers.local_catalogue import LocalCatalogueProvider
+from sales_platform.seed import DEMO_CATALOGUES, INDUSTRIAL_TENANT, OFFICE_TENANT
 from tests.support.catalogue_store import InMemoryCatalogueStore
+from tests.support.demo_catalogue import DemoCatalogue
 
 SEARCH_CASES = json.loads(
     (Path(__file__).parents[3] / "data" / "catalogue_search_cases.json").read_text("utf-8")
@@ -48,9 +48,9 @@ def _context(tenant_id: UUID) -> TenantContext:
     return TenantContext(tenant_id, "contract@example.test", frozenset({Role.SALES_OPERATOR}))
 
 
-def _simulated() -> ContractSetup:
+def _demo() -> ContractSetup:
     return ContractSetup(
-        erp=SimulatedErp(demo_catalogues(INDUSTRIAL_TENANT, OFFICE_TENANT)),
+        erp=DemoCatalogue({INDUSTRIAL_TENANT: "industrial", OFFICE_TENANT: "office"}),
         tenant=_context(INDUSTRIAL_TENANT),
         other_tenant=_context(OFFICE_TENANT),
         known_sku="IND-FAN-450",
@@ -59,37 +59,41 @@ def _simulated() -> ContractSetup:
 
 
 def _tenant_catalogue() -> ContractSetup:
-    """Phase 1: the per-business router over the simulated provider's demo catalogues."""
+    """The per-business router over our own product list (the demo data in memory)."""
     now = datetime(2026, 1, 1, tzinfo=UTC)
 
-    def source(tenant_id: UUID, name: str) -> Connection:
+    def source(tenant_id: UUID) -> Connection:
         return Connection(
-            uuid4(), tenant_id, "simulated", "Demo", frozenset({Purpose.CATALOGUE}),
-            {"catalogue": name}, {}, "simulated-local", ConnectionStatus.ACTIVE, None, "test",
-            now, now,
+            uuid4(), tenant_id, "local_catalogue", "Our product list",
+            frozenset({Purpose.CATALOGUE}), {}, {}, "local", ConnectionStatus.ACTIVE, None,
+            "test", now, now,
         )  # fmt: skip
 
     class Sources:
         def catalogue_sources(self, tenant_id: UUID) -> list[Connection]:
-            name = {INDUSTRIAL_TENANT: "industrial", OFFICE_TENANT: "office"}[tenant_id]
-            return [source(tenant_id, name)]
+            return [source(tenant_id)]
 
+    store = InMemoryCatalogueStore.from_demo(
+        {INDUSTRIAL_TENANT: DEMO_CATALOGUES["industrial"], OFFICE_TENANT: DEMO_CATALOGUES["office"]}
+    )
     resolver = CatalogueSourceResolver(
         Sources(),  # type: ignore[arg-type]
-        ProviderRegistry([SimulatedProvider(Path("unused"))]),
+        ProviderRegistry([LocalCatalogueProvider(store)]),
         None,  # type: ignore[arg-type]
     )
-    return replace(_simulated(), erp=TenantCatalogue(resolver))
+    return replace(_demo(), erp=TenantCatalogue(resolver))
 
 
 def _local_in_memory() -> ContractSetup:
     """Phase 3: our own catalogue, holding the same synthetic data."""
-    store = InMemoryCatalogueStore.from_simulated(demo_catalogues(INDUSTRIAL_TENANT, OFFICE_TENANT))
-    return replace(_simulated(), erp=LocalCatalogue(store))
+    store = InMemoryCatalogueStore.from_demo(
+        {INDUSTRIAL_TENANT: DEMO_CATALOGUES["industrial"], OFFICE_TENANT: DEMO_CATALOGUES["office"]}
+    )
+    return replace(_demo(), erp=LocalCatalogue(store))
 
 
 ADAPTERS: list[object] = [
-    pytest.param(_simulated, id="simulated"),
+    pytest.param(_demo, id="demo"),
     pytest.param(_tenant_catalogue, id="tenant-catalogue"),
     pytest.param(_local_in_memory, id="local-memory"),
 ]

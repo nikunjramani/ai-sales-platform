@@ -152,26 +152,3 @@ export interface FieldProblem {
   message: string;
 }
 
-/** The copy of an ERP or shop catalogue (phase 6); synced is false for our own list. */
-export interface SyncIssue {
-  code: string;
-  message: string;
-  sku: string | null;
-}
-
-export interface SyncRun {
-  trigger: "schedule" | "manual" | "connected";
-  status: "running" | "succeeded" | "failed";
-  started_at: string;
-  finished_at: string | null;
-  counts: Record<string, number> | null;
-  issues: SyncIssue[];
-  error: string | null;
-  next_run_at: string | null;
-}
-
-export interface SyncStatus {
-  synced: boolean;
-  every_minutes: number | null;
-  latest: SyncRun | null;
-}

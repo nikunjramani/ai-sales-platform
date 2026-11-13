@@ -94,7 +94,7 @@ See [testing](../development/testing.md). Rules interpreter on 2026-10-22: 12/12
 - Delivery date and location are not interpreted.
 - Questions are not yet sent to customers.
 - Ready enquiries are not yet priced into draft quotations automatically (M4).
-- The worker uses the simulated ERP for the two demo tenants only.
+- The demo businesses use seeded demo products.
 
 **Related ADRs:** [0001](../adr/0001-adapter-boundaries.md), [0003](../adr/0003-erp-authority.md), [0004](../adr/0004-durable-execution.md), [0012](../adr/0012-provider-independent-extraction.md).
 

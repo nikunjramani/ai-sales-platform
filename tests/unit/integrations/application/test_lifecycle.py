@@ -216,36 +216,29 @@ def test_another_business_cannot_touch_the_connection(
         setup.service.disable(admin(office_tenant), started.connection.connection_id)
 
 
-class CopyingSource(OneClickTool):
-    """A product source enabled with one click that copies its catalogue (phase 6)."""
+class OtherSource(OneClickTool):
+    """A product source enabled with one click (phase 6)."""
 
-    key = "copying_source"
-    display_name = "Copying source"
-    purposes = frozenset({Purpose.CATALOGUE, Purpose.ORDERS})
-    capabilities = Capabilities(self_service=True, catalogue=CatalogueCapabilities(sync=True))
+    key = "other_source"
+    display_name = "Other source"
+    purposes = frozenset({Purpose.CATALOGUE})
+    capabilities = Capabilities(self_service=True, catalogue=CatalogueCapabilities())
 
     def provision(self, conn: Connection, secrets: SecretStore) -> ProvisionResult:
-        return ProvisionResult(ProvisionStatus.READY, config={"sync_minutes": 15})
+        return ProvisionResult(ProvisionStatus.READY)
 
 
-def test_a_new_product_source_replaces_the_old_and_starts_its_first_copy(
-    now: datetime, industrial_tenant: UUID
-) -> None:
+def test_a_new_product_source_replaces_the_old_one(now: datetime, industrial_tenant: UUID) -> None:
     connections = MemoryConnections(now, industrial_tenant)
     store = MemoryLifecycle(connections, now)
     service = ConnectionLifecycle(
-        connections, store, ProviderRegistry([CopyingSource(now)]), InMemorySecretStore(),
+        connections, store, ProviderRegistry([OtherSource(now)]), InMemorySecretStore(),
         clock=lambda: now,
     )  # fmt: skip
-    outcome = service.enable(admin(industrial_tenant), "copying_source", accept_costs=False)
+    outcome = service.enable(admin(industrial_tenant), "other_source", accept_costs=False)
     assert outcome.connection.active
     [change] = store.changes
-    assert change.exclusive_purposes == ("catalogue", "orders")
-    [(kind, payload)] = change.jobs
-    assert kind == JobKind.SYNC_CATALOGUE.value
-    assert payload == {
-        "connection_id": str(outcome.connection.connection_id),
-        "trigger": "connected",
-    }
+    assert change.exclusive_purposes == ("catalogue",)
+    assert change.jobs == ()
     service.disable(admin(industrial_tenant), outcome.connection.connection_id)
     assert store.changes[-1].restore_replaced is True

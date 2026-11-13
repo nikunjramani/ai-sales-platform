@@ -30,7 +30,7 @@ from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.exc import SQLAlchemyError
 
-from sales_platform.catalogue.ports.erp import ErpError
+from sales_platform.catalogue.ports.sources import ErpError
 from sales_platform.conversations.domain.contacts import InvalidContact
 from sales_platform.customer_channels.application.chat import (
     ChatNotFound,
@@ -43,6 +43,7 @@ from sales_platform.customer_channels.domain.chat import origin_allowed
 from sales_platform.customer_channels.ports.chat import ChatEndpoint, ChatSession, ThreadMessage
 from sales_platform.enquiries.domain.intake import MAX_ATTACHMENT_BYTES, AttachmentUpload
 from sales_platform.enquiries.ports.intake import IdempotencyConflict
+from sales_platform.platform.api.errors import UNAVAILABLE
 from sales_platform.quotations.application.customer_actions import (
     CustomerActionRejected,
     CustomerActionService,
@@ -267,9 +268,9 @@ def build_public_chat_router(
         except (OfferNotOpen, NotCurrentOffer) as error:
             raise HTTPException(status.HTTP_409_CONFLICT, str(error)) from None
         except DocumentIntegrityError:
-            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Try again later") from None
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, UNAVAILABLE) from None
         except (ErpError, SQLAlchemyError):
-            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Try again later") from None
+            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, UNAVAILABLE) from None
 
     def foreign_origin(request: Request) -> str | None:
         """The Origin header, unless it is this API's own address (our hosted chat page)."""

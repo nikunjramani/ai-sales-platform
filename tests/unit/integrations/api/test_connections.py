@@ -16,6 +16,7 @@ from sales_platform.integrations.application.connections import ConnectionServic
 from sales_platform.integrations.domain.connections import Purpose
 from sales_platform.platform.adapters.identity.dev import DevIdentityProvider
 from sales_platform.platform.api.auth import CSRF_HEADER, PortalAuth
+from sales_platform.platform.api.errors import add_error_handlers
 from sales_platform.platform.application.sessions import SessionService
 from sales_platform.platform.application.tenancy import TenantContextResolver
 from sales_platform.platform.domain.tenancy import Role
@@ -40,6 +41,7 @@ def client(
     harness.db.add_member(harness.tenant_id, ADMIN, Role.ADMINISTRATOR)
     auth = PortalAuth(SessionService(memory_sessions), TenantContextResolver(harness.db))
     app = FastAPI()
+    add_error_handlers(app)
     app.include_router(
         build_auth_router(auth, session_view, DevIdentityProvider(memory_directory), [], False)
     )

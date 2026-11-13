@@ -105,15 +105,6 @@ class Job(Base):
         CheckConstraint(
             "tenant_id IS NOT NULL OR kind = 'send_account_email'", name="ck_jobs_tenant"
         ),
-        # Phase 6: at most one waiting "Sync now" run per business (migration 0014).
-        Index(
-            "uq_jobs_manual_sync",
-            "tenant_id",
-            unique=True,
-            postgresql_where=text(
-                "kind = 'sync_catalogue' AND status = 'pending' AND payload->>'trigger' = 'manual'"
-            ),
-        ),
     )
 
     id: Mapped[UUID] = mapped_column(primary_key=True)

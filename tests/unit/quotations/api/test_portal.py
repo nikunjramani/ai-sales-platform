@@ -17,6 +17,7 @@ from sales_platform.accounts.api.auth import build_auth_router
 from sales_platform.enquiries.application.intake import EnquiryListService
 from sales_platform.platform.adapters.identity.dev import DevIdentityProvider
 from sales_platform.platform.api.auth import CSRF_HEADER, SESSION_COOKIE, PortalAuth
+from sales_platform.platform.api.errors import add_error_handlers
 from sales_platform.platform.application.sessions import SessionService
 from sales_platform.platform.application.tenancy import TenantContextResolver
 from sales_platform.quotations.api.portal import build_portal_router
@@ -34,6 +35,7 @@ class NoEnquiries:
 def build_app(harness: Any, sessions: Any, directory: Any, view: Any, dev: bool = True) -> FastAPI:
     auth = PortalAuth(SessionService(sessions), TenantContextResolver(harness.db))
     app = FastAPI()
+    add_error_handlers(app)
     app.include_router(
         build_auth_router(
             auth, view, DevIdentityProvider(directory) if dev else None, [MANAGER], False

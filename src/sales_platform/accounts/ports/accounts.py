@@ -18,7 +18,6 @@ from uuid import UUID
 
 from sales_platform.accounts.domain.accounts import (
     AccountEmailPurpose,
-    Invitation,
     SetupItem,
     SetupItemKey,
     User,
@@ -273,27 +272,6 @@ class MemberStore(Protocol):
 
     def remove(self, context: TenantContext, user_id: UUID) -> None:
         """Through remove_member(); also revokes their approval-channel links here."""
-        ...
-
-
-class InvitationStore(Protocol):
-    def invite(
-        self, context: TenantContext, email: str, email_normalized: str, roles: frozenset[Role]
-    ) -> UUID:
-        """Revokes an older open invitation for the same email, then stores this one, its email
-        job and the audit row. AlreadyMember if that email is a member."""
-        ...
-
-    def list(self, context: TenantContext) -> list[Invitation]: ...
-
-    def resend(self, context: TenantContext, invitation_id: UUID) -> bool: ...
-
-    def revoke(self, context: TenantContext, invitation_id: UUID) -> bool: ...
-
-    def preview(self, token_sha256: str, now: datetime) -> InvitationPreview | None: ...
-
-    def accept(self, token_sha256: str, user_id: UUID, subject: str) -> UUID:
-        """Through accept_invitation(); returns the business. InvitationNotUsable otherwise."""
         ...
 
 

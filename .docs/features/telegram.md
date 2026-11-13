@@ -1,5 +1,5 @@
 # Telegram (phase 5)
-Decision: [ADR 0022](../adr/0022-one-click-providers-and-approval-by-message.md). Package: [adapters/providers/telegram/](../../src/sales_platform/providers/telegram/provider.py). **Not live-verified:** phase 5 had no accounts. Updates are taken from the Bot API documentation ([fixtures](../../tests/data/providers/telegram/updates.json)), and the first live run must confirm the points marked "verify" in the [phase 5 plan](../plan/platform/implementation/phase-5-one-click-providers.md#64-telegram--our-bot-behind-the-businesss-own-account).
+Decision: [ADR 0022](../adr/0022-one-click-providers-and-approval-by-message.md). Package: [adapters/providers/telegram/](../../src/sales_platform/providers/telegram/provider.py). **Not live-verified:** phase 5 had no accounts. Updates are taken from the Bot API documentation ([fixtures](../../tests/data/providers/telegram/updates.json)), and the first live run must confirm the points marked "verify" in the phase 5 plan (git history).
 
 ## In short
 - **Customers** write to the business's **own** Telegram account. Our one bot is connected to it as a Telegram Business chatbot and answers there.

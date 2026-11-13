@@ -28,14 +28,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import IntegrityError
 
 from sales_platform.enquiries.application.intake import EnquiryListService
 from sales_platform.enquiries.domain.intake import EnquiryStatus
 from sales_platform.enquiries.domain.requirements import RequestedLine
 from sales_platform.integrations.ports.connections import ConnectionStore
 from sales_platform.platform.api.auth import PortalAuth
-from sales_platform.platform.domain.tenancy import Permission, PermissionDenied, TenantContext
+from sales_platform.platform.domain.tenancy import Permission, TenantContext
 from sales_platform.platform.domain.text import UnrenderableContent
 from sales_platform.platform.ports.storage import ObjectNotFound
 from sales_platform.quotations.api.pdf import integrity_failure, pdf_response
@@ -422,8 +422,6 @@ def build_portal_router(
     def guarded[T](action: Callable[[], T]) -> T:
         try:
             return action()
-        except PermissionDenied as error:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, str(error) or "Not permitted") from None
         except (QuotationNotFound, TaskNotFound, DocumentNotAvailable):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found") from None
         except (DocumentIntegrityError, ObjectNotFound):
@@ -444,10 +442,6 @@ def build_portal_router(
         except (StaleVersion, RevisionConflict, RevisionNotAllowed, IntegrityError) as error:
             message = str(error) if not isinstance(error, IntegrityError) else "Conflict"
             raise HTTPException(status.HTTP_409_CONFLICT, message) from None
-        except ValueError as error:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
-        except (SQLAlchemyError, OSError):
-            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, _UNAVAILABLE) from None
 
     @router.get("/quotations", response_model=list[QuotationSummaryOut])
     def list_quotations(

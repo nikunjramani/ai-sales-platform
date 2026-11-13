@@ -39,7 +39,7 @@ Shared fixtures in [tests/conftest.py](../../tests/conftest.py):
 | `industrial_tenant`, `office_tenant` | The two seeded demo tenant IDs |
 | `make_context(tenant_id, role)` | A TenantContext with one role |
 | `make_policy(tenant_id, currency)` | Synthetic pricing policy (2 decimals, half_up, 18% tax, 15/5 min freshness) |
-| `simulated_erp` | Demo catalogues for both tenants, ERP clock fixed at `now`; `.failures` injects errors |
+| `demo_catalogue` | The seed's demo products for each demo business in memory, clock fixed at `now`; `.failures` injects errors |
 | `membership_reader`, `policy_reader` | In-memory fakes; tests edit `.rows` / `.policies` |
 | `memory_storage` | In-memory ObjectStorage; `.objects` to inspect, `.fail_puts` to simulate disk errors |
 | `intake_store` | In-memory IntakeStore; `.fail_record` and `.concurrent_winner` simulate failures and lost races |
@@ -136,7 +136,7 @@ CI runs `check_database.py --cycle` on a fresh environment. Remote GitHub Action
 | [unit/adapters/catalogue/test_local.py](../../tests/unit/catalogue/adapters/catalogue/test_local.py) | Evidence (standard list, revision, read time; stock as of), scheduled price ends the current one, archived products and categories disappear, staff notes never searched, store failure is a retryable ERP error, the provider |
 | [unit/application/test_catalogue_admin.py](../../tests/unit/catalogue/application/test_catalogue_admin.py) | Who may read and edit, read-only sources, suspended business, currency and minor units, replays, staleness, unit lock, archive/restore/delete, list with prices and stock, categories |
 | [unit/providers/test_provider_contract.py](../../tests/unit/providers/test_provider_contract.py) | Also `local_catalogue` (no webhooks, no sending, a working reader) |
-| [integration/persistence/test_catalogue.py](../../tests/integration/catalogue/persistence/test_catalogue.py) | Seeded local demo reads like the simulated ERP; RLS on every table and WITH CHECK; cross-business category refused; worker read-only; prices and stock cannot change (grants and trigger); create/update/archive and audit; unit lock and delete rule; concurrent prices get revisions 1 and 2; replays; decimals kept exactly; counts; limit; category rename/archive refresh search words |
+| [integration/persistence/test_catalogue.py](../../tests/integration/catalogue/persistence/test_catalogue.py) | Seeded demo products; RLS on every table and WITH CHECK; cross-business category refused; worker read-only; prices and stock cannot change (grants and trigger); create/update/archive and audit; unit lock and delete rule; concurrent prices get revisions 1 and 2; replays; decimals kept exactly; counts; limit; category rename/archive refresh search words |
 | [integration/adapters/catalogue/test_local_catalogue.py](../../tests/integration/catalogue/adapters/catalogue/test_local_catalogue.py) | Search cases and contract checks on PostgreSQL with both roles; each business routed to its own source |
 | [integration/api/test_catalogue.py](../../tests/integration/catalogue/api/test_catalogue.py) | Real session and CSRF; products, prices (replay 200), stock, unit lock, version conflict, delete refused, archive, changes; paging and search; other businesses 404; read-only source 409; viewer 403; checklist step |
 | [integration/workflows/test_local_catalogue_quotation.py](../../tests/integration/quotations/workflows/test_local_catalogue_quotation.py) | Enquiry priced from our list (evidence standard/2), approval, a portal price change makes acceptance revise to version 2 at the new price; an 8-day-old count is stale with stock review; an archived product is never quoted or offered |
@@ -167,18 +167,9 @@ CI runs `check_database.py --cycle` on a fresh environment. Remote GitHub Action
 - **Portal:** `portal/tests/features/connections` (one-click rules, cards for an unknown tool, cost tick, steps with the code, forms with password fields), `portal/tests/features/approvals`, the conversation thread's Send again.
 - **Live:** none (no accounts, user answer). `scripts/evaluate_replies.py --model ...` evaluates a model on the reply set when the user wants a live run.
 
-### Phases 6 and 7: ERPNext and orders (ADR 0023, 0024)
-- **Unit:**
-  - `tests/unit/adapters/providers/erpnext/test_erpnext.py`, over a fake Frappe REST API: form and checks, production address rules, feed mapping (units, groups, tax, warehouses), live prices and stock, error mapping, writer (reference, accepted price, duplicates, unknown versus refused).
-  - `tests/unit/domain/test_catalogue_sync.py` and `test_orders.py`.
-  - `tests/unit/application/test_catalogue_sync.py` and `test_orders.py`: creation rules and the ERP write with chaos cases (timeout after commit gives exactly one ERP order, a worker stopped while sending, the window, no resend, and an unknown outcome never reaching the job runner as an error).
-  - `test_lifecycle.py` (replace and first copy); the provider contract sample for ERPNext.
-- **Writer contract:** `tests/unit/ports/test_erp_writer_contract.py`, with the simulated writer and the ERPNext sandbox (integration marker).
-- **PostgreSQL:**
-  - `tests/integration/persistence/test_catalogue_sync.py` (copy, change-only rows, currency issue, interrupted runs, "Sync now", replace and restore);
-  - `test_provider_state.py` (an order question is not an enquiry);
-  - `tests/integration/workflows/test_orders.py` (automatic and staff creation, the customer's pull view, moves, a create race, compare-and-set steps, append-only history, grants, isolation).
-- **Sandbox (integration marker, needs `SALES_TEST_ERPNEXT_*`):** `tests/unit/adapters/providers/erpnext/test_erpnext_sandbox.py` and the writer contract. See [provider setup](../operations/provider-setup.md#erpnext).
+### Orders (local only)
+- **Unit:** `tests/unit/orders/domain/test_orders.py`, `tests/unit/orders/application/test_orders.py`.
+- **PostgreSQL:** `tests/integration/orders/workflows/test_orders.py` (automatic and staff creation, the customer's pull view, moves, a create race, append-only history, isolation).
 
 ## Planned business suites
 - Domain unit tests: Decimal totals, rounding, quantity/unit validation, expiry, pricing policies, missing values.

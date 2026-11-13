@@ -13,7 +13,6 @@ import { OrderStatusBadge } from "../components/OrderStatusBadge";
 
 const TABS = [
   { id: "all", label: "All" },
-  { id: "attention", label: "Needs attention" },
   { id: "on_hold", label: "On hold" },
   { id: "placed", label: "Placed" },
   { id: "confirmed", label: "Confirmed" },
@@ -23,13 +22,12 @@ const TABS = [
 
 function filterFor(tab: string): OrderListFilter {
   if (tab === "all") return {};
-  if (tab === "attention") return { needsAttention: true };
   return { status: tab as OrderStatus };
 }
 
-/** Every order, newest first (refreshes every 15 seconds while ERP writes finish). */
+/** Every order, newest first (refreshes every 15 seconds). */
 export function OrderListPage() {
-  // The tab lives in the URL (?filter=attention) like the other lists, so Home can link to it.
+  // The tab lives in the URL (?filter=on_hold) like the other lists, so Home can link to it.
   const [params, setParams] = useSearchParams();
   const tab = TABS.find((item) => item.id === params.get("filter"))?.id ?? "all";
   const orders = useOrders(filterFor(tab));
@@ -57,11 +55,7 @@ export function OrderListPage() {
                   <strong>{order.order_number}</strong>{" "}
                   <span className="muted small">from {order.quotation_number}</span>
                   <br />
-                  {money(order.total, order.currency)} ·{" "}
-                  {order.fulfilment === "erp" ? "ERP" : "kept here"}
-                  {order.operation_status === "failed" || order.operation_status === "needs_attention" ? (
-                    <strong> · needs attention</strong>
-                  ) : null}
+                  {money(order.total, order.currency)}
                   <br />
                   <span className="muted small">{dateTime(order.created_at)}</span>
                 </span>

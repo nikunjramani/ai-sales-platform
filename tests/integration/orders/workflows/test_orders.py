@@ -6,7 +6,6 @@ ERP write's compare-and-set steps, append-only history and business isolation.
 
 import threading
 from collections.abc import Callable, Iterator
-from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from uuid import UUID, uuid4
 
@@ -21,16 +20,12 @@ from sales_platform.enquiries.adapters.interpreters.rules import RulesInterprete
 from sales_platform.enquiries.persistence.workflow import open_checkpointer
 from sales_platform.orders.domain.orders import (
     EventSource,
-    Fulfilment,
-    OperationStatus,
     OrderCreation,
-    OrderEventType,
     OrderStatus,
-    external_reference,
     order_lines,
 )
 from sales_platform.orders.persistence.orders import SqlOrderStore
-from sales_platform.orders.ports.orders import NewOrder, OperationOutcome, OrderExists
+from sales_platform.orders.ports.orders import NewOrder, OrderExists
 from sales_platform.platform.api.auth import CSRF_HEADER
 from sales_platform.platform.application.jobs import JobRunner
 from sales_platform.platform.config import Settings
@@ -135,11 +130,7 @@ def test_automatic_orders_follow_acceptance_and_customers_can_follow_them(
 
     login(client, "sales@local.example")
     order = client.get(f"{BASE}/quotations/{quotation_id}/order").json()
-    assert (order["status"], order["fulfilment"], order["total"]) == (
-        "placed",
-        "local",
-        order["total"],
-    )
+    assert order["status"] == "placed"
     assert [line["unit_price"] for line in order["lines"]] == ["4250.00"]
     pulled = client.get(f"/api/v1/enquiries/{enquiry_id}/order", headers=auth)
     assert pulled.status_code == 200, pulled.text
@@ -181,7 +172,7 @@ def test_staff_create_orders_by_default_and_only_once(
     assert again.status_code == 409 and again.json()["detail"]["code"] == "order_exists"
 
 
-def _new_order(store: SqlOrderStore, quotation_id: UUID, connection_id: UUID | None) -> NewOrder:
+def _new_order(store: SqlOrderStore, quotation_id: UUID) -> NewOrder:
     accepted = store.accepted_quotation(LOCAL_TENANT, quotation_id)
     assert accepted is not None and accepted.response_id is not None
     order_id = uuid4()
@@ -191,9 +182,6 @@ def _new_order(store: SqlOrderStore, quotation_id: UUID, connection_id: UUID | N
         quotation=accepted,
         status=OrderStatus.PLACED,
         hold_reason=None,
-        fulfilment=Fulfilment.LOCAL if connection_id is None else Fulfilment.ERP,
-        erp_connection_id=connection_id,
-        erp_customer=None,
         currency=str(content["currency"]),
         subtotal=Decimal(str(content["subtotal"])),
         tax=Decimal(str(content["tax"])),
@@ -201,24 +189,7 @@ def _new_order(store: SqlOrderStore, quotation_id: UUID, connection_id: UUID | N
         lines=order_lines(content),
         actor="test",
         source=EventSource.STAFF,
-        external_reference=None if connection_id is None else external_reference(order_id),
-        send_now=True,
     )
-
-
-def _catalogue_connection(owner: Engine) -> UUID:
-    with tenant_transaction(owner, LOCAL_TENANT) as connection:
-        return UUID(
-            str(
-                connection.execute(
-                    text(
-                        "SELECT id FROM connections WHERE tenant_id = :t "
-                        "AND purposes @> ARRAY['catalogue'] LIMIT 1"
-                    ),
-                    {"t": LOCAL_TENANT},
-                ).scalar_one()
-            )
-        )
 
 
 def test_two_creates_racing_for_one_quotation_make_one_order(
@@ -236,7 +207,7 @@ def test_two_creates_racing_for_one_quotation_make_one_order(
     outcomes: list[str] = []
 
     def create(store: SqlOrderStore) -> None:
-        new = _new_order(store, quotation_id, None)
+        new = _new_order(store, quotation_id)
         barrier.wait()
         try:
             store.create(LOCAL_TENANT, new)
@@ -252,52 +223,17 @@ def test_two_creates_racing_for_one_quotation_make_one_order(
     assert sorted(outcomes) == ["created", "exists"]
 
 
-def test_the_erp_write_steps_are_compare_and_set_and_history_is_append_only(
+def test_order_history_is_append_only_and_other_businesses_see_nothing(
     client: TestClient,
     make_api_key: ApiKeyFactory,
     integration_settings: Settings,
     worker_engine: Engine,
     runtime_engine: Engine,
-    owner_engine: Engine,
 ) -> None:
     token = make_api_key(LOCAL_TENANT, Role.INTAKE_SERVICE)
     _, quotation = accepted_quotation(client, token, integration_settings, worker_engine)
     store = SqlOrderStore(worker_engine)
-    order = store.create(
-        LOCAL_TENANT, _new_order(store, UUID(quotation), _catalogue_connection(owner_engine))
-    )
-    [operation] = store.operations(LOCAL_TENANT, order.order_id)
-    assert operation.external_reference == f"QO-{order.order_id.hex}"
-    assert store.begin_send(LOCAL_TENANT, operation.operation_id)
-    assert not store.begin_send(LOCAL_TENANT, operation.operation_id)  # only one sender
-    later = datetime.now(UTC) + timedelta(minutes=5)
-    unknown = OperationOutcome(
-        OperationStatus.UNKNOWN, OrderEventType.ERP_WRITE_UNKNOWN, "test", reconcile_at=later
-    )
-    sending = frozenset({OperationStatus.SENDING})
-    assert store.finish_operation(LOCAL_TENANT, operation.operation_id, sending, unknown)
-    assert not store.finish_operation(LOCAL_TENANT, operation.operation_id, sending, unknown)
-    found = OperationOutcome(
-        OperationStatus.SUCCEEDED,
-        OrderEventType.RECONCILED,
-        "test",
-        erp_order_id="SO-00042",
-        order_status=OrderStatus.CONFIRMED,
-        notify_customer=True,
-    )
-    assert store.finish_operation(
-        LOCAL_TENANT, operation.operation_id, frozenset({OperationStatus.UNKNOWN}), found
-    )
-    stored = store.get(LOCAL_TENANT, order.order_id)
-    assert stored is not None and stored.erp_order_id == "SO-00042"
-    assert stored.status is OrderStatus.CONFIRMED
-    with tenant_transaction(owner_engine, LOCAL_TENANT) as connection:
-        kinds = connection.execute(
-            text("SELECT kind, run_at > now() FROM jobs WHERE tenant_id = :t ORDER BY created_at"),
-            {"t": LOCAL_TENANT},
-        ).all()
-    assert ("reconcile_order_operation", True) in [tuple(row) for row in kinds]
-    assert ("notify_order", False) in [tuple(row) for row in kinds]
+    order = store.create(LOCAL_TENANT, _new_order(store, UUID(quotation)))
 
     # Lines and events never change, for any role; other businesses see nothing.
     for engine in (runtime_engine, worker_engine):

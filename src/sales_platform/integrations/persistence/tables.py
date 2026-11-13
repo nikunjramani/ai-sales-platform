@@ -40,13 +40,6 @@ class ConnectionRow(Base):
             unique=True,
             postgresql_where=text("status = 'active' AND purposes @> ARRAY['catalogue']::text[]"),
         ),
-        # And one place its orders go (phase 7, migration 0015).
-        Index(
-            "uq_connections_one_orders",
-            "tenant_id",
-            unique=True,
-            postgresql_where=text("status = 'active' AND purposes @> ARRAY['orders']::text[]"),
-        ),
         UniqueConstraint("public_handle", name="uq_connections_public_handle"),
         CheckConstraint(
             "public_handle IS NULL OR public_handle ~ '^[a-z0-9](?:[a-z0-9-]{1,62}[a-z0-9])$'",

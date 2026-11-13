@@ -5,7 +5,6 @@ import hashlib
 from collections.abc import Iterator
 from dataclasses import replace
 from datetime import datetime
-from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
@@ -16,9 +15,10 @@ from sqlalchemy.exc import OperationalError
 
 from sales_platform.accounts.application.api_keys import ApiKeyAuthenticator, generate_api_key
 from sales_platform.accounts.ports.api_keys import ApiKeyRecord
-from sales_platform.catalogue.ports.erp import ErpError, ErpErrorCode
+from sales_platform.catalogue.ports.sources import ErpError, ErpErrorCode
 from sales_platform.customer_channels.api.enquiries import MAX_REQUEST_BYTES, build_enquiry_router
 from sales_platform.enquiries.application.intake import EnquiryIntakeService
+from sales_platform.platform.api.errors import add_error_handlers
 from sales_platform.platform.domain.tenancy import Role
 
 BODY = {"text": "Please quote 50 industrial fans for Pune", "customer_reference": "CUST-1"}
@@ -38,6 +38,7 @@ def client(
     harness: Any,
 ) -> Iterator[TestClient]:
     app = FastAPI()
+    add_error_handlers(app)
     intake = EnquiryIntakeService(
         intake_store, memory_storage, connection_store, provider_registry, clock=lambda: now
     )
@@ -297,9 +298,7 @@ def test_changed_prices_and_erp_failures_are_explained(
     assert unavailable.status_code == 503 and "nothing was recorded" in unavailable.json()["detail"]
     del harness.erp.failures["get_prices"]
 
-    catalogue = harness.erp.catalogue(industrial_tenant)
-    [price] = catalogue.prices["IND-FAN-450"][-1:]
-    catalogue.prices["IND-FAN-450"] = (replace(price, unit_price=Decimal("4500.00")),)
+    harness.erp.set_price(industrial_tenant, "IND-FAN-450", "4500.00")
     refused = client.post(issued["response_path"], json=body, headers=headers)
     assert refused.status_code == 409
     detail = refused.json()["detail"]
