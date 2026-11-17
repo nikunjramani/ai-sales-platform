@@ -28,14 +28,12 @@ def demo_connection(store: SqlConnectionStore, tenant_id: UUID) -> UUID:
     return found.connection_id
 
 
-def test_seed_gives_each_demo_business_its_simulated_connection(runtime_engine: Engine) -> None:
+def test_seed_gives_each_demo_business_its_product_list(runtime_engine: Engine) -> None:
     store = SqlConnectionStore(runtime_engine)
-    for tenant_id, catalogue in ((INDUSTRIAL_TENANT, "industrial"), (OFFICE_TENANT, "office")):
+    for tenant_id in (INDUSTRIAL_TENANT, OFFICE_TENANT):
         [source] = store.catalogue_sources(tenant_id)
-        assert source.provider_key == "simulated" and source.active
-        assert source.purposes == {Purpose.MANAGER_APPROVALS, Purpose.CATALOGUE}
-        assert source.config == {"catalogue": catalogue}
-        assert source.legacy_key == "simulated-local"
+        assert source.provider_key == "local_catalogue" and source.active
+        assert source.purposes == {Purpose.CATALOGUE}
 
 
 def test_each_business_sees_only_its_own_connections(runtime_engine: Engine) -> None:

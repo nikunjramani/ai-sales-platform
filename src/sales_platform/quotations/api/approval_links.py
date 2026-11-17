@@ -15,7 +15,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy.exc import SQLAlchemyError
 
 from sales_platform.platform.api.auth import PortalAuth, SignedIn
 from sales_platform.platform.domain.tenancy import AuthorizationError
@@ -79,10 +78,6 @@ def build_approval_link_router(auth: PortalAuth, links: ApprovalLinkService) -> 
             raise HTTPException(status.HTTP_403_FORBIDDEN, str(error)) from None
         except AuthorizationError:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Not permitted") from None
-        except ValueError as error:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
-        except SQLAlchemyError:
-            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Try again later") from None
 
     @router.get("/{token}", response_model=ApprovalLinkOut, responses={403: {}, 404: {}})
     def view(token: str, person: Person) -> ApprovalLinkOut:

@@ -1,4 +1,6 @@
 # 0023: ERPNext as the first real product source: a synced copy for search, live prices and stock
+**Superseded by [ADR 0027](0027-remove-erp-integration.md)** (removed 2026-11-03).
+
 **Date:** 2026-10-29. **Status:** accepted (phase 6); implemented on `feat/phase-6-7-erp-and-orders`, verified against a local ERPNext v16 sandbox (synthetic data). No pilot business yet (user answer): the pilot questions of the plan (§5.6) stay open and are settings, not code. Extends ADR 0003 (ERP authority), ADR 0010 (exact money and units), ADR 0018 (connector framework) and ADR 0020 (our catalogue; its "ERP becomes the authority" amendment is implemented here).
 
 ## Context

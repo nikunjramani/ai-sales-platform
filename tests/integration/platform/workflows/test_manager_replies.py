@@ -18,7 +18,6 @@ from pydantic import SecretStr
 from sqlalchemy import Engine, text
 
 from sales_platform.api_app import create_app
-from sales_platform.catalogue.adapters.erp.simulated import SimulatedErp, demo_catalogues
 from sales_platform.composition import build_job_handlers, build_runtime
 from sales_platform.enquiries.adapters.interpreters.rules import RulesInterpreter
 from sales_platform.enquiries.persistence.workflow import open_checkpointer
@@ -44,6 +43,7 @@ from tests.integration.quotations.workflows.test_quotation import (
     settings,  # noqa: F401  (fixture)
     submit,
 )
+from tests.support.demo_catalogue import DemoCatalogue
 
 PHONE = "phone-9"
 
@@ -79,7 +79,7 @@ class Phone:
         assert answer.status_code == 200, answer.text
 
     def drain(self) -> None:
-        erp = SimulatedErp(demo_catalogues(INDUSTRIAL_TENANT, OFFICE_TENANT))
+        erp = DemoCatalogue({INDUSTRIAL_TENANT: "industrial", OFFICE_TENANT: "office"})
         with open_checkpointer(self.settings.worker_url()) as checkpointer:
             handlers = build_job_handlers(
                 self.settings, self.engine, build_runtime(self.settings, self.engine),

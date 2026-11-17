@@ -81,7 +81,7 @@ A second chat or email tool is one more package with its own key and entry point
 
 The core does the rest, by flags only: it copies the catalogue, checks prices live, writes orders with intent before call, reconciles by reference (if `reference_lookup`) and follows statuses (if `order_status`).
 
-A second ERP or shop (Odoo, Zoho, Shopify...) is one more package that passes the ERP read and write contract suites; see `adapters/providers/erpnext/` and [ADR 0023](../adr/0023-erpnext-product-source.md).
+An ERP or shop (ERPNext, Odoo, Shopify...) would be one more package with `catalogue_reader` (`catalogue/ports/sources.py`) that passes the product source contract suite. None is built ([ADR 0027](../adr/0027-remove-erp-integration.md)).
 
 ## Hosted customer tools (phase 4)
 A provider with `Capabilities(hosted_chat=True)` (website chat is the first) is served by our own public chat API and widget: administrators enable it with one click (`POST /connections/hosted-chat`), it gets a public handle, and the core routes its visitors' messages like any customer message. Nothing in the core or portal names the provider; `GET /connections/available` lists what can be enabled.

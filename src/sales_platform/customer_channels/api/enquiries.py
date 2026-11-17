@@ -32,7 +32,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from sales_platform.accounts.application.api_keys import ApiKeyAuthenticator
-from sales_platform.catalogue.ports.erp import ErpError
+from sales_platform.catalogue.ports.sources import ErpError
 from sales_platform.enquiries.application.intake import EnquiryIntakeService, IntakeResult
 from sales_platform.enquiries.domain.intake import (
     MAX_ATTACHMENT_BYTES,

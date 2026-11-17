@@ -21,7 +21,7 @@ The goal is a reusable product that many businesses (tenants) can use with their
 | PostgreSQL with separate owner and runtime roles; row-level security per tenant | ✅ M0 |
 | Tenant membership, roles (administrator, sales operator, approver, viewer) and permission checks | ✅ M1 |
 | Deterministic quotation calculator: Decimal money, per-tenant rounding and tax, quantity and unit rules; a missing price is never treated as zero | ✅ M1 |
-| ERP contract plus a simulated ERP with two fictional businesses | ✅ M1 |
+| Product source contract; demo products seeded for three fictional businesses | ✅ M1 |
 | Enquiry intake API with API keys, replay-safe idempotency keys and durable receipt | ✅ M2 |
 | Background worker with leased, retried, crash-safe jobs; attachment quarantine and inspection | ✅ M2 |
 | Requirement extraction (LangGraph, checkpoints): free rules interpreter or any AI model from settings (generic, e.g. Gemini); verbatim checks, ERP matching, clarification questions | ✅ M3 |
@@ -93,7 +93,7 @@ src/sales_platform/   one application, nine business modules in a fixed order (A
   quotations/        pricing, approvals, PDFs and delivery, acceptance, quotation workflow
   orders/            orders, order writers, track my order
   customer_channels/ website chat, customer inbox, customer API
-  providers/         plug-in packages: api, simulated, web_chat, telegram, erpnext, local_catalogue
+  providers/         plug-in packages: api, simulated, web_chat, telegram, local_catalogue
   (each module has domain/, ports/, application/, adapters/, persistence/, api/ as needed)
   composition.py, api_app.py, worker.py, seed.py   the wiring
 migrations/      Alembic: one baseline (0001_baseline) plus later migrations
@@ -101,7 +101,7 @@ portal/          React portal: src/app, src/shared, src/features/<feature>/<laye
 evals/           Synthetic manager-reply cases (scripts/evaluate_replies.py, needs a model)
 scripts/         Local helpers: credentials, database checks, pricing demo, API keys
 tests/
-  conftest.py    Shared fixtures (tenants, contexts, policies, simulated ERP)
+  conftest.py    Shared fixtures (tenants, contexts, policies, demo catalogue)
   unit/          Offline tests; folders mirror the modules in src/sales_platform
   integration/   PostgreSQL tests; run with --run-integration
 infra/           PostgreSQL role bootstrap for Docker Compose

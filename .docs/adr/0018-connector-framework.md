@@ -2,7 +2,7 @@
 Date: 2026-10-27
 Extended by [0021](0021-customers-conversations-and-website-chat.md): The first hosted customer tool (website chat, capability hosted_chat) and consent events (phase 4, ADR 0021).
 Status: accepted; implemented and merged to main (PR #6, phase 1 of the [platform plan](../plan/platform/README.md)); extended by [0019](0019-accounts-and-onboarding.md)
-Extends [0007](0007-channel-independent-approval.md), [0011](0011-durable-intake-and-jobs.md), [0013](0013-portal-identity-and-approval-core.md), [0015](0015-quotation-documents-and-delivery.md) and [0016](0016-customer-acceptance.md); supersedes their per-channel maps (`DeliveryChannel`, `ApprovalNotifier`, the `Channel`/`ApprovalChannel` enums). Plan: [phase 1](../plan/platform/implementation/phase-1-foundations.md), [shared contracts](../plan/platform/implementation/00-shared-contracts.md).
+Extends [0007](0007-channel-independent-approval.md), [0011](0011-durable-intake-and-jobs.md), [0013](0013-portal-identity-and-approval-core.md), [0015](0015-quotation-documents-and-delivery.md) and [0016](0016-customer-acceptance.md); supersedes their per-channel maps (`DeliveryChannel`, `ApprovalNotifier`, the `Channel`/`ApprovalChannel` enums). Plan: phase 1 (git history), shared contracts (git history).
 
 ## Context
 Every business will use its own tools: WhatsApp, Telegram, email, website chat, an ERP or shop. Before phase 1, tools were named in code:
@@ -24,7 +24,7 @@ Adding a tool meant editing the core. The user requires generic, pluggable integ
 | Deprecated alias | `POST /api/v1/channels/simulated/events` stays for the demo page and scripts, rebuilt on the framework with the same answers. It is development-only, still takes the business from the body (accepted weakness), and is removed in phase 4/5 |
 
 ### User decisions (2026-10-27, phase 1 open questions)
-All recommendations were accepted ([phase 1 plan §3](../plan/platform/implementation/phase-1-foundations.md#user-answers-2026-10-27)):
+All recommendations were accepted (phase 1 plan §3 (git history)):
 - **P1-Q1:** behaviour tests unchanged; unit tests of the replaced classes rewritten case by case.
 - **P1-Q2:** the old route kept as an alias.
 - **P1-Q3:** no product source puts the enquiry in review, with "No product source is connected".

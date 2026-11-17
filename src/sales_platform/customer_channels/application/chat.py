@@ -31,10 +31,10 @@ from sales_platform.conversations.domain.contacts import (
     consent_command,
 )
 from sales_platform.customer_channels.domain.chat import ChatLimits, origin_allowed
+from sales_platform.customer_channels.persistence.chat import SqlChatStore
 from sales_platform.customer_channels.ports.chat import (
     ChatEndpoint,
     ChatSession,
-    ChatStore,
     ThreadMessage,
 )
 from sales_platform.enquiries.domain.attachments import StorageArea, attachment_key
@@ -131,7 +131,7 @@ def _sha256(value: str) -> str:
 class HostedChatService:
     def __init__(
         self,
-        chats: ChatStore,
+        chats: SqlChatStore,
         intake: IntakeStore,
         inbound: InboundStore,
         storage: ObjectStorage,

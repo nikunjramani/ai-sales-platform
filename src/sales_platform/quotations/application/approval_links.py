@@ -24,11 +24,11 @@ from sales_platform.quotations.domain.quotations import (
     ReviewPacket,
     TaskStatus,
 )
+from sales_platform.quotations.persistence.manager_replies import SqlReplyStore
 from sales_platform.quotations.ports.channels import NotificationStore
 from sales_platform.quotations.ports.manager_replies import (
     ApprovalLinkLookup,
     ApprovalRequestState,
-    ReplyStore,
 )
 
 MAX_TOKEN = 100
@@ -64,7 +64,7 @@ class ApprovalLinkService:
     def __init__(
         self,
         links: ApprovalLinkLookup,
-        requests: ReplyStore,
+        requests: SqlReplyStore,
         packets: NotificationStore,
         approvals: ApprovalService,
         clock: Callable[[], datetime] = utc_now,

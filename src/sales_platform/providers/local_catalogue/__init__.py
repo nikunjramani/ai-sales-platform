@@ -12,7 +12,7 @@ from typing import cast
 
 from sales_platform.catalogue.adapters.catalogue.local import LocalCatalogue
 from sales_platform.catalogue.ports.catalogue_admin import CatalogueReadStore, CatalogueUnavailable
-from sales_platform.catalogue.ports.erp import ProductSource
+from sales_platform.catalogue.ports.sources import ProductSource
 from sales_platform.integrations.domain.connections import Capabilities, Connection, Purpose
 from sales_platform.integrations.domain.events import InboundEvent
 from sales_platform.integrations.ports.providers import (

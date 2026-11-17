@@ -39,6 +39,7 @@ from sales_platform.accounts.domain.accounts import (
     validate_people_roles,
 )
 from sales_platform.accounts.domain.emails import render_account_email
+from sales_platform.accounts.persistence.accounts import SqlInvitationStore
 from sales_platform.accounts.ports.accounts import (
     AccountEmailStore,
     ApiKeyAdminStore,
@@ -46,7 +47,6 @@ from sales_platform.accounts.ports.accounts import (
     BusinessSettings,
     BusinessStore,
     InvitationPreview,
-    InvitationStore,
     LogoNormalizer,
     Mailer,
     MailRejected,
@@ -521,7 +521,7 @@ class MemberService:
 class InvitationService:
     def __init__(
         self,
-        invitations: InvitationStore,
+        invitations: SqlInvitationStore,
         businesses: BusinessStore,
         users: UserStore,
         limiter: RateLimiter,

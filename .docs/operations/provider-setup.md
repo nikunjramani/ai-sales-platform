@@ -35,30 +35,5 @@ uv run python -m sales_platform.ops platform-setup <provider_key>
 
 **Limits:** one bot serves every business, at about 30 messages a second in total. Telegram answers 429 when we go faster, and the send job retries later.
 
-## ERPNext
-ERPNext needs **no company-level setup**: each business enables it under Connections with its own ERPNext address and API user (phase 6, [ERPNext](../features/erpnext.md)).
-
-**Local sandbox (development and the integration tests, synthetic data only):**
-```powershell
-docker compose -p quotation-erpnext -f infra/erpnext/compose.yaml up -d   # ERPNext v16 on :8090
-# wait until http://localhost:8090/api/method/ping answers {"message":"pong"} (first start ~10 min)
-uv run python scripts/seed_erpnext_sandbox.py     # company, 3 items, prices, stock, customer; prints a key
-```
-In the portal, enable ERPNext with:
-- address `http://localhost:8090` (http is accepted outside production);
-- the printed key and secret;
-- price list `Standard Selling`;
-- warehouse `Stores - PS`;
-- for orders, "Write orders to ERPNext" and customer `Sandbox Customer`.
-
-If the sandbox answers "Encryption key is invalid" or 502 right after the first start, restart it (`... restart backend queue-short queue-long scheduler frontend websocket`) and run the seed again: it is safe to repeat.
-
-To run the sandbox tests, set `SALES_TEST_ERPNEXT_URL`, `SALES_TEST_ERPNEXT_KEY` and `SALES_TEST_ERPNEXT_SECRET`, then `uv run pytest --run-integration tests/unit/ports/test_erp_writer_contract.py tests/unit/adapters/providers/erpnext/test_erpnext_sandbox.py`. They create sales orders, so never point them at a real ERPNext.
-
-**A business's real ERPNext:**
-- Use a dedicated API user with read access to Item, Item Price, Price List, Bin, Warehouse, UOM and Item Group, plus Customer and Sales Order (create) when orders are written.
-- Try orders on a test company first.
-- Production accepts only public `https://` addresses.
-
 ## Other tools
-Email (SendGrid), WhatsApp and SMS (Twilio), Instagram and Messenger are not built yet. The company tasks they will need (Meta business verification, App Review, Twilio ISV profile, SendGrid domain authentication, privacy pages) are listed in the [phase 5 plan, section 8](../plan/platform/implementation/phase-5-one-click-providers.md#8-company-setup-once-by-us--start-now-they-take-weeks). They take weeks and are started only when the user decides to add those tools.
+Email (SendGrid), WhatsApp and SMS (Twilio), Instagram and Messenger are not built yet. The company tasks they will need (Meta business verification, App Review, Twilio ISV profile, SendGrid domain authentication, privacy pages) are in the phase 5 plan in git history (before ADR 0027). They take weeks and are started only when the user decides to add those tools.

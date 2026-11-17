@@ -6,17 +6,13 @@ import { useOrderActions } from "../../hooks/useOrders";
 import type { Order, OrderStatus } from "../../model/types";
 import { moveLabel, needsReason, nextStatuses } from "../../services/orderService";
 
-/** Moves staff may make (orders:manage). An ERP order's status follows the ERP instead. */
+/** Moves staff may make (orders:manage). */
 export function OrderActions({ order }: { order: Order }) {
   const { move } = useOrderActions(order.order_id);
   const [target, setTarget] = useState<OrderStatus | null>(null);
   const [reason, setReason] = useState("");
   const choices = nextStatuses(order);
-  if (choices.length === 0) {
-    return order.fulfilment === "erp" ? (
-      <p className="muted small">This order follows its status in the ERP; change it there.</p>
-    ) : null;
-  }
+  if (choices.length === 0) return null;
   const submit = (event: FormEvent) => {
     event.preventDefault();
     if (!target) return;

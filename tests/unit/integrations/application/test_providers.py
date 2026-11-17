@@ -33,7 +33,7 @@ def test_loads_providers_and_finds_them_by_key_and_purpose() -> None:
     registry = ProviderRegistry.load(environment(), entries)
     assert [provider.key for provider in registry.all()] == ["api", "simulated"]
     assert registry.get("api").key == "api"
-    assert [p.key for p in registry.for_purpose(Purpose.CATALOGUE)] == ["simulated"]
+    assert [p.key for p in registry.for_purpose(Purpose.MANAGER_APPROVALS)] == ["simulated"]
     with pytest.raises(UnknownProvider):
         registry.get("telegram")
     assert registry.find("telegram") is None

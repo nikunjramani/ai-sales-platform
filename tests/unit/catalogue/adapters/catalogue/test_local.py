@@ -8,13 +8,13 @@ from uuid import UUID, uuid4
 import pytest
 
 from sales_platform.catalogue.adapters.catalogue.local import LocalCatalogue
-from sales_platform.catalogue.adapters.erp.simulated import demo_catalogue
 from sales_platform.catalogue.domain.catalogue_admin import ProductFields
-from sales_platform.catalogue.ports.erp import ErpError, ErpErrorCode
+from sales_platform.catalogue.ports.sources import ErpError, ErpErrorCode
 from sales_platform.integrations.domain.connections import Connection, ConnectionStatus, Purpose
 from sales_platform.integrations.ports.providers import OperationUnsupported, ProviderEnvironment
 from sales_platform.platform.domain.tenancy import Role, TenantContext
 from sales_platform.providers.local_catalogue import LocalCatalogueProvider, build
+from sales_platform.seed import DEMO_CATALOGUES
 from tests.support.catalogue_store import InMemoryCatalogueStore
 
 TENANT = UUID("00000000-0000-4000-8000-000000000001")
@@ -23,9 +23,7 @@ CONTEXT = TenantContext(TENANT, "sales@example.test", frozenset({Role.SALES_OPER
 
 
 def _store() -> InMemoryCatalogueStore:
-    return InMemoryCatalogueStore.from_simulated(
-        {TENANT: demo_catalogue("industrial")}, lambda: NOW
-    )
+    return InMemoryCatalogueStore.from_demo({TENANT: DEMO_CATALOGUES["industrial"]}, lambda: NOW)
 
 
 def _fan(store: InMemoryCatalogueStore) -> UUID:

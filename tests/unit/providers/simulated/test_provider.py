@@ -14,12 +14,10 @@ from sales_platform.integrations.ports.providers import (
     InboundRejected,
     InboundRequest,
     InvalidInbound,
-    OperationUnsupported,
     ReceiptKind,
     RenderedMessage,
     SendRejected,
 )
-from sales_platform.platform.domain.tenancy import Role, TenantContext
 from sales_platform.platform.ports.secrets import SecretNotFound
 from sales_platform.providers.simulated import SimulatedProvider
 from sales_platform.providers.simulated.signing import SIGNATURE_HEADER, sign
@@ -126,19 +124,6 @@ def test_parsing_gives_manager_actions_and_refuses_tenant_fields() -> None:
     for bad in (b"[]", b'{"event_id": "e", "tenant_id": "x"}'):
         with pytest.raises(InvalidInbound):
             provider.parse_inbound(connection(), InboundRequest({}, bad, {}, NOW))
-
-
-def test_catalogue_reader_is_the_named_demo_catalogue_for_that_business() -> None:
-    provider = SimulatedProvider(Path("unused"))
-    reader = provider.catalogue_reader(connection(), OneSecret())
-    context = TenantContext(TENANT, "system", frozenset({Role.SALES_OPERATOR}))
-    assert "IND-FAN-450" in reader.get_products(context, ["IND-FAN-450"])
-    assert provider.catalogue_reader(connection(), OneSecret()) is reader  # same state
-    with pytest.raises(OperationUnsupported):
-        provider.catalogue_reader(connection(config={"catalogue": "unknown"}), OneSecret())
-    with pytest.raises(OperationUnsupported):
-        no_catalogue = connection(purposes=frozenset({Purpose.MANAGER_APPROVALS}))
-        provider.catalogue_reader(no_catalogue, OneSecret())
 
 
 def test_each_message_gets_its_own_provider_message_id(tmp_path: Path) -> None:

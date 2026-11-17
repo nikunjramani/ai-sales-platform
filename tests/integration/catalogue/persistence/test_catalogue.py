@@ -25,7 +25,7 @@ from sales_platform.catalogue.ports.catalogue_admin import (
 )
 from sales_platform.composition import build_catalogue_store
 from sales_platform.platform.domain.tenancy import Role, TenantContext
-from sales_platform.seed import INDUSTRIAL_TENANT, LOCAL_TENANT
+from sales_platform.seed import INDUSTRIAL_TENANT, LOCAL_TENANT, OFFICE_TENANT
 
 pytestmark = pytest.mark.integration
 
@@ -42,7 +42,7 @@ def _new_product(store: SqlCatalogueStore, sku: str = "NEW-1", **fields: object)
     return created.product_id
 
 
-def test_seeded_local_catalogue_reads_like_the_simulated_erp(worker_engine: Engine) -> None:
+def test_seeded_local_catalogue_reads_the_demo_products(worker_engine: Engine) -> None:
     store = build_catalogue_store(worker_engine)
     found = store.search(LOCAL_TENANT, query_terms("IND-FAN"), 10)
     assert [p.sku for p in found] == ["IND-FAN-450", "IND-FAN-600"]
@@ -53,7 +53,7 @@ def test_seeded_local_catalogue_reads_like_the_simulated_erp(worker_engine: Engi
         "IND-BOLT-M8"
     ]
     assert store.search(LOCAL_TENANT, query_terms("tata sierra car"), 10) == []
-    assert store.search(INDUSTRIAL_TENANT, query_terms("IND-FAN"), 10) == []  # not its tables
+    assert store.search(OFFICE_TENANT, query_terms("IND-FAN"), 10) == []  # not its tables
     prices = store.effective_prices(
         LOCAL_TENANT, ["IND-FAN-450", "IND-PUMP-2HP"], "INR", NOW, "standard"
     )
@@ -86,7 +86,8 @@ def test_tenants_cannot_see_or_write_each_others_catalogue(
                 "catalogue_stock",
                 "catalogue_categories",
             ):
-                assert connection.execute(text(f"SELECT count(*) FROM {table}")).scalar_one() == 0
+                query = f"SELECT count(*) FROM {table} WHERE tenant_id <> '{INDUSTRIAL_TENANT}'"
+                assert connection.execute(text(query)).scalar_one() == 0
     with pytest.raises(DBAPIError), runtime_engine.begin() as connection:
         connection.execute(text(f"SELECT set_config('app.tenant_id', '{INDUSTRIAL_TENANT}', true)"))
         connection.execute(

@@ -37,8 +37,6 @@ from sales_platform.accounts.persistence.accounts import (
 from sales_platform.accounts.persistence.api_keys import SqlApiKeyAdminStore, SqlApiKeyReader
 from sales_platform.catalogue.api.catalogue import build_catalogue_router
 from sales_platform.catalogue.application.catalogue_admin import ProductService
-from sales_platform.catalogue.application.catalogue_sync import CatalogueSyncService
-from sales_platform.catalogue.persistence.catalogue_sync import SqlCatalogueSync
 from sales_platform.composition import (
     DEV_PUBLIC_BASE_URL,
     build_catalogue_store,
@@ -76,6 +74,7 @@ from sales_platform.orders.api.orders import build_order_router
 from sales_platform.platform.adapters.identity.dev import DevIdentityProvider
 from sales_platform.platform.adapters.storage.local import LocalObjectStorage
 from sales_platform.platform.api.auth import PortalAuth
+from sales_platform.platform.api.errors import add_error_handlers
 from sales_platform.platform.application.sessions import SessionService
 from sales_platform.platform.config import Settings
 from sales_platform.platform.persistence.database import build_engine, database_ready
@@ -116,6 +115,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             engine.dispose()
 
     app = FastAPI(title="Sales Platform", version="0.1.0", lifespan=lifespan)
+    add_error_handlers(app)
 
     @app.get("/health/live", response_model=HealthResponse, tags=["health"])
     def live() -> HealthResponse:
@@ -247,7 +247,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         build_catalogue_router(
             auth,
             products,
-            CatalogueSyncService(connections, runtime.registry, SqlCatalogueSync(engine)),
         )
     )
     # The signed approval link page (phase 5, P5-14): sign-in, then one click.

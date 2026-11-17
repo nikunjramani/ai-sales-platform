@@ -136,7 +136,10 @@ def violations() -> list[str]:
                 continue
             if MODULE_ORDER.index(target_module) > rank:
                 problems.append(f"{relative}:{line} ({module}) imports later module {name}")
-            elif target_layer not in ALLOWED[layer]:
+            elif target_layer not in ALLOWED[layer] and not (
+                # A store with one implementation and no fake needs no port (user, 2026-11-03).
+                layer == "application" and target_layer == "persistence" and target_module == module
+            ):
                 problems.append(f"{relative}:{line} ({layer}) must not import {name}")
     return problems
 

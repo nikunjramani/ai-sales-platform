@@ -56,13 +56,7 @@ Connect, statement and pool-wait timeouts are 3 seconds, with a pool of 5 and no
 
 **Phase 5 (0013), both roles:** connection_routes SELECT/INSERT/DELETE (plus one route by its exact key, `app.route_provider` and `app.route_key`); approval_reply_prompts SELECT/INSERT, UPDATE (token, message, closed, outcome). **API:** outbound_messages INSERT (Resend); quotation_deliveries UPDATE (outbound_message_id); connections INSERT (with secret references and the pending step), UPDATE (status, config, secret references, last error, pending step); one action reference by its link token (`app.approval_token_sha256`); one media link by its token (`app.media_token_sha256`); manager_reply_classifications and media_links SELECT. **Worker:** connections UPDATE (the same columns) and connection_events INSERT (setup events finish a connection); outbound_messages UPDATE (action_ref_id); customer_action_refs UPDATE (consumed_at, response_id) (Accept/Decline pressed in a tool); manager_reply_classifications and media_links SELECT/INSERT.
 
-**Phase 6 (0014):**
-- catalogue_sync_runs: API SELECT; worker SELECT/INSERT, UPDATE (progress columns).
-- The worker may INSERT categories, products, prices, stock and change records.
-- The worker may UPDATE the product columns a sync changes (name, category, unit, quantities, search words, source, external ID, synced time, archive columns, row version, updated) and the category archive columns.
-- The API still only inserts jobs: a partial unique index (`uq_jobs_manual_sync`) allows one waiting "Sync now" run per business.
-
-**Phase 7 (0015), both roles:** orders, order_lines, order_events and order_operations SELECT/INSERT; orders UPDATE (status, hold_reason, erp_customer, erp_order_id, updated_at); order_operations UPDATE (status, erp_order_id, attempts, last_error, unknown_since, updated_at). **API:** tenants UPDATE (order_creation).
+**Orders, both roles:** orders, order_lines and order_events SELECT/INSERT; orders UPDATE (status, hold_reason, updated_at). **Catalogue:** the worker only reads the product tables. **API:** tenants UPDATE (order_creation).
 
 All tenant tables use forced RLS on `app.tenant_id`, so without context nothing is visible.
 

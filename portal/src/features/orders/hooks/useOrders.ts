@@ -16,7 +16,7 @@ export const orderKeys = {
   settings: (tenantId: string) => ["tenants", tenantId, "orders", "settings"] as const,
 };
 
-// ERP writes and status changes happen in the background: the screens follow them.
+// Automatic orders and status changes happen in the background: the screens follow them.
 const REFRESH_MS = 15_000;
 
 export function useOrders(filter: OrderListFilter, { enabled = true } = {}) {
@@ -58,8 +58,7 @@ export function useCreateOrder(quotationId: string) {
   const tenantId = useTenantId();
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (erpCustomer: string | null) =>
-      orderRepository.create(tenantId, quotationId, erpCustomer),
+    mutationFn: () => orderRepository.create(tenantId, quotationId),
     onSettled: () => client.invalidateQueries({ queryKey: orderKeys.all(tenantId) }),
   });
 }
@@ -73,22 +72,7 @@ export function useOrderActions(orderId: string) {
       orderRepository.move(tenantId, orderId, status, reason),
     onSettled: refresh,
   });
-  const resolve = useMutation({
-    mutationFn: (input: {
-      operationId: string;
-      resolution: "found" | "not_found";
-      erpOrderId: string | null;
-    }) =>
-      orderRepository.resolve(
-        tenantId,
-        orderId,
-        input.operationId,
-        input.resolution,
-        input.erpOrderId,
-      ),
-    onSettled: refresh,
-  });
-  return { move, resolve };
+  return { move };
 }
 
 export function useOrderSettings() {

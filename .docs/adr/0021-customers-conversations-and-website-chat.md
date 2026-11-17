@@ -2,7 +2,7 @@
 **Status:** accepted (phase 4, user decisions 2026-10-28); implemented on `feat/phase-4-conversations`. Extends ADR 0012 (the interpreter reads a transcript), ADR 0016 (answers may also come from customer action references) and ADR 0018 (first hosted customer tool, consent events).
 
 ## Context
-Before phase 4 one enquiry was one message. A customer answering our question ("10 meter?") created a new, empty enquiry, and nothing was sent back to customers except the quotation over the API. Phase 4 adds customers, conversations and the first customer tool we host ourselves (website chat). Decisions D13-D15 and Q1-Q14 were answered by the user on 2026-10-28, plus four points asked during the work ([plan, user answers](../plan/platform/implementation/phase-4-conversations.md#user-answers-2026-10-28)).
+Before phase 4 one enquiry was one message. A customer answering our question ("10 meter?") created a new, empty enquiry, and nothing was sent back to customers except the quotation over the API. Phase 4 adds customers, conversations and the first customer tool we host ourselves (website chat). Decisions D13-D15 and Q1-Q14 were answered by the user on 2026-10-28, plus four points asked during the work (plan, user answers (git history)).
 
 ## Decision
 1. **Model.**

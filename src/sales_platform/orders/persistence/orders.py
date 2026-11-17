@@ -1,17 +1,13 @@
 """Orders in PostgreSQL (phase 7, ADR 0024). Both the API and the worker role use SqlOrderStore.
 
 Every write runs in one tenant transaction together with its order event and follow-up job:
-- create: order, lines, the created (and held) event, and for ERP orders the operation row
-  with its stable reference, plus the erp_order_operation job unless the order is on hold.
-  A second order for the same quotation hits uq_orders_quotation: OrderExists.
+- create: order, lines and the created (and held) event. A second order for the same
+  quotation hits uq_orders_quotation: OrderExists.
 - change_status: compare-and-set on the expected status, event, and the notify_order job
   for statuses customers hear about.
-- begin_send / finish_operation: compare-and-set on the operation's status (intent before
-  call); an unknown outcome queues the reconciliation; a success queues the status refresh.
 """
 
 from collections.abc import Mapping, Sequence
-from datetime import datetime
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -23,35 +19,29 @@ from sales_platform.conversations.persistence.tables import ContactIdentity
 from sales_platform.enquiries.persistence.tables import Enquiry
 from sales_platform.orders.domain.orders import (
     EventSource,
-    Fulfilment,
-    OperationStatus,
     Order,
     OrderCreation,
     OrderEvent,
     OrderEventType,
     OrderLine,
-    OrderOperation,
     OrderStatus,
     order_number,
 )
 from sales_platform.orders.persistence.tables import (
     OrderEventRow,
     OrderLineRow,
-    OrderOperationRow,
     OrderRow,
 )
 from sales_platform.orders.ports.orders import (
     AcceptedQuotation,
     NewOrder,
-    OperationOutcome,
     OrderExists,
     OrderFilter,
     OrderListItem,
     StatusChange,
 )
-from sales_platform.platform.domain.jobs import JobKind, JobStatus
+from sales_platform.platform.domain.jobs import JobKind
 from sales_platform.platform.persistence.jobs import queue_job
-from sales_platform.platform.persistence.models import Job
 from sales_platform.platform.persistence.tenancy import tenant_transaction
 from sales_platform.quotations.domain.quotations import QuotationStatus, quotation_number
 from sales_platform.quotations.persistence.tables import (
@@ -63,8 +53,6 @@ from sales_platform.quotations.persistence.tables import (
 _O = OrderRow
 _L = OrderLineRow
 _E = OrderEventRow
-_OP = OrderOperationRow
-_ATTENTION = (OperationStatus.FAILED.value, OperationStatus.NEEDS_ATTENTION.value)
 
 
 def _order(row: Row[Any], lines: Sequence[Row[Any]]) -> Order:
@@ -79,10 +67,6 @@ def _order(row: Row[Any], lines: Sequence[Row[Any]]) -> Order:
         enquiry_id=row.enquiry_id,
         contact_id=row.contact_id,
         status=OrderStatus(row.status),
-        fulfilment=Fulfilment(row.fulfilment),
-        erp_connection_id=row.erp_connection_id,
-        erp_customer=row.erp_customer,
-        erp_order_id=row.erp_order_id,
         currency=row.currency,
         subtotal=row.subtotal,
         tax=row.tax,
@@ -117,22 +101,6 @@ def _event(row: Row[Any]) -> OrderEvent:
         actor=row.actor,
         detail=dict(row.detail),
         occurred_at=row.occurred_at,
-    )
-
-
-def _operation(row: Row[Any]) -> OrderOperation:
-    return OrderOperation(
-        operation_id=row.id,
-        order_id=row.order_id,
-        external_reference=row.external_reference,
-        connection_id=row.connection_id,
-        status=OperationStatus(row.status),
-        erp_order_id=row.erp_order_id,
-        attempts=row.attempts,
-        last_error=row.last_error,
-        created_at=row.created_at,
-        updated_at=row.updated_at,
-        unknown_since=row.unknown_since,
     )
 
 
@@ -230,9 +198,6 @@ class SqlOrderStore:
                         response_id=quotation.response_id,
                         status=new.status.value,
                         hold_reason=new.hold_reason,
-                        fulfilment=new.fulfilment.value,
-                        erp_connection_id=new.erp_connection_id,
-                        erp_customer=new.erp_customer,
                         currency=new.currency,
                         subtotal=new.subtotal,
                         tax=new.tax,
@@ -260,7 +225,6 @@ class SqlOrderStore:
                 detail: dict[str, object] = {
                     "quotation": quotation_number(quotation.quotation_id),
                     "version": quotation.version,
-                    "fulfilment": new.fulfilment.value,
                 }
                 _add_event(
                     connection, tenant_id, new.order_id, OrderEventType.CREATED, None,
@@ -272,22 +236,6 @@ class SqlOrderStore:
                         OrderStatus.PLACED, OrderStatus.ON_HOLD, EventSource.SYSTEM,
                         new.actor, {"reason": new.hold_reason},
                     )  # fmt: skip
-                if new.external_reference is not None:
-                    assert new.erp_connection_id is not None
-                    operation_id = uuid4()
-                    connection.execute(
-                        insert(_OP).values(
-                            id=operation_id,
-                            tenant_id=tenant_id,
-                            order_id=new.order_id,
-                            kind="create_sales_order",
-                            external_reference=new.external_reference,
-                            connection_id=new.erp_connection_id,
-                            status=OperationStatus.PENDING.value,
-                        )
-                    )
-                    if new.send_now:
-                        _queue_operation(connection, tenant_id, operation_id)
         except IntegrityError as error:
             if "uq_orders_quotation" not in str(error.orig):
                 raise
@@ -311,22 +259,9 @@ class SqlOrderStore:
             return _load(connection, tenant_id, Quotation.enquiry_id == enquiry_id)
 
     def list(self, tenant_id: UUID, query: OrderFilter) -> Sequence[OrderListItem]:
-        latest_operation = (
-            select(_OP.status)
-            .where(_OP.tenant_id == _O.tenant_id, _OP.order_id == _O.id)
-            .order_by(_OP.created_at.desc())
-            .limit(1)
-            .scalar_subquery()
-        )
-        statement = (
-            _order_select()
-            .add_columns(latest_operation.label("operation_status"))
-            .where(_O.tenant_id == tenant_id)
-        )
+        statement = _order_select().where(_O.tenant_id == tenant_id)
         if query.status is not None:
             statement = statement.where(_O.status == query.status.value)
-        if query.needs_attention:
-            statement = statement.where(latest_operation.in_(_ATTENTION))
         if query.before is not None:
             statement = statement.where(_O.created_at < query.before)
         statement = statement.order_by(_O.created_at.desc()).limit(query.limit)
@@ -334,11 +269,7 @@ class SqlOrderStore:
             rows = connection.execute(statement).all()
             lines = _lines(connection, tenant_id, [row.id for row in rows])
         return [
-            OrderListItem(
-                _order(row, lines.get(row.id, [])),
-                quotation_number(row.quotation_id),
-                None if row.operation_status is None else OperationStatus(row.operation_status),
-            )
+            OrderListItem(_order(row, lines.get(row.id, [])), quotation_number(row.quotation_id))
             for row in rows
         ]
 
@@ -357,22 +288,6 @@ class SqlOrderStore:
                 select(_E).where(_E.tenant_id == tenant_id, _E.id == event_id)
             ).one_or_none()
         return None if row is None else _event(row)
-
-    def operations(self, tenant_id: UUID, order_id: UUID) -> Sequence[OrderOperation]:
-        with tenant_transaction(self._engine, tenant_id) as connection:
-            rows = connection.execute(
-                select(_OP)
-                .where(_OP.tenant_id == tenant_id, _OP.order_id == order_id)
-                .order_by(_OP.created_at)
-            ).all()
-        return [_operation(row) for row in rows]
-
-    def operation(self, tenant_id: UUID, operation_id: UUID) -> OrderOperation | None:
-        with tenant_transaction(self._engine, tenant_id) as connection:
-            row = connection.execute(
-                select(_OP).where(_OP.tenant_id == tenant_id, _OP.id == operation_id)
-            ).one_or_none()
-        return None if row is None else _operation(row)
 
     def for_identity(
         self, tenant_id: UUID, connection_id: UUID, external_id: str
@@ -396,18 +311,6 @@ class SqlOrderStore:
             lines = _lines(connection, tenant_id, [row.id for row in rows])
         return [_order(row, lines.get(row.id, [])) for row in rows]
 
-    def open_erp_orders(self, tenant_id: UUID, connection_id: UUID) -> Sequence[Order]:
-        with tenant_transaction(self._engine, tenant_id) as connection:
-            rows = connection.execute(
-                _order_select().where(
-                    _O.tenant_id == tenant_id,
-                    _O.erp_connection_id == connection_id,
-                    _O.erp_order_id.is_not(None),
-                    _O.status.not_in([OrderStatus.DELIVERED.value, OrderStatus.CANCELLED.value]),
-                )
-            ).all()
-        return [_order(row, []) for row in rows]
-
     def change_status(self, tenant_id: UUID, change: StatusChange) -> Order | None:
         with tenant_transaction(self._engine, tenant_id) as connection:
             values: dict[str, object] = {
@@ -415,8 +318,6 @@ class SqlOrderStore:
                 "hold_reason": change.hold_reason,
                 "updated_at": func.now(),
             }
-            if change.erp_customer is not None:
-                values["erp_customer"] = change.erp_customer
             moved = connection.execute(
                 update(_O)
                 .where(
@@ -431,157 +332,13 @@ class SqlOrderStore:
             event_id = _add_event(
                 connection, tenant_id, change.order_id, change.event_type, change.expected,
                 change.target, change.source, change.actor, change.detail,
-                change.external_event_id,
             )  # fmt: skip
             if change.notify_customer:
                 queue_job(
                     connection, tenant_id, JobKind.NOTIFY_ORDER, {"event_id": str(event_id)},
                     uuid4(),
                 )  # fmt: skip
-            if change.send_operation:
-                pending = connection.execute(
-                    select(_OP.id).where(
-                        _OP.tenant_id == tenant_id,
-                        _OP.order_id == change.order_id,
-                        _OP.status == OperationStatus.PENDING.value,
-                    )
-                ).scalar_one_or_none()
-                if pending is not None:
-                    _queue_operation(connection, tenant_id, pending)
         return self.get(tenant_id, change.order_id)
-
-    # --- the ERP write ---------------------------------------------------------------------
-    def begin_send(self, tenant_id: UUID, operation_id: UUID) -> bool:
-        with tenant_transaction(self._engine, tenant_id) as connection:
-            moved = connection.execute(
-                update(_OP)
-                .where(
-                    _OP.tenant_id == tenant_id,
-                    _OP.id == operation_id,
-                    _OP.status == OperationStatus.PENDING.value,
-                )
-                .values(
-                    status=OperationStatus.SENDING.value,
-                    attempts=_OP.attempts + 1,
-                    updated_at=func.now(),
-                )
-            ).rowcount
-        return bool(moved)
-
-    def finish_operation(
-        self,
-        tenant_id: UUID,
-        operation_id: UUID,
-        expected: frozenset[OperationStatus],
-        outcome: OperationOutcome,
-    ) -> bool:
-        with tenant_transaction(self._engine, tenant_id) as connection:
-            values: dict[str, object] = {
-                "status": outcome.status.value,
-                "last_error": None if outcome.error is None else outcome.error[:500],
-                "updated_at": func.now(),
-            }
-            if outcome.erp_order_id is not None:
-                values["erp_order_id"] = outcome.erp_order_id
-            if outcome.status is OperationStatus.UNKNOWN:
-                values["unknown_since"] = func.coalesce(_OP.unknown_since, func.now())
-            row = connection.execute(
-                update(_OP)
-                .where(
-                    _OP.tenant_id == tenant_id,
-                    _OP.id == operation_id,
-                    _OP.status.in_([item.value for item in expected]),
-                )
-                .values(**values)
-                .returning(_OP.order_id, _OP.connection_id)
-            ).one_or_none()
-            if row is None:
-                return False
-            current = connection.execute(
-                select(_O.status).where(_O.tenant_id == tenant_id, _O.id == row.order_id)
-            ).scalar_one()
-            target = outcome.order_status
-            order_values: dict[str, object] = {"updated_at": func.now()}
-            if outcome.erp_order_id is not None:
-                order_values["erp_order_id"] = outcome.erp_order_id
-            moved = target is not None and target.value != current
-            if moved:
-                assert target is not None
-                order_values["status"] = target.value
-            connection.execute(
-                update(_O)
-                .where(_O.tenant_id == tenant_id, _O.id == row.order_id)
-                .values(**order_values)
-            )
-            event_id = None
-            if outcome.event_type is not None:
-                event_id = _add_event(
-                    connection, tenant_id, row.order_id, outcome.event_type,
-                    OrderStatus(current) if moved else None, target if moved else None,
-                    EventSource.SYSTEM, outcome.actor,
-                    {**outcome.detail, **({"error": outcome.error} if outcome.error else {})},
-                )  # fmt: skip
-            if outcome.send_again:
-                _queue_operation(connection, tenant_id, operation_id)
-            if moved and outcome.notify_customer and event_id is not None:
-                queue_job(
-                    connection, tenant_id, JobKind.NOTIFY_ORDER, {"event_id": str(event_id)},
-                    uuid4(),
-                )  # fmt: skip
-            if outcome.reconcile_at is not None:
-                queue_job(
-                    connection, tenant_id, JobKind.RECONCILE_ORDER_OPERATION,
-                    {"operation_id": str(operation_id)}, uuid4(), run_at=outcome.reconcile_at,
-                )  # fmt: skip
-        return True
-
-    def retry_operation(
-        self, tenant_id: UUID, operation_id: UUID, actor: str, event_type: OrderEventType
-    ) -> bool:
-        with tenant_transaction(self._engine, tenant_id) as connection:
-            row = connection.execute(
-                update(_OP)
-                .where(
-                    _OP.tenant_id == tenant_id,
-                    _OP.id == operation_id,
-                    _OP.status.in_(_ATTENTION),
-                )
-                .values(
-                    status=OperationStatus.PENDING.value,
-                    unknown_since=None,
-                    updated_at=func.now(),
-                )
-                .returning(_OP.order_id)
-            ).one_or_none()
-            if row is None:
-                return False
-            _add_event(
-                connection, tenant_id, row.order_id, event_type, None, None, EventSource.STAFF,
-                actor, {"action": "send again"},
-            )  # fmt: skip
-            _queue_operation(connection, tenant_id, operation_id)
-        return True
-
-    def refresh_due(self, tenant_id: UUID, connection_id: UUID, run_at: datetime) -> None:
-        payload = {"connection_id": str(connection_id)}
-        with tenant_transaction(self._engine, tenant_id) as connection:
-            connection.execute(
-                text("SELECT pg_advisory_xact_lock(hashtextextended(:key, 0))"),
-                {"key": f"order-refresh:{tenant_id}:{connection_id}"},
-            )
-            waiting = connection.execute(
-                select(func.count()).where(
-                    Job.tenant_id == tenant_id,
-                    Job.kind == JobKind.REFRESH_ORDER_STATUS.value,
-                    Job.status == JobStatus.PENDING.value,
-                    Job.payload["connection_id"].astext == str(connection_id),
-                )
-            ).scalar_one()
-            if not waiting:
-                queue_job(
-                    connection, tenant_id, JobKind.REFRESH_ORDER_STATUS, payload, uuid4(),
-                    run_at=run_at,
-                )  # fmt: skip
 
 
 def _load(connection: Connection, tenant_id: UUID, condition: Any) -> Order | None:
@@ -618,7 +375,6 @@ def _add_event(
     source: EventSource,
     actor: str,
     detail: Mapping[str, object],
-    external_event_id: str | None = None,
 ) -> UUID:
     event_id = uuid4()
     connection.execute(
@@ -632,17 +388,6 @@ def _add_event(
             source=source.value,
             actor=actor[:200],
             detail=dict(detail),
-            external_event_id=external_event_id,
         )
     )
     return event_id
-
-
-def _queue_operation(connection: Connection, tenant_id: UUID, operation_id: UUID) -> None:
-    queue_job(
-        connection,
-        tenant_id,
-        JobKind.ERP_ORDER_OPERATION,
-        {"operation_id": str(operation_id)},
-        uuid4(),
-    )

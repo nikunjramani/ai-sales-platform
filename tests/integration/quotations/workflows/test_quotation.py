@@ -11,9 +11,7 @@ import json
 import threading
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
-from dataclasses import replace
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal
 from io import BytesIO
 from pathlib import Path
 from typing import Any
@@ -27,7 +25,6 @@ from sqlalchemy import Engine, text
 from sqlalchemy.exc import DBAPIError, ProgrammingError
 
 from sales_platform.api_app import create_app
-from sales_platform.catalogue.adapters.erp.simulated import SimulatedErp, demo_catalogues
 from sales_platform.composition import build_job_handlers, build_runtime
 from sales_platform.enquiries.adapters.interpreters.rules import RulesInterpreter
 from sales_platform.enquiries.persistence.workflow import open_checkpointer
@@ -63,6 +60,7 @@ from sales_platform.quotations.persistence.acceptance import SqlResponseStore
 from sales_platform.quotations.persistence.pricing_policy import SqlPricingPolicyReader
 from sales_platform.quotations.persistence.quotations import SqlApprovalStore
 from sales_platform.seed import INDUSTRIAL_TENANT, OFFICE_TENANT, seed_demo_tenants
+from tests.support.demo_catalogue import DemoCatalogue
 
 type ApiKeyFactory = Callable[[UUID, Role], str]
 
@@ -96,7 +94,7 @@ def make_client(settings: Settings, runtime_engine: Engine) -> Iterator[Callable
 @contextmanager
 def running_worker(settings: Settings, engine: Engine) -> Iterator[JobRunner]:
     """Everything python -m sales_platform.worker wires, in-process (rules interpreter)."""
-    erp = SimulatedErp(demo_catalogues(INDUSTRIAL_TENANT, OFFICE_TENANT))
+    erp = DemoCatalogue({INDUSTRIAL_TENANT: "industrial", OFFICE_TENANT: "office"})
     with open_checkpointer(settings.worker_url()) as checkpointer:
         handlers = build_job_handlers(
             settings, engine, build_runtime(settings, engine), checkpointer, RulesInterpreter(), erp
@@ -610,10 +608,10 @@ def customer_context() -> TenantContext:
 
 
 def responses_service(
-    engine: Engine, erp: SimulatedErp | None = None, at: datetime | None = None
+    engine: Engine, erp: DemoCatalogue | None = None, at: datetime | None = None
 ) -> QuotationResponseService:
     pricing = QuotationPricingService(
-        erp or SimulatedErp(demo_catalogues(INDUSTRIAL_TENANT, OFFICE_TENANT)),
+        erp or DemoCatalogue({INDUSTRIAL_TENANT: "industrial", OFFICE_TENANT: "office"}),
         SqlPricingPolicyReader(engine),
     )
     if at is None:
@@ -664,10 +662,8 @@ def test_changed_price_refuses_and_the_revision_goes_to_approval(
     owner_engine: Engine,
 ) -> None:
     _, _, enquiry_id, issued = issued_quotation(make_client, make_api_key, settings, worker_engine)
-    erp = SimulatedErp(demo_catalogues(INDUSTRIAL_TENANT, OFFICE_TENANT))
-    catalogue = erp.catalogue(INDUSTRIAL_TENANT)
-    [price] = catalogue.prices["IND-FAN-450"][-1:]
-    catalogue.prices["IND-FAN-450"] = (replace(price, unit_price=Decimal("4500.00")),)
+    erp = DemoCatalogue({INDUSTRIAL_TENANT: "industrial", OFFICE_TENANT: "office"})
+    erp.set_price(INDUSTRIAL_TENANT, "IND-FAN-450", "4500.00")
     request = ResponseRequest(ResponseAction.ACCEPT, 1, issued["content_sha256"], None)
     with pytest.raises(PricesChanged) as refused:
         responses_service(runtime_engine, erp).respond(

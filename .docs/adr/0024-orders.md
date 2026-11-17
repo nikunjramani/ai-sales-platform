@@ -1,4 +1,6 @@
 # 0024: Orders: one per accepted quotation, written once to the ERP with intent before call
+**Partly superseded by [ADR 0027](0027-remove-erp-integration.md):** orders are local only; the ERP write is removed.
+
 **Date:** 2026-10-29. **Status:** accepted (phase 7, roadmap M6b); implemented on `feat/phase-6-7-erp-and-orders`, verified with fakes, PostgreSQL and the ERPNext sandbox (synthetic data). Extends ADR 0003 (ERP authority: an ERP order's status follows the ERP; without an ERP we keep the order), ADR 0004 (persisted intents, reconciliation), ADR 0015 (unknown is never resent automatically) and ADR 0016 (acceptance; this ADR is what follows `accepted`).
 
 ## Context

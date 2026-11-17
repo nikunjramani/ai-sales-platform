@@ -35,14 +35,10 @@ class JobKind(StrEnum):
     POLL_CONNECTION = "poll_connection"
     CLASSIFY_MANAGER_REPLY = "classify_manager_reply"
     # Phase 6: copy a product source's catalogue into ours (repeats on its own schedule).
-    SYNC_CATALOGUE = "sync_catalogue"
     # Phase 7 orders (ADR 0024): create one after an acceptance (when the business wants it
     # automatic), write it to the ERP, look up an uncertain write, follow ERP statuses, tell
     # the customer about a status change.
     CREATE_ORDER = "create_order"
-    ERP_ORDER_OPERATION = "erp_order_operation"
-    RECONCILE_ORDER_OPERATION = "reconcile_order_operation"
-    REFRESH_ORDER_STATUS = "refresh_order_status"
     NOTIFY_ORDER = "notify_order"
 
 

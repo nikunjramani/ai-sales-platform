@@ -22,7 +22,6 @@ class Purpose(StrEnum):
     MANAGER_APPROVALS = "manager_approvals"
     CATALOGUE = "catalogue"
     # Phase 7: the business's orders are written to this tool (an ERP that takes sales orders).
-    ORDERS = "orders"
 
 
 class ConnectionStatus(StrEnum):
@@ -39,41 +38,11 @@ class DeliveryMode(StrEnum):
     PULL = "pull"
 
 
-class StockSemantics(StrEnum):
-    """What a product source's stock number means; shown to staff, never reinterpreted."""
-
-    ON_HAND = "on_hand"  # physically there, including stock already promised to others
-    AVAILABLE = "available"  # on hand minus what existing orders reserved
-    UNKNOWN = "unknown"
-
-
 @dataclass(frozen=True)
 class CatalogueCapabilities:
-    """What a product source can do beyond the five ERP reads (phase 6, contracts §1)."""
+    """What a product source can do beyond the five reads (phase 6, contracts §1)."""
 
     editable: bool = False  # staff edit the products in our portal
-    sync: bool = False  # copies products into our catalogue tables (sync_catalogue job)
-    live_prices: bool = False  # get_prices asks the source itself, not our copy
-    live_stock: bool = False  # get_availability asks the source itself
-    warehouses: bool = False  # stock per warehouse
-    webhooks: bool = False  # tells us about changes (not used yet: sync runs on a schedule)
-
-
-@dataclass(frozen=True)
-class OrderCapabilities:
-    """What an order destination (an ERP) can do (phase 7, contracts §1, integrations.md).
-
-    reference_lookup: our external order reference can be searched in the tool, so an
-    uncertain create can be reconciled. idempotency_key: the tool itself refuses a second
-    order with the same reference, so an unknown create may be sent again. Without either, an
-    unknown outcome always goes to staff (needs_attention).
-    """
-
-    create_order: bool = False
-    reference_lookup: bool = False
-    idempotency_key: bool = False
-    reserve_stock: bool = False
-    order_status: bool = False  # get_order_status reports the order's progress
 
 
 @dataclass(frozen=True)
@@ -105,9 +74,8 @@ class Capabilities:
     platform_webhooks: bool = False
     # The tool downloads attachments from a public URL instead of receiving the bytes.
     attachments_by_url: bool = False
-    # Phase 6/7: product source and order destination abilities (None: not that kind of tool).
+    # Product source abilities (None: not a product source).
     catalogue: CatalogueCapabilities | None = None
-    orders: OrderCapabilities | None = None
 
 
 @dataclass(frozen=True)

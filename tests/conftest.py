@@ -14,7 +14,6 @@ from uuid import NAMESPACE_URL, UUID, uuid5
 import pytest
 
 from sales_platform.accounts.ports.api_keys import ApiKeyRecord
-from sales_platform.catalogue.adapters.erp.simulated import SimulatedErp, demo_catalogues
 from sales_platform.enquiries.domain.attachments import AttachmentStatus
 from sales_platform.enquiries.domain.follow_ups import OpenEnquiry
 from sales_platform.enquiries.domain.intake import EnquiryStatus, InboundEnvelope
@@ -33,6 +32,7 @@ from sales_platform.providers.api import ApiProvider
 from sales_platform.quotations.domain.pricing import PricingPolicy
 from sales_platform.quotations.ports.pricing_policy import PricingPolicyNotConfigured
 from sales_platform.seed import INDUSTRIAL_TENANT, OFFICE_TENANT
+from tests.support.demo_catalogue import DemoCatalogue
 
 INTEGRATION_DIR = Path(__file__).parent / "integration"
 
@@ -123,9 +123,11 @@ def make_policy() -> PolicyFactory:
 
 
 @pytest.fixture
-def simulated_erp(now: datetime, industrial_tenant: UUID, office_tenant: UUID) -> SimulatedErp:
+def demo_catalogue(now: datetime, industrial_tenant: UUID, office_tenant: UUID) -> DemoCatalogue:
     """Demo catalogues for both tenants, with the ERP clock fixed at `now`."""
-    return SimulatedErp(demo_catalogues(industrial_tenant, office_tenant), clock=lambda: now)
+    return DemoCatalogue(
+        {industrial_tenant: "industrial", office_tenant: "office"}, clock=lambda: now
+    )
 
 
 @pytest.fixture

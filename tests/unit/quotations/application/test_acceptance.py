@@ -2,14 +2,12 @@
 expiry, withdrawal, notifications, replays and tenant boundaries."""
 
 from datetime import UTC, datetime, timedelta
-from decimal import Decimal
 from typing import Any
 from uuid import UUID, uuid4
 
 import pytest
 
-from sales_platform.catalogue.adapters.erp.simulated import SimulatedPrice
-from sales_platform.catalogue.ports.erp import ErpError, ErpErrorCode
+from sales_platform.catalogue.ports.sources import ErpError, ErpErrorCode
 from sales_platform.platform.domain.jobs import JobKind
 from sales_platform.platform.domain.tenancy import PermissionDenied, Role, TenantContext
 from sales_platform.quotations.application.acceptance import NotDueYet, NotIssued
@@ -81,14 +79,10 @@ def link_manager_phone(harness: Any) -> None:
 
 
 def set_fan_price(harness: Any, price: str | None) -> None:
-    catalogue = harness.erp.catalogue(harness.tenant_id)
     if price is None:
-        catalogue.prices.pop("IND-FAN-450")
-        return
-    [current] = catalogue.prices["IND-FAN-450"][-1:]
-    catalogue.prices["IND-FAN-450"] = (
-        SimulatedPrice(Decimal(price), "INR", current.price_list_id, "99", current.effective_from),
-    )
+        harness.erp.clear_prices(harness.tenant_id, "IND-FAN-450")
+    else:
+        harness.erp.set_price(harness.tenant_id, "IND-FAN-450", price)
 
 
 def test_customer_accepts_unchanged_prices_and_managers_are_told(harness: Any) -> None:

@@ -263,5 +263,5 @@ Then ("Run all" in VS Code):
 1. Sign in as `sales@local.example` (dev login) and open **Products**: five synthetic products, prices and stock.
 2. Add a category and a product, give it a price and a stock count. Create an API key as `admin@local.example` (**Settings -> API keys**) and send an enquiry for the new SKU; after a worker pass `manager@local.example` sees the quotation with evidence "standard list, revision 1".
 3. Raise the price, then accept the quotation as the customer (`POST .../quotation/response`): it is refused and version 2 goes to the manager.
-4. The demo businesses still use the simulated ERP; their **Products** page is read-only.
+4. Every demo business has demo products in its own product list (seeded); staff can edit them.
 

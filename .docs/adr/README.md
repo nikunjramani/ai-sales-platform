@@ -29,5 +29,6 @@ Accepted denotes intended design, not implemented code. Date: 2026-10-22.
 - [0024: Orders: one per accepted quotation, written once to the ERP with intent before call](0024-orders.md) — phase 7 (M6b), user answers Q1-Q4 2026-10-29, Q5-Q16 delegated to Claude; implemented on `feat/phase-6-7-erp-and-orders`
 - [0025: A friendly portal design: plain words, a simple menu, a Home page and page hints](0025-friendly-portal-design.md) — user decisions 2026-10-30; implemented on `feat/portal-friendly-design`
 - [0026: Backend by business module, one shared wiring, and the `sales_platform` name](0026-backend-business-modules.md) — implemented 2026-11-03 (PRs #13-#17)
+- [0027: Remove the ERP integration for now (products in our own list, local orders)](0027-remove-erp-integration.md) — user decision 2026-11-03; supersedes 0023, parts of 0003 and 0024
 
 New decisions get sequential IDs. Preserve history and explicitly link superseding records.

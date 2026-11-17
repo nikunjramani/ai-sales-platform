@@ -12,7 +12,7 @@ import { homeCards, setupProgress, type CountResult } from "../services/homeCard
 const WAITING = ["pending_approval"] as const;
 const CHANGES = ["revision_requested", "pricing_failed"] as const;
 const REQUESTS = ["needs_review", "needs_clarification"];
-const ATTENTION = { needsAttention: true };
+const ON_HOLD = { status: "on_hold" } as const;
 
 function result(query: { data?: readonly unknown[]; isError: boolean }): CountResult {
   return { count: query.data?.length, failed: query.isError };
@@ -30,7 +30,7 @@ export function useHomeSummary() {
   const waiting = useQuotationList(WAITING, { enabled: can("quotations:approve") });
   const changes = useQuotationList(CHANGES, { enabled: can("quotations:draft") });
   const requests = useEnquiryList(REQUESTS, { enabled: can("enquiries:view") });
-  const orders = useOrders(ATTENTION, { enabled: can("orders:view") });
+  const orders = useOrders(ON_HOLD, { enabled: can("orders:view") });
   const inbox = useInbox({ enabled: can("conversations:view") });
   const setup = useSetupChecklist({ enabled: settingUp });
 

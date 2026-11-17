@@ -35,7 +35,7 @@ export const HOME_CARDS: readonly {
   { id: "approve", title: "Quotes waiting for approval", link: "/quotations?filter=waiting", permission: "quotations:approve" },
   { id: "changes", title: "Quotes that need changes", link: "/quotations?filter=revision", permission: "quotations:draft" },
   { id: "requests", title: "Customer requests that need you", link: "/enquiries?filter=attention", permission: "enquiries:view" },
-  { id: "orders", title: "Orders that need attention", link: "/orders?filter=attention", permission: "orders:view" },
+  { id: "orders", title: "Orders on hold", link: "/orders?filter=on_hold", permission: "orders:view" },
 ];
 
 /** The cards this person may use, in order, with their counts. */

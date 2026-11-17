@@ -1,5 +1,5 @@
 """The product list API on PostgreSQL: real sessions and CSRF, two businesses, paging,
-permissions, read-only sources and the setup checklist step."""
+permissions and the setup checklist step."""
 
 from collections.abc import Iterator
 from uuid import UUID, uuid4
@@ -118,15 +118,11 @@ def test_paging_and_search(app: TestClient) -> None:
     assert found[0]["current_price"]["unit_price"] == "2.375"
 
 
-def test_other_businesses_and_read_only_sources(app: TestClient) -> None:
-    headers = login(app, "admin@industrial.example")
+def test_other_businesses_and_viewers(app: TestClient) -> None:
+    login(app, "admin@industrial.example")
     assert app.get(f"{base()}/summary").status_code == 404  # not a member of the local demo
     local_product = UUID(int=1)
     assert app.get(f"{base(INDUSTRIAL_TENANT)}/products/{local_product}").status_code == 404
-    summary = app.get(f"{base(INDUSTRIAL_TENANT)}/summary").json()
-    assert summary["source"]["editable"] is False
-    refused = app.post(f"{base(INDUSTRIAL_TENANT)}/categories", json={"name": "X"}, headers=headers)
-    assert refused.status_code == 409 and refused.json()["detail"]["code"] == "source_not_editable"
     viewer = login(app, "viewer@industrial.example")
     assert app.get(f"{base(INDUSTRIAL_TENANT)}/products").status_code == 200
     assert (

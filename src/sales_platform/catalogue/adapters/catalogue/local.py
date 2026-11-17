@@ -24,7 +24,7 @@ from sales_platform.catalogue.domain.catalogue_admin import (
 )
 from sales_platform.catalogue.domain.catalogue_search import query_terms
 from sales_platform.catalogue.ports.catalogue_admin import CatalogueReadStore, CatalogueUnavailable
-from sales_platform.catalogue.ports.erp import ErpError, ErpErrorCode
+from sales_platform.catalogue.ports.sources import ErpError, ErpErrorCode
 from sales_platform.platform.domain.money import Money
 from sales_platform.platform.domain.tenancy import TenantContext
 from sales_platform.platform.domain.validation import require_aware

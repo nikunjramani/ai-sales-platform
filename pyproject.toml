@@ -34,7 +34,6 @@ simulated = "sales_platform.providers.simulated:build"
 local_catalogue = "sales_platform.providers.local_catalogue:build"
 web_chat = "sales_platform.providers.web_chat:build"
 telegram = "sales_platform.providers.telegram:build"
-erpnext = "sales_platform.providers.erpnext:build"
 
 [project.entry-points."sales_platform.secret_stores"]
 local = "sales_platform.platform.adapters.secrets.local:build"

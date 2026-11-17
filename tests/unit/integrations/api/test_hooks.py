@@ -17,6 +17,7 @@ from sales_platform.integrations.api.hooks import MAX_HOOK_BYTES, build_hook_rou
 from sales_platform.integrations.application.inbound import InboundService
 from sales_platform.integrations.application.providers import ProviderRegistry
 from sales_platform.integrations.domain.connections import Connection
+from sales_platform.platform.api.errors import add_error_handlers
 from sales_platform.platform.ports.secrets import SecretNotFound
 from sales_platform.providers.simulated import SimulatedProvider
 from sales_platform.providers.simulated.signing import SIGNATURE_HEADER, sign
@@ -63,6 +64,7 @@ def client(harness: Any) -> Iterator[TestClient]:
         harness.inbox,
     )
     app = FastAPI()
+    add_error_handlers(app)
     app.include_router(build_hook_router(service))
     with TestClient(app) as http:
         yield http

@@ -9,7 +9,7 @@ they started. The core never names this provider; it acts on capabilities (hoste
 
 from collections.abc import Sequence
 
-from sales_platform.catalogue.ports.erp import ProductSource
+from sales_platform.catalogue.ports.sources import ProductSource
 from sales_platform.customer_channels.domain.chat import MAX_ATTACHMENT_BYTES
 from sales_platform.integrations.domain.connections import (
     Capabilities,

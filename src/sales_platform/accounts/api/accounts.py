@@ -26,7 +26,6 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy.exc import SQLAlchemyError
 
 from sales_platform.accounts.api.auth import SessionOut, SessionView, UserOut, user_out
 from sales_platform.accounts.application.accounts import (
@@ -52,7 +51,6 @@ from sales_platform.accounts.ports.accounts import (
 )
 from sales_platform.platform.api.auth import PortalAuth, SignedIn, set_session_cookie
 from sales_platform.platform.domain.security import AuthenticationFailed, hash_secret
-from sales_platform.platform.domain.tenancy import PermissionDenied
 from sales_platform.platform.domain.text import UnrenderableContent
 from sales_platform.platform.ports.identity import IdentityRejected
 
@@ -76,17 +74,14 @@ def guarded[T](action: Callable[[], T]) -> T:
     except PasswordRejected as error:
         detail = {"message": str(error), "problems": [p.value for p in error.problems]}
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail) from None
-    except (PermissionDenied, NotAllowed) as error:
+    except NotAllowed as error:
         raise HTTPException(status.HTTP_403_FORBIDDEN, str(error) or "Not permitted") from None
     except InvitationNotUsable:
         raise HTTPException(status.HTTP_404_NOT_FOUND, _BAD_INVITATION) from None
     except (AlreadyMember, LastAdministrator, VersionConflict) as error:
         raise HTTPException(status.HTTP_409_CONFLICT, str(error)) from None
-    except (InvalidEmail, InvalidLogo, UnrenderableContent, ValueError) as error:
+    except (InvalidEmail, InvalidLogo, UnrenderableContent) as error:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
-    except (SQLAlchemyError, OSError):
-        logger.exception("Account request failed")
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, _UNAVAILABLE) from None
 
 
 def require_json(request: Request) -> None:

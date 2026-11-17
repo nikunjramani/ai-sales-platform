@@ -1,37 +1,27 @@
-"""The simulated provider: a fake manager phone plus a demo product catalogue (development only).
+"""The simulated provider: a fake manager phone (development only).
 
 It behaves like a real provider in the ways that matter for security:
 - Outbound: messages are "delivered" as JSON files in a local outbox (see outbox.py).
 - Inbound: callbacks are signed with HMAC-SHA256 using the connection's own signing secret,
   kept in the secret store. Unsigned or altered callbacks are refused before parsing. The body
   names no business: the business is always the connection's.
-- Catalogue: the demo catalogue named in the connection's config ("industrial" or "office").
 - Phase 5: every message to a manager is a file with its message_id; a "reply" event answers
   one of them by that ID (a written reply, read by the AI when a model is configured), and a
   "confirm" event presses Yes or No on a confirmation question.
 """
 
-import threading
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal
-from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from sales_platform.catalogue.adapters.erp.simulated import (
-    DEMO_CATALOGUES,
-    SimulatedErp,
-    demo_catalogue,
-)
-from sales_platform.catalogue.ports.erp import ProductSource
 from sales_platform.integrations.domain.connections import Capabilities, Connection, Purpose
 from sales_platform.integrations.domain.events import InboundEvent, ManagerAction, ManagerReply
 from sales_platform.integrations.ports.providers import (
     InboundRejected,
     InboundRequest,
     InvalidInbound,
-    OperationUnsupported,
     ProviderDefaults,
     ReceiptKind,
     RenderedMessage,
@@ -83,15 +73,13 @@ class SimulatedEvent(BaseModel):
 
 class SimulatedProvider(ProviderDefaults):
     key = PROVIDER_KEY
-    display_name = "Simulated phone and demo catalogue (development)"
-    purposes = frozenset({Purpose.MANAGER_APPROVALS, Purpose.CATALOGUE})
+    display_name = "Simulated phone (development)"
+    purposes = frozenset({Purpose.MANAGER_APPROVALS})
     capabilities = Capabilities(webhooks=True, buttons=True, max_inbound_bytes=16 * 1024)
     dev_only = True
 
     def __init__(self, outbox: Path) -> None:
         self._outbox = outbox.resolve()
-        self._catalogues: dict[tuple[UUID, str], SimulatedErp] = {}
-        self._lock = threading.Lock()
 
     def test(self, conn: Connection, secrets: SecretStore) -> TestResult:
         return TestResult(ok=True)
@@ -155,15 +143,3 @@ class SimulatedProvider(ProviderDefaults):
         write_message(self._outbox, conn.tenant_id, message.recipient, name, body)
         # One ID per message: the same file name is used for every account that gets this task.
         return SendReceipt(ReceiptKind.SENT, provider_message_id=str(message.message_id))
-
-    def catalogue_reader(self, conn: Connection, secrets: SecretStore) -> ProductSource:
-        name = str(conn.config.get("catalogue", ""))
-        if Purpose.CATALOGUE not in conn.purposes or name not in DEMO_CATALOGUES:
-            raise OperationUnsupported("This connection has no demo catalogue")
-        # One in-memory catalogue per business and name, so stock and prices stay consistent.
-        with self._lock:
-            reader = self._catalogues.get((conn.tenant_id, name))
-            if reader is None:
-                reader = SimulatedErp({conn.tenant_id: demo_catalogue(name)})
-                self._catalogues[(conn.tenant_id, name)] = reader
-        return reader

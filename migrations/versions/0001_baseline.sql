@@ -405,7 +405,7 @@ CREATE TABLE public.catalogue_prices (
     created_by character varying(200) NOT NULL,
     CONSTRAINT ck_catalogue_prices_currency CHECK (((currency)::text ~ '^[A-Z]{3}$'::text)),
     CONSTRAINT ck_catalogue_prices_revision CHECK ((revision >= 1)),
-    CONSTRAINT ck_catalogue_prices_source CHECK (((source)::text = ANY ((ARRAY['manual'::character varying, 'sync'::character varying])::text[]))),
+    CONSTRAINT ck_catalogue_prices_source CHECK (((source)::text = 'manual'::text)),
     CONSTRAINT ck_catalogue_prices_unit_price CHECK (((unit_price > (0)::numeric) AND (unit_price < '1000000000000'::numeric) AND (scale(unit_price) <= 6)))
 );
 
@@ -423,8 +423,6 @@ CREATE TABLE public.catalogue_products (
     quantity_step numeric NOT NULL,
     search_terms text[] NOT NULL,
     source character varying(16) DEFAULT 'manual'::character varying NOT NULL,
-    external_id character varying(200),
-    synced_at timestamp with time zone,
     archived_at timestamp with time zone,
     archived_by character varying(200),
     row_version integer DEFAULT 1 NOT NULL,
@@ -437,7 +435,7 @@ CREATE TABLE public.catalogue_products (
     CONSTRAINT ck_catalogue_products_quantity_step CHECK (((quantity_step > (0)::numeric) AND (quantity_step < '1000000000'::numeric) AND (scale(quantity_step) <= 3))),
     CONSTRAINT ck_catalogue_products_row_version CHECK ((row_version >= 1)),
     CONSTRAINT ck_catalogue_products_sku CHECK (((sku)::text ~ '^[A-Za-z0-9][A-Za-z0-9._/-]{0,63}$'::text)),
-    CONSTRAINT ck_catalogue_products_source CHECK (((source)::text = ANY ((ARRAY['manual'::character varying, 'sync'::character varying])::text[]))),
+    CONSTRAINT ck_catalogue_products_source CHECK (((source)::text = 'manual'::text)),
     CONSTRAINT ck_catalogue_products_unit CHECK ((btrim((unit)::text) <> ''::text))
 );
 
@@ -458,29 +456,10 @@ CREATE TABLE public.catalogue_stock (
     recorded_by character varying(200) NOT NULL,
     CONSTRAINT ck_catalogue_stock_as_of CHECK ((as_of <= (recorded_at + '00:05:00'::interval))),
     CONSTRAINT ck_catalogue_stock_quantity CHECK (((quantity IS NULL) OR ((quantity >= (0)::numeric) AND (quantity < '1000000000000'::numeric) AND (scale(quantity) <= 3)))),
-    CONSTRAINT ck_catalogue_stock_source CHECK (((source)::text = ANY ((ARRAY['manual'::character varying, 'sync'::character varying])::text[])))
+    CONSTRAINT ck_catalogue_stock_source CHECK (((source)::text = 'manual'::text))
 );
 
 ALTER TABLE ONLY public.catalogue_stock FORCE ROW LEVEL SECURITY;
-
-CREATE TABLE public.catalogue_sync_runs (
-    id uuid NOT NULL,
-    tenant_id uuid NOT NULL,
-    connection_id uuid NOT NULL,
-    trigger character varying(16) NOT NULL,
-    status character varying(16) NOT NULL,
-    started_at timestamp with time zone DEFAULT now() NOT NULL,
-    finished_at timestamp with time zone,
-    counts jsonb,
-    issues jsonb DEFAULT '[]'::jsonb NOT NULL,
-    error character varying(500),
-    next_run_at timestamp with time zone,
-    CONSTRAINT ck_catalogue_sync_runs_finished CHECK ((((status)::text = 'running'::text) = (finished_at IS NULL))),
-    CONSTRAINT ck_catalogue_sync_runs_status CHECK (((status)::text = ANY ((ARRAY['running'::character varying, 'succeeded'::character varying, 'failed'::character varying])::text[]))),
-    CONSTRAINT ck_catalogue_sync_runs_trigger CHECK (((trigger)::text = ANY ((ARRAY['schedule'::character varying, 'manual'::character varying, 'connected'::character varying])::text[])))
-);
-
-ALTER TABLE ONLY public.catalogue_sync_runs FORCE ROW LEVEL SECURITY;
 
 CREATE TABLE public.channel_bindings (
     id uuid NOT NULL,
@@ -591,7 +570,7 @@ CREATE TABLE public.connections (
     pending_action jsonb,
     CONSTRAINT ck_connections_provider_key CHECK (((provider_key)::text ~ '^[a-z][a-z0-9_]{1,31}$'::text)),
     CONSTRAINT ck_connections_public_handle CHECK (((public_handle IS NULL) OR ((public_handle)::text ~ '^[a-z0-9](?:[a-z0-9-]{1,62}[a-z0-9])$'::text))),
-    CONSTRAINT ck_connections_purposes CHECK (((cardinality(purposes) >= 1) AND (purposes <@ ARRAY['customer_messages'::text, 'manager_approvals'::text, 'catalogue'::text, 'payments'::text, 'orders'::text]))),
+    CONSTRAINT ck_connections_purposes CHECK (((cardinality(purposes) >= 1) AND (purposes <@ ARRAY['customer_messages'::text, 'manager_approvals'::text, 'catalogue'::text, 'payments'::text]))),
     CONSTRAINT ck_connections_status CHECK (((status)::text = ANY ((ARRAY['setting_up'::character varying, 'active'::character varying, 'error'::character varying, 'disabled'::character varying])::text[])))
 );
 
@@ -866,11 +845,10 @@ CREATE TABLE public.order_events (
     source character varying(16) NOT NULL,
     actor character varying(200) NOT NULL,
     detail jsonb DEFAULT '{}'::jsonb NOT NULL,
-    external_event_id character varying(200),
     occurred_at timestamp with time zone DEFAULT now() NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT ck_order_events_source CHECK (((source)::text = ANY ((ARRAY['system'::character varying, 'staff'::character varying, 'erp'::character varying])::text[]))),
-    CONSTRAINT ck_order_events_type CHECK (((type)::text = ANY ((ARRAY['created'::character varying, 'status_changed'::character varying, 'held'::character varying, 'erp_write_succeeded'::character varying, 'erp_write_failed'::character varying, 'erp_write_unknown'::character varying, 'reconciled'::character varying, 'needs_attention'::character varying, 'resolved'::character varying, 'retried'::character varying, 'ignored'::character varying])::text[])))
+    CONSTRAINT ck_order_events_source CHECK (((source)::text = ANY ((ARRAY['system'::character varying, 'staff'::character varying])::text[]))),
+    CONSTRAINT ck_order_events_type CHECK (((type)::text = ANY ((ARRAY['created'::character varying, 'status_changed'::character varying, 'held'::character varying])::text[])))
 );
 
 ALTER TABLE ONLY public.order_events FORCE ROW LEVEL SECURITY;
@@ -890,27 +868,6 @@ CREATE TABLE public.order_lines (
 
 ALTER TABLE ONLY public.order_lines FORCE ROW LEVEL SECURITY;
 
-CREATE TABLE public.order_operations (
-    id uuid NOT NULL,
-    tenant_id uuid NOT NULL,
-    order_id uuid NOT NULL,
-    kind character varying(32) NOT NULL,
-    external_reference character varying(64) NOT NULL,
-    connection_id uuid NOT NULL,
-    status character varying(16) NOT NULL,
-    erp_order_id character varying(140),
-    attempts integer DEFAULT 0 NOT NULL,
-    last_error character varying(500),
-    unknown_since timestamp with time zone,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT ck_order_operations_attempts CHECK ((attempts >= 0)),
-    CONSTRAINT ck_order_operations_kind CHECK (((kind)::text = 'create_sales_order'::text)),
-    CONSTRAINT ck_order_operations_status CHECK (((status)::text = ANY ((ARRAY['pending'::character varying, 'sending'::character varying, 'succeeded'::character varying, 'failed'::character varying, 'unknown'::character varying, 'needs_attention'::character varying])::text[])))
-);
-
-ALTER TABLE ONLY public.order_operations FORCE ROW LEVEL SECURITY;
-
 CREATE TABLE public.orders (
     id uuid NOT NULL,
     tenant_id uuid NOT NULL,
@@ -921,10 +878,6 @@ CREATE TABLE public.orders (
     response_id uuid,
     status character varying(16) NOT NULL,
     hold_reason character varying(500),
-    fulfilment character varying(8) NOT NULL,
-    erp_connection_id uuid,
-    erp_customer character varying(140),
-    erp_order_id character varying(140),
     currency character varying(3) NOT NULL,
     subtotal numeric NOT NULL,
     tax numeric NOT NULL,
@@ -933,8 +886,6 @@ CREATE TABLE public.orders (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT ck_orders_currency CHECK (((currency)::text ~ '^[A-Z]{3}$'::text)),
-    CONSTRAINT ck_orders_erp CHECK ((((fulfilment)::text = 'erp'::text) = (erp_connection_id IS NOT NULL))),
-    CONSTRAINT ck_orders_fulfilment CHECK (((fulfilment)::text = ANY ((ARRAY['local'::character varying, 'erp'::character varying])::text[]))),
     CONSTRAINT ck_orders_status CHECK (((status)::text = ANY ((ARRAY['placed'::character varying, 'confirmed'::character varying, 'in_progress'::character varying, 'shipped'::character varying, 'delivered'::character varying, 'cancelled'::character varying, 'on_hold'::character varying])::text[])))
 );
 
@@ -1254,9 +1205,6 @@ ALTER TABLE ONLY public.catalogue_products
 ALTER TABLE ONLY public.catalogue_stock
     ADD CONSTRAINT pk_catalogue_stock PRIMARY KEY (id);
 
-ALTER TABLE ONLY public.catalogue_sync_runs
-    ADD CONSTRAINT pk_catalogue_sync_runs PRIMARY KEY (id);
-
 ALTER TABLE ONLY public.channel_bindings
     ADD CONSTRAINT pk_channel_bindings PRIMARY KEY (id);
 
@@ -1319,9 +1267,6 @@ ALTER TABLE ONLY public.order_events
 
 ALTER TABLE ONLY public.order_lines
     ADD CONSTRAINT pk_order_lines PRIMARY KEY (tenant_id, order_id, line_index);
-
-ALTER TABLE ONLY public.order_operations
-    ADD CONSTRAINT pk_order_operations PRIMARY KEY (id);
 
 ALTER TABLE ONLY public.orders
     ADD CONSTRAINT pk_orders PRIMARY KEY (id);
@@ -1485,12 +1430,6 @@ ALTER TABLE ONLY public.media_links
 ALTER TABLE ONLY public.memberships
     ADD CONSTRAINT uq_memberships_tenant_subject_role UNIQUE (tenant_id, subject, role);
 
-ALTER TABLE ONLY public.order_operations
-    ADD CONSTRAINT uq_order_operations_connection_reference UNIQUE (tenant_id, connection_id, external_reference);
-
-ALTER TABLE ONLY public.order_operations
-    ADD CONSTRAINT uq_order_operations_reference UNIQUE (tenant_id, external_reference);
-
 ALTER TABLE ONLY public.orders
     ADD CONSTRAINT uq_orders_number UNIQUE (tenant_id, order_number);
 
@@ -1572,8 +1511,6 @@ CREATE INDEX ix_catalogue_products_terms ON public.catalogue_products USING gin 
 
 CREATE INDEX ix_catalogue_stock_current ON public.catalogue_stock USING btree (tenant_id, product_id, location_code, as_of DESC, recorded_at DESC);
 
-CREATE INDEX ix_catalogue_sync_runs_latest ON public.catalogue_sync_runs USING btree (tenant_id, connection_id, started_at DESC);
-
 CREATE INDEX ix_connection_events_connection ON public.connection_events USING btree (tenant_id, connection_id, created_at);
 
 CREATE INDEX ix_connection_routes_connection ON public.connection_routes USING btree (tenant_id, connection_id);
@@ -1602,8 +1539,6 @@ CREATE INDEX ix_jobs_claim ON public.jobs USING btree (status, run_at);
 
 CREATE INDEX ix_order_events_order ON public.order_events USING btree (tenant_id, order_id, occurred_at);
 
-CREATE INDEX ix_order_operations_status ON public.order_operations USING btree (tenant_id, status, updated_at);
-
 CREATE INDEX ix_orders_status ON public.orders USING btree (tenant_id, status, created_at);
 
 CREATE INDEX ix_outbound_messages_action_ref ON public.outbound_messages USING btree (tenant_id, action_ref_id);
@@ -1626,15 +1561,9 @@ CREATE UNIQUE INDEX uq_channel_bindings_active_account ON public.channel_binding
 
 CREATE UNIQUE INDEX uq_connections_one_catalogue ON public.connections USING btree (tenant_id) WHERE (((status)::text = 'active'::text) AND (purposes @> ARRAY['catalogue'::text]));
 
-CREATE UNIQUE INDEX uq_connections_one_orders ON public.connections USING btree (tenant_id) WHERE (((status)::text = 'active'::text) AND (purposes @> ARRAY['orders'::text]));
-
 CREATE UNIQUE INDEX uq_email_verifications_one_open ON public.email_verifications USING btree (user_id) WHERE ((consumed_at IS NULL) AND (revoked_at IS NULL));
 
 CREATE UNIQUE INDEX uq_invitations_one_open ON public.invitations USING btree (tenant_id, email_normalized) WHERE ((accepted_at IS NULL) AND (revoked_at IS NULL));
-
-CREATE UNIQUE INDEX uq_jobs_manual_sync ON public.jobs USING btree (tenant_id) WHERE (((kind)::text = 'sync_catalogue'::text) AND ((status)::text = 'pending'::text) AND ((payload ->> 'trigger'::text) = 'manual'::text));
-
-CREATE UNIQUE INDEX uq_order_events_external ON public.order_events USING btree (tenant_id, source, external_event_id) WHERE (external_event_id IS NOT NULL);
 
 CREATE UNIQUE INDEX uq_outbound_messages_provider_message ON public.outbound_messages USING btree (tenant_id, connection_ref, provider_message_id) WHERE (provider_message_id IS NOT NULL);
 
@@ -1748,12 +1677,6 @@ ALTER TABLE ONLY public.catalogue_stock
 
 ALTER TABLE ONLY public.catalogue_stock
     ADD CONSTRAINT fk_catalogue_stock_tenant_id_tenants FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
-
-ALTER TABLE ONLY public.catalogue_sync_runs
-    ADD CONSTRAINT fk_catalogue_sync_runs_connection FOREIGN KEY (tenant_id, connection_id) REFERENCES public.connections(tenant_id, id);
-
-ALTER TABLE ONLY public.catalogue_sync_runs
-    ADD CONSTRAINT fk_catalogue_sync_runs_tenant_id_tenants FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
 
 ALTER TABLE ONLY public.channel_bindings
     ADD CONSTRAINT fk_channel_bindings_connection FOREIGN KEY (tenant_id, connection_ref) REFERENCES public.connections(tenant_id, id);
@@ -1911,18 +1834,6 @@ ALTER TABLE ONLY public.order_lines
 ALTER TABLE ONLY public.order_lines
     ADD CONSTRAINT fk_order_lines_tenant_id_tenants FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
 
-ALTER TABLE ONLY public.order_operations
-    ADD CONSTRAINT fk_order_operations_connection FOREIGN KEY (tenant_id, connection_id) REFERENCES public.connections(tenant_id, id);
-
-ALTER TABLE ONLY public.order_operations
-    ADD CONSTRAINT fk_order_operations_order FOREIGN KEY (tenant_id, order_id) REFERENCES public.orders(tenant_id, id);
-
-ALTER TABLE ONLY public.order_operations
-    ADD CONSTRAINT fk_order_operations_tenant_id_tenants FOREIGN KEY (tenant_id) REFERENCES public.tenants(id);
-
-ALTER TABLE ONLY public.orders
-    ADD CONSTRAINT fk_orders_connection FOREIGN KEY (tenant_id, erp_connection_id) REFERENCES public.connections(tenant_id, id);
-
 ALTER TABLE ONLY public.orders
     ADD CONSTRAINT fk_orders_response FOREIGN KEY (response_id) REFERENCES public.quotation_responses(id);
 
@@ -2033,8 +1944,6 @@ ALTER TABLE public.catalogue_products ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE public.catalogue_stock ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.catalogue_sync_runs ENABLE ROW LEVEL SECURITY;
-
 ALTER TABLE public.channel_bindings ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE public.channel_enrollments ENABLE ROW LEVEL SECURITY;
@@ -2102,8 +2011,6 @@ ALTER TABLE public.memberships ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_events ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE public.order_lines ENABLE ROW LEVEL SECURITY;
-
-ALTER TABLE public.order_operations ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 
@@ -2173,8 +2080,6 @@ CREATE POLICY tenant_isolation ON public.catalogue_products USING ((tenant_id = 
 
 CREATE POLICY tenant_isolation ON public.catalogue_stock USING ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)) WITH CHECK ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid));
 
-CREATE POLICY tenant_isolation ON public.catalogue_sync_runs USING ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)) WITH CHECK ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid));
-
 CREATE POLICY tenant_isolation ON public.channel_bindings USING ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)) WITH CHECK ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid));
 
 CREATE POLICY tenant_isolation ON public.channel_enrollments USING ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)) WITH CHECK ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid));
@@ -2214,8 +2119,6 @@ CREATE POLICY tenant_isolation ON public.memberships USING ((tenant_id = (NULLIF
 CREATE POLICY tenant_isolation ON public.order_events USING ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)) WITH CHECK ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid));
 
 CREATE POLICY tenant_isolation ON public.order_lines USING ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)) WITH CHECK ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid));
-
-CREATE POLICY tenant_isolation ON public.order_operations USING ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)) WITH CHECK ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid));
 
 CREATE POLICY tenant_isolation ON public.orders USING ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid)) WITH CHECK ((tenant_id = (NULLIF(current_setting('app.tenant_id'::text, true), ''::text))::uuid));
 
@@ -2388,89 +2291,53 @@ GRANT SELECT,INSERT ON TABLE public.attachments TO sales_app;
 GRANT SELECT,UPDATE ON TABLE public.attachments TO sales_worker;
 
 GRANT SELECT,INSERT ON TABLE public.catalogue_categories TO sales_app;
-GRANT SELECT,INSERT ON TABLE public.catalogue_categories TO sales_worker;
+GRANT SELECT ON TABLE public.catalogue_categories TO sales_worker;
 
 GRANT UPDATE(name) ON TABLE public.catalogue_categories TO sales_app;
 
 GRANT UPDATE(archived_at) ON TABLE public.catalogue_categories TO sales_app;
-GRANT UPDATE(archived_at) ON TABLE public.catalogue_categories TO sales_worker;
 
 GRANT UPDATE(row_version) ON TABLE public.catalogue_categories TO sales_app;
-GRANT UPDATE(row_version) ON TABLE public.catalogue_categories TO sales_worker;
 
 GRANT UPDATE(updated_at) ON TABLE public.catalogue_categories TO sales_app;
-GRANT UPDATE(updated_at) ON TABLE public.catalogue_categories TO sales_worker;
 
 GRANT UPDATE(updated_by) ON TABLE public.catalogue_categories TO sales_app;
-GRANT UPDATE(updated_by) ON TABLE public.catalogue_categories TO sales_worker;
 
 GRANT SELECT,INSERT ON TABLE public.catalogue_changes TO sales_app;
-GRANT INSERT ON TABLE public.catalogue_changes TO sales_worker;
 
 GRANT SELECT,INSERT ON TABLE public.catalogue_prices TO sales_app;
-GRANT SELECT,INSERT ON TABLE public.catalogue_prices TO sales_worker;
+GRANT SELECT ON TABLE public.catalogue_prices TO sales_worker;
 
 GRANT SELECT,INSERT,DELETE ON TABLE public.catalogue_products TO sales_app;
-GRANT SELECT,INSERT ON TABLE public.catalogue_products TO sales_worker;
+GRANT SELECT ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(name) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(name) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(description) ON TABLE public.catalogue_products TO sales_app;
 
 GRANT UPDATE(category_id) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(category_id) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(unit) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(unit) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(minimum_quantity) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(minimum_quantity) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(quantity_step) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(quantity_step) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(search_terms) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(search_terms) ON TABLE public.catalogue_products TO sales_worker;
 
-GRANT UPDATE(source) ON TABLE public.catalogue_products TO sales_worker;
-
-GRANT UPDATE(external_id) ON TABLE public.catalogue_products TO sales_worker;
-
-GRANT UPDATE(synced_at) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(archived_at) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(archived_at) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(archived_by) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(archived_by) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(row_version) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(row_version) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(updated_at) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(updated_at) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT UPDATE(updated_by) ON TABLE public.catalogue_products TO sales_app;
-GRANT UPDATE(updated_by) ON TABLE public.catalogue_products TO sales_worker;
 
 GRANT SELECT,INSERT ON TABLE public.catalogue_stock TO sales_app;
-GRANT SELECT,INSERT ON TABLE public.catalogue_stock TO sales_worker;
-
-GRANT SELECT ON TABLE public.catalogue_sync_runs TO sales_app;
-GRANT SELECT,INSERT ON TABLE public.catalogue_sync_runs TO sales_worker;
-
-GRANT UPDATE(status) ON TABLE public.catalogue_sync_runs TO sales_worker;
-
-GRANT UPDATE(finished_at) ON TABLE public.catalogue_sync_runs TO sales_worker;
-
-GRANT UPDATE(counts) ON TABLE public.catalogue_sync_runs TO sales_worker;
-
-GRANT UPDATE(issues) ON TABLE public.catalogue_sync_runs TO sales_worker;
-
-GRANT UPDATE(error) ON TABLE public.catalogue_sync_runs TO sales_worker;
-
-GRANT UPDATE(next_run_at) ON TABLE public.catalogue_sync_runs TO sales_worker;
+GRANT SELECT ON TABLE public.catalogue_stock TO sales_worker;
 
 GRANT SELECT,INSERT ON TABLE public.channel_bindings TO sales_app;
 GRANT SELECT,INSERT ON TABLE public.channel_bindings TO sales_worker;
@@ -2689,27 +2556,6 @@ GRANT SELECT,INSERT ON TABLE public.order_events TO sales_worker;
 GRANT SELECT,INSERT ON TABLE public.order_lines TO sales_app;
 GRANT SELECT,INSERT ON TABLE public.order_lines TO sales_worker;
 
-GRANT SELECT,INSERT ON TABLE public.order_operations TO sales_app;
-GRANT SELECT,INSERT ON TABLE public.order_operations TO sales_worker;
-
-GRANT UPDATE(status) ON TABLE public.order_operations TO sales_app;
-GRANT UPDATE(status) ON TABLE public.order_operations TO sales_worker;
-
-GRANT UPDATE(erp_order_id) ON TABLE public.order_operations TO sales_app;
-GRANT UPDATE(erp_order_id) ON TABLE public.order_operations TO sales_worker;
-
-GRANT UPDATE(attempts) ON TABLE public.order_operations TO sales_app;
-GRANT UPDATE(attempts) ON TABLE public.order_operations TO sales_worker;
-
-GRANT UPDATE(last_error) ON TABLE public.order_operations TO sales_app;
-GRANT UPDATE(last_error) ON TABLE public.order_operations TO sales_worker;
-
-GRANT UPDATE(unknown_since) ON TABLE public.order_operations TO sales_app;
-GRANT UPDATE(unknown_since) ON TABLE public.order_operations TO sales_worker;
-
-GRANT UPDATE(updated_at) ON TABLE public.order_operations TO sales_app;
-GRANT UPDATE(updated_at) ON TABLE public.order_operations TO sales_worker;
-
 GRANT SELECT,INSERT ON TABLE public.orders TO sales_app;
 GRANT SELECT,INSERT ON TABLE public.orders TO sales_worker;
 
@@ -2718,12 +2564,6 @@ GRANT UPDATE(status) ON TABLE public.orders TO sales_worker;
 
 GRANT UPDATE(hold_reason) ON TABLE public.orders TO sales_app;
 GRANT UPDATE(hold_reason) ON TABLE public.orders TO sales_worker;
-
-GRANT UPDATE(erp_customer) ON TABLE public.orders TO sales_app;
-GRANT UPDATE(erp_customer) ON TABLE public.orders TO sales_worker;
-
-GRANT UPDATE(erp_order_id) ON TABLE public.orders TO sales_app;
-GRANT UPDATE(erp_order_id) ON TABLE public.orders TO sales_worker;
 
 GRANT UPDATE(updated_at) ON TABLE public.orders TO sales_app;
 GRANT UPDATE(updated_at) ON TABLE public.orders TO sales_worker;

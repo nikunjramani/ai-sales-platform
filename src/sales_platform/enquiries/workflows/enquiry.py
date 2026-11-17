@@ -30,7 +30,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 
 from sales_platform.catalogue.domain.catalogue import Product
-from sales_platform.catalogue.ports.erp import CatalogueSourceMissing, ProductSource
+from sales_platform.catalogue.ports.sources import CatalogueSourceMissing, ProductSource
 from sales_platform.conversations.ports.conversations import CustomerNotifier
 from sales_platform.enquiries.domain.requirements import (
     ExtractedRequirements,

@@ -16,7 +16,7 @@
 - Context: `TenantContextResolver.resolve(subject, tenant_id)` in [application/tenancy.py](../../src/sales_platform/platform/application/tenancy.py).
 - Rules: `calculate_quotation` in [domain/pricing.py](../../src/sales_platform/quotations/domain/pricing.py); money in [domain/money.py](../../src/sales_platform/platform/domain/money.py); roles in [domain/tenancy.py](../../src/sales_platform/platform/domain/tenancy.py).
 - Contracts: [ports/erp.py](../../src/sales_platform/catalogue/ports/erp.py) and [ports/tenancy.py](../../src/sales_platform/platform/ports/tenancy.py).
-- Implementations: [simulated ERP](../../src/sales_platform/catalogue/adapters/erp/simulated.py) and [SQL repositories](../../src/sales_platform/platform/persistence/tenancy.py).
+- Implementations: [our product list](../../src/sales_platform/catalogue/adapters/catalogue/local.py) and [SQL repositories](../../src/sales_platform/platform/persistence/tenancy.py).
 
 ## Inputs and validation
 - `subject`: authenticated identity string. The placeholder until OIDC (M4).

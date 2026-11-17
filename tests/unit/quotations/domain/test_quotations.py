@@ -8,7 +8,6 @@ from uuid import UUID, uuid4
 
 import pytest
 
-from sales_platform.catalogue.adapters.erp.simulated import SimulatedErp
 from sales_platform.enquiries.domain.requirements import RequestedLine
 from sales_platform.platform.domain.tenancy import Role, TenantContext
 from sales_platform.quotations.application.pricing import QuotationPricingService
@@ -22,17 +21,18 @@ from sales_platform.quotations.domain.quotations import (
     quotation_content,
     quotation_number,
 )
+from tests.support.demo_catalogue import DemoCatalogue
 
 
 @pytest.fixture
 def priced(
-    simulated_erp: SimulatedErp,
+    demo_catalogue: DemoCatalogue,
     policy_reader: Any,
     now: datetime,
     make_context: Callable[[UUID, Role], TenantContext],
     industrial_tenant: UUID,
 ) -> PricedQuotation:
-    service = QuotationPricingService(simulated_erp, policy_reader, clock=lambda: now)
+    service = QuotationPricingService(demo_catalogue, policy_reader, clock=lambda: now)
     outcome = service.price(
         make_context(industrial_tenant, Role.SALES_OPERATOR),
         [
@@ -70,7 +70,7 @@ def test_content_keeps_exact_amounts_and_evidence(priced: PricedQuotation) -> No
     )
     lines = content["lines"]
     assert isinstance(lines, list)
-    assert lines[0]["unit_price"] == "4250.00" and lines[0]["price_list_id"] == "STD-2026"
+    assert lines[0]["unit_price"] == "4250.00" and lines[0]["price_list_id"] == "standard"
     assert lines[1]["stock_status"] == "unknown" and lines[1]["stock_available"] is None
     assert content["stock_review_required"] is True
 

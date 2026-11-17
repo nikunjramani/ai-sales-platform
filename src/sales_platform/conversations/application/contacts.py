@@ -12,10 +12,10 @@ from typing import Protocol
 from uuid import UUID
 
 from sales_platform.conversations.domain.contacts import mask_email, mask_phone
+from sales_platform.conversations.persistence.contacts import SqlContactReader
 from sales_platform.conversations.ports.contacts import (
     ContactDetail,
     ContactMerger,
-    ContactReader,
     ContactSummary,
     ConversationSummary,
     IdentityView,
@@ -40,7 +40,7 @@ class CustomerMessageSettings(Protocol):
 class ContactService:
     def __init__(
         self,
-        reader: ContactReader,
+        reader: SqlContactReader,
         merger: ContactMerger,
         settings: CustomerMessageSettings,
     ) -> None:

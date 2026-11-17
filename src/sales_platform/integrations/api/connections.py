@@ -32,7 +32,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy.exc import SQLAlchemyError
 
 from sales_platform.integrations.application.connections import (
     ConnectionService,
@@ -49,7 +48,7 @@ from sales_platform.integrations.domain.connections import Connection, Connectio
 from sales_platform.integrations.ports.connections import ConnectionNotFound, RouteTaken
 from sales_platform.integrations.ports.providers import PendingAction, PendingActionKind
 from sales_platform.platform.api.auth import PortalAuth
-from sales_platform.platform.domain.tenancy import PermissionDenied, TenantContext
+from sales_platform.platform.domain.tenancy import TenantContext
 
 
 class ConnectionOut(BaseModel):
@@ -223,18 +222,12 @@ def build_connection_router(
     def guarded[T](action: Callable[[], T]) -> T:
         try:
             return action()
-        except PermissionDenied as error:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, str(error) or "Not permitted") from None
         except ConnectionNotFound:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found") from None
         except (HandleTaken, RouteTaken) as error:
             raise HTTPException(status.HTTP_409_CONFLICT, str(error)) from None
         except ActionNotFound:
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Not found") from None
-        except ValueError as error:
-            raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, str(error)) from None
-        except SQLAlchemyError:
-            raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Try again later") from None
 
     @router.get("/connections", response_model=list[ConnectionOut])
     def list_connections(

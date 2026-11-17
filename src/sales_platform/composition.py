@@ -24,10 +24,8 @@ from sales_platform.catalogue.application.catalogue_sources import (
     CatalogueSourceResolver,
     TenantCatalogue,
 )
-from sales_platform.catalogue.application.catalogue_sync import CatalogueSyncHandler
 from sales_platform.catalogue.persistence.catalogue import SqlCatalogueStore
-from sales_platform.catalogue.persistence.catalogue_sync import SqlCatalogueSync
-from sales_platform.catalogue.ports.erp import ProductSource
+from sales_platform.catalogue.ports.sources import ProductSource
 from sales_platform.conversations.application.customer_messages import (
     CustomerConsentHook,
     CustomerMessenger,
@@ -69,13 +67,9 @@ from sales_platform.integrations.ports.messages import SendHook
 from sales_platform.integrations.ports.providers import ProviderEnvironment
 from sales_platform.orders.application.orders import (
     CreateOrderHandler,
-    ErpOrderOperationHandler,
-    OrderDestinations,
     OrderNotificationHandler,
     OrderService,
     OrderStatusRoute,
-    ReconcileOrderOperationHandler,
-    RefreshOrderStatusHandler,
 )
 from sales_platform.orders.persistence.orders import SqlOrderStore
 from sales_platform.platform.adapters.storage.local import LocalObjectStorage
@@ -302,7 +296,6 @@ class CoreServices:
     channel_actions: ChannelActionService
     lifecycle: ConnectionLifecycle
     order_store: SqlOrderStore
-    destinations: OrderDestinations
     orders: OrderService
     notifications: SqlNotificationStore
     deliveries: SqlDeliveryStore
@@ -328,7 +321,6 @@ def build_core(
     resolver = TenantContextResolver(memberships)
     approvals = ApprovalService(SqlApprovalStore(engine), resolver)
     order_store = SqlOrderStore(engine)
-    destinations = OrderDestinations(connections, runtime.registry, runtime.secrets)
     return CoreServices(
         connections=connections,
         businesses=SqlBusinessStore(engine, default_catalogue_source(settings, runtime.registry)),
@@ -350,8 +342,7 @@ def build_core(
             connections, SqlConnectionLifecycle(engine), runtime.registry, runtime.secrets
         ),
         order_store=order_store,
-        destinations=destinations,
-        orders=OrderService(order_store, reader, destinations),
+        orders=OrderService(order_store, reader),
         notifications=SqlNotificationStore(engine),
         deliveries=SqlDeliveryStore(engine),
         inbox=SqlInboundStore(engine),
@@ -443,9 +434,8 @@ def build_job_handlers(
     send_hooks[TemplateKey.APPROVAL_CONFIRM] = prompt_hook
     send_hooks[TemplateKey.APPROVAL_REASON] = prompt_hook
     lifecycle = core.lifecycle
-    # Orders (phase 7): created after acceptance, written to the ERP, followed and announced.
+    # Orders (phase 7): created after acceptance and announced to the customer.
     orders = core.order_store
-    destinations = core.destinations
     handlers: dict[JobKind, JobHandler] = {
         JobKind.PREPARE_ENQUIRY: EnquiryPreparationHandler(
             SqlPreparationStore(engine), storage, customers
@@ -503,13 +493,7 @@ def build_job_handlers(
         JobKind.POLL_CONNECTION: lifecycle.poll,
         JobKind.CLASSIFY_MANAGER_REPLY: replies.classify,
         JobKind.CREATE_ORDER: CreateOrderHandler(core.orders),
-        JobKind.ERP_ORDER_OPERATION: ErpOrderOperationHandler(orders, destinations),
-        JobKind.RECONCILE_ORDER_OPERATION: ReconcileOrderOperationHandler(orders, destinations),
-        JobKind.REFRESH_ORDER_STATUS: RefreshOrderStatusHandler(orders, destinations),
         JobKind.NOTIFY_ORDER: OrderNotificationHandler(orders, customers),
-        JobKind.SYNC_CATALOGUE: CatalogueSyncHandler(
-            connections, runtime.registry, runtime.secrets, SqlCatalogueSync(engine)
-        ),
     }
     # A suspended business's jobs wait instead of running (phase 2, Q13).
     return {kind: PauseWhileSuspended(handler, statuses) for kind, handler in handlers.items()}

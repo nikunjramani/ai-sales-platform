@@ -8,7 +8,6 @@ import pytest
 from sqlalchemy import Engine, text
 from sqlalchemy.exc import ProgrammingError
 
-from sales_platform.catalogue.adapters.erp.simulated import SimulatedErp, demo_catalogues
 from sales_platform.enquiries.domain.requirements import RequestedLine
 from sales_platform.platform.application.tenancy import TenantContextResolver
 from sales_platform.platform.domain.money import Money
@@ -18,6 +17,7 @@ from sales_platform.quotations.application.pricing import QuotationPricingServic
 from sales_platform.quotations.domain.pricing import PricedQuotation
 from sales_platform.quotations.persistence.pricing_policy import SqlPricingPolicyReader
 from sales_platform.quotations.ports.pricing_policy import PricingPolicyNotConfigured
+from tests.support.demo_catalogue import DemoCatalogue
 
 type ContextFactory = Callable[[UUID, Role], TenantContext]
 
@@ -108,7 +108,7 @@ def test_end_to_end_pricing_with_database_policy(
 ) -> None:
     resolver = TenantContextResolver(SqlMembershipReader(runtime_engine))
     service = QuotationPricingService(
-        SimulatedErp(demo_catalogues(industrial_tenant, office_tenant)),
+        DemoCatalogue({industrial_tenant: "industrial", office_tenant: "office"}),
         SqlPricingPolicyReader(runtime_engine),
     )
     context = resolver.resolve("sales@industrial.example", industrial_tenant)

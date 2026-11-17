@@ -1,10 +1,9 @@
 # Product catalogue (phase 3)
-Decision: [ADR 0020](../adr/0020-local-catalogue.md). Plan: [phase 3](../plan/platform/implementation/phase-3-catalogue.md) (user answers 2026-10-28).
 
 ## What it does
 A business without an ERP types its products, categories, prices and stock counts into the portal. Enquiries are then matched, priced and accepted from that list exactly as from an ERP: the quotation core does not know the difference.
 
-- **Product source:** each business has one active catalogue connection (ADR 0018). A new business starts with **Our product list** (provider `local_catalogue`). The demo businesses use the simulated ERP; the dev-only **Demo Local Catalogue** business uses our list with the same synthetic products.
+- **Product source:** each business has one active catalogue connection (ADR 0018). A new business starts with **Our product list** (provider `local_catalogue`). Every demo business has seeded demo products in its own list (`seed.DEMO_CATALOGUES`).
 - **Read-only elsewhere:** when the source is not editable in the portal (an ERP, the simulated demo), the screens show "Products come from <source>" and refuse changes.
 
 ## Rules (user answers Q1-Q23)
@@ -28,7 +27,7 @@ A business without an ERP types its products, categories, prices and stock count
 - A price change after a quotation was sent: the customer's acceptance is refused and version N+1 goes to a manager (ADR 0016).
 
 ## Search
-Customers' words are matched exactly as with the simulated ERP: the SKU and its hyphen parts, the name and the category; simple plurals ("fans" → "fan"); only the products sharing the most words. The staff notes are not searched. Typos are not guessed ("did you mean" suggestions need the user's agreement first). The portal's search box finds any part of a SKU or name.
+Customers' words are matched like this: the SKU and its hyphen parts, the name and the category; simple plurals ("fans" → "fan"); only the products sharing the most words. The staff notes are not searched. Typos are not guessed ("did you mean" suggestions need the user's agreement first). The portal's search box finds any part of a SKU or name.
 
 ## API (`/api/v1/tenants/{t}/catalogue`, session + CSRF)
 | Route | Who | What |

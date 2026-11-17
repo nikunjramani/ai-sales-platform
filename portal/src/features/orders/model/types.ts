@@ -9,14 +9,6 @@ export type OrderStatus =
   | "cancelled"
   | "on_hold";
 
-export type OperationStatus =
-  | "pending"
-  | "sending"
-  | "succeeded"
-  | "failed"
-  | "unknown"
-  | "needs_attention";
-
 export interface OrderLine {
   line_index: number;
   sku: string;
@@ -35,10 +27,6 @@ export interface Order {
   version: number;
   status: OrderStatus;
   hold_reason: string | null;
-  /** local: staff move the status here; erp: written to the ERP, whose status it follows. */
-  fulfilment: "local" | "erp";
-  erp_customer: string | null;
-  erp_order_id: string | null;
   currency: string;
   subtotal: string;
   tax: string;
@@ -47,7 +35,6 @@ export interface Order {
   created_by: string;
   created_at: string;
   updated_at: string;
-  operation_status: OperationStatus | null;
 }
 
 export interface OrderEvent {
@@ -55,26 +42,14 @@ export interface OrderEvent {
   type: string;
   from_status: OrderStatus | null;
   to_status: OrderStatus | null;
-  source: "system" | "staff" | "erp";
+  source: "system" | "staff";
   actor: string;
   detail: Record<string, unknown>;
   occurred_at: string;
 }
 
-export interface OrderOperation {
-  operation_id: string;
-  external_reference: string;
-  status: OperationStatus;
-  erp_order_id: string | null;
-  attempts: number;
-  last_error: string | null;
-  unknown_since: string | null;
-  updated_at: string;
-}
-
 export interface OrderDetail extends Order {
   events: OrderEvent[];
-  operations: OrderOperation[];
 }
 
 export type OrderCreation = "staff" | "automatic";
@@ -85,5 +60,4 @@ export interface OrderSettings {
 
 export interface OrderListFilter {
   status?: OrderStatus;
-  needsAttention?: boolean;
 }

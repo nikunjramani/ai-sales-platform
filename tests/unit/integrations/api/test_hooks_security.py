@@ -14,6 +14,7 @@ from sales_platform.integrations.application.inbound import InboundService
 from sales_platform.integrations.application.lifecycle import ConnectionLifecycle
 from sales_platform.integrations.application.providers import ProviderRegistry
 from sales_platform.platform.adapters.secrets.memory import InMemorySecretStore
+from sales_platform.platform.api.errors import add_error_handlers
 from sales_platform.platform.domain.tenancy import Role, TenantContext
 from tests.unit.conftest import Job, MemoryConnections, MemoryInbox
 from tests.unit.one_click import PLATFORM_SECRET, TOOL, MemoryLifecycle, OneClickTool
@@ -42,6 +43,7 @@ def setup(now: datetime, industrial_tenant: UUID) -> Iterator[tuple[TestClient, 
         connections=connections,
     )
     app = FastAPI()
+    add_error_handlers(app)
     app.include_router(build_hook_router(service))
     with TestClient(app) as client:
         yield client, tool

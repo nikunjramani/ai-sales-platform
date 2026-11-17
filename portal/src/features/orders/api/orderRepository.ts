@@ -13,10 +13,7 @@ const id = encodeURIComponent;
 export const orderRepository = {
   list: (tenantId: string, filter: OrderListFilter) =>
     http<Order[]>(tenantPath(tenantId, "/orders"), {
-      query: {
-        status: filter.status,
-        needs_attention: filter.needsAttention ? "true" : undefined,
-      },
+      query: { status: filter.status },
     }),
 
   detail: (tenantId: string, orderId: string) =>
@@ -26,11 +23,8 @@ export const orderRepository = {
   forQuotation: (tenantId: string, quotationId: string) =>
     http<Order>(tenantPath(tenantId, `/quotations/${id(quotationId)}/order`)),
 
-  create: (tenantId: string, quotationId: string, erpCustomer: string | null) =>
-    http<Order>(tenantPath(tenantId, `/quotations/${id(quotationId)}/order`), {
-      method: "POST",
-      body: { erp_customer: erpCustomer },
-    }),
+  create: (tenantId: string, quotationId: string) =>
+    http<Order>(tenantPath(tenantId, `/quotations/${id(quotationId)}/order`), { method: "POST" }),
 
   move: (tenantId: string, orderId: string, status: OrderStatus, reason: string | null) =>
     http<Order>(tenantPath(tenantId, `/orders/${id(orderId)}/status`), {
@@ -38,17 +32,6 @@ export const orderRepository = {
       body: { status, reason },
     }),
 
-  resolve: (
-    tenantId: string,
-    orderId: string,
-    operationId: string,
-    resolution: "found" | "not_found",
-    erpOrderId: string | null,
-  ) =>
-    http<Order>(
-      tenantPath(tenantId, `/orders/${id(orderId)}/operations/${id(operationId)}/resolve`),
-      { method: "POST", body: { resolution, erp_order_id: erpOrderId } },
-    ),
 
   settings: (tenantId: string) => http<OrderSettings>(tenantPath(tenantId, "/order-settings")),
 

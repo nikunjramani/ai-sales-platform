@@ -1,7 +1,7 @@
 # 0019: Accounts, sign-up and business onboarding
 Date: 2026-10-27
 Status: accepted; implemented and merged (PR #7, phase 2 of the [platform plan](../plan/platform/README.md))
-Extends [0002](0002-tenant-isolation.md), [0011](0011-durable-intake-and-jobs.md), [0013](0013-portal-identity-and-approval-core.md) and [0018](0018-connector-framework.md). Supersedes the line in 0013 that OIDC is required before any non-development deployment (user decision D1: email + password only). Plan: [phase 2](../plan/platform/implementation/phase-2-accounts.md), answers in its [user answers](../plan/platform/implementation/phase-2-accounts.md#user-answers-2026-10-27).
+Extends [0002](0002-tenant-isolation.md), [0011](0011-durable-intake-and-jobs.md), [0013](0013-portal-identity-and-approval-core.md) and [0018](0018-connector-framework.md). Supersedes the line in 0013 that OIDC is required before any non-development deployment (user decision D1: email + password only). Plan: phase 2 (git history), answers in its user answers (git history).
 
 ## Context
 Until phase 2 a business existed only if a developer seeded it, people signed in through a development login, and API keys came from a script with owner credentials. The platform plan needs self-service: anyone signs up, creates a business, invites colleagues and connects their system, without scripts (D1, D3). Two such businesses must stay fully isolated.

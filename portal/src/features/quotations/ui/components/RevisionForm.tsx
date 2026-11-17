@@ -4,15 +4,15 @@ import { useRevisionForm } from "../../hooks/useRevisionForm";
 import type { QuotationDetail } from "../../model/types";
 
 /**
- * A sales operator changes products or quantities; the server re-prices from the ERP.
- * Prices cannot be typed in: they always come from the ERP and the business's pricing policy.
+ * A sales operator changes products or quantities; the server re-prices from the product list.
+ * Prices cannot be typed in: they always come from the product list and the business's pricing policy.
  */
 export function RevisionForm({ detail }: { detail: QuotationDetail }) {
   const form = useRevisionForm(detail);
   return (
     <form className="card" aria-label="Revision" onSubmit={form.submit}>
       <h2>Prepare a revision</h2>
-      <p className="muted">Change products or quantities. Prices are recalculated from the ERP.</p>
+      <p className="muted">Change products or quantities. Prices are recalculated from your product list.</p>
       {form.lines.map((line, index) => (
         <div className="line-edit" key={index}>
           <input

@@ -1,4 +1,4 @@
-"""LocalCatalogue on PostgreSQL: the ERP contract checks and search cases, for both roles,
+"""LocalCatalogue on PostgreSQL: the source contract checks and search cases, for both roles,
 and each business routed to its own product source through its catalogue connection."""
 
 import json
@@ -9,11 +9,11 @@ import pytest
 from sqlalchemy import Engine
 
 from sales_platform.catalogue.adapters.catalogue.local import LocalCatalogue
-from sales_platform.catalogue.ports.erp import ErpError, ErpErrorCode, ProductSource
+from sales_platform.catalogue.ports.sources import ErpError, ErpErrorCode, ProductSource
 from sales_platform.composition import build_catalogue, build_catalogue_store, build_runtime
 from sales_platform.platform.config import Settings
 from sales_platform.platform.domain.tenancy import Role, TenantContext
-from sales_platform.seed import INDUSTRIAL_TENANT, LOCAL_TENANT
+from sales_platform.seed import LOCAL_TENANT, OFFICE_TENANT
 
 pytestmark = pytest.mark.integration
 
@@ -21,7 +21,7 @@ CASES = json.loads(
     (Path(__file__).parents[4] / "data" / "catalogue_search_cases.json").read_text("utf-8")
 )["cases"]
 LOCAL = TenantContext(LOCAL_TENANT, "sales@local.example", frozenset({Role.SALES_OPERATOR}))
-OTHER = TenantContext(INDUSTRIAL_TENANT, "sales@industrial.example", frozenset({Role.VIEWER}))
+OTHER = TenantContext(OFFICE_TENANT, "sales@office.example", frozenset({Role.VIEWER}))
 
 
 @pytest.fixture(params=["runtime", "worker"])
@@ -65,7 +65,7 @@ def test_each_business_reads_its_own_source(
 ) -> None:
     catalogue = build_catalogue(worker_engine, build_runtime(integration_settings, worker_engine))
     local = catalogue.get_prices(LOCAL, ["IND-FAN-450"], "INR", datetime.now(UTC))
-    simulated = catalogue.get_prices(OTHER, ["IND-FAN-450"], "INR", datetime.now(UTC))
     assert local["IND-FAN-450"].source == "local-catalogue"
     assert local["IND-FAN-450"].price_list_id == "standard"
-    assert simulated["IND-FAN-450"].source == "simulated-erp"
+    assert catalogue.get_prices(OTHER, ["IND-FAN-450"], "INR", datetime.now(UTC)) == {}
+    assert set(catalogue.get_products(OTHER, ["OFF-DESK-160"])) == {"OFF-DESK-160"}

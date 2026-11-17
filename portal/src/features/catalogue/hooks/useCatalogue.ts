@@ -16,22 +16,6 @@ export function useCatalogueSummary() {
   });
 }
 
-/** The copy of an ERP catalogue (phase 6); refreshes while a run is going on. */
-export function useCatalogueSync() {
-  const tenantId = useTenantId();
-  const client = useQueryClient();
-  const query = useQuery({
-    queryKey: catalogueKeys.sync(tenantId),
-    queryFn: () => catalogueRepository.sync(tenantId),
-    refetchInterval: (state) => (state.state.data?.latest?.status === "running" ? 3_000 : 60_000),
-  });
-  const syncNow = useMutation({
-    mutationFn: () => catalogueRepository.syncNow(tenantId),
-    onSettled: () => client.invalidateQueries({ queryKey: catalogueKeys.all(tenantId) }),
-  });
-  return { query, syncNow };
-}
-
 /** May the current person change products here? (UI hint; the server checks again.) */
 export function useCanEditCatalogue(): boolean {
   const { can } = useCurrentTenant();

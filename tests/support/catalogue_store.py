@@ -13,7 +13,6 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sales_platform.catalogue.adapters.erp.simulated import SimulatedCatalogue
 from sales_platform.catalogue.domain.catalogue_admin import (
     DEFAULT_LOCATION,
     LOCAL_PRICE_LIST,
@@ -49,6 +48,7 @@ from sales_platform.catalogue.ports.catalogue_admin import (
     VersionConflict,
 )
 from sales_platform.platform.domain.tenancy import TenantContext
+from sales_platform.seed import DemoProduct
 
 _EPOCH = datetime(2026, 1, 1, tzinfo=UTC)
 
@@ -71,44 +71,41 @@ class InMemoryCatalogueStore:
         self.unavailable = False  # tests: the store cannot be reached
 
     @classmethod
-    def from_simulated(
-        cls, catalogues: Mapping[UUID, SimulatedCatalogue], clock: Callable[[], datetime] = _utc_now
+    def from_demo(
+        cls,
+        catalogues: Mapping[UUID, tuple["DemoProduct", ...]],
+        clock: Callable[[], datetime] = _utc_now,
     ) -> "InMemoryCatalogueStore":
-        """The synthetic demo catalogues, copied the way the seed copies them."""
+        """The seed's synthetic demo products (sales_platform.seed.DEMO_CATALOGUES), copied the
+        way the seed copies them into our catalogue tables."""
         store = cls(clock)
-        for tenant_id, catalogue in catalogues.items():
-            names = sorted({p.category for p in catalogue.products.values() if p.category})
-            ids = {name: uuid4() for name in names}
-            for name in names:
-                store._categories[ids[name]] = (tenant_id, Category(ids[name], name, None, 1))
-            for sku, product in sorted(catalogue.products.items()):
+        for tenant_id, products in catalogues.items():
+            ids = {name: uuid4() for name in sorted({p.category for p in products})}
+            for name, category_id in ids.items():
+                store._categories[category_id] = (tenant_id, Category(category_id, name, None, 1))
+            for product in sorted(products, key=lambda item: item.sku):
                 product_id = uuid4()
                 record = CatalogueProduct(
-                    product_id, sku,
+                    product_id, product.sku,
                     ProductFields(
-                        product.description, product.unit, None,
-                        ids.get(product.category or ""), product.minimum_quantity,
-                        product.quantity_step,
+                        product.name, product.unit, None, ids[product.category],
+                        product.minimum_quantity, product.quantity_step,
                     ),
-                    store._categories[ids[product.category]][1] if product.category else None,
-                    None, 1, _EPOCH, _EPOCH,
+                    store._categories[ids[product.category]][1], None, 1, _EPOCH, _EPOCH,
                 )  # fmt: skip
                 store._products[product_id] = (tenant_id, record)
-                ordered = sorted(catalogue.prices.get(sku, ()), key=lambda p: p.effective_from)
-                for revision, price in enumerate(ordered, start=1):
+                for revision, (amount, currency, start) in enumerate(product.prices, start=1):
                     entry = PriceEntry(
-                        uuid4(), product_id, LOCAL_PRICE_LIST, revision, price.currency,
-                        product.unit, price.unit_price, price.effective_from, EntrySource.MANUAL,
-                        None, _EPOCH, "seed",
+                        uuid4(), product_id, LOCAL_PRICE_LIST, revision, currency, product.unit,
+                        amount, start, EntrySource.MANUAL, None, _EPOCH, "seed",
                     )  # fmt: skip
                     store._prices.append((tenant_id, entry, uuid4()))
-                if sku in catalogue.stock:
-                    now = store._clock()
-                    count = StockEntry(
-                        uuid4(), product_id, DEFAULT_LOCATION, catalogue.stock[sku],
-                        product.unit, now, EntrySource.MANUAL, None, now, "seed",
-                    )  # fmt: skip
-                    store._stock.append((tenant_id, count, uuid4()))
+                now = store._clock()
+                count = StockEntry(
+                    uuid4(), product_id, DEFAULT_LOCATION, product.stock, product.unit, now,
+                    EntrySource.MANUAL, None, now, "seed",
+                )  # fmt: skip
+                store._stock.append((tenant_id, count, uuid4()))
         return store
 
     # --- helpers -----------------------------------------------------------------------------

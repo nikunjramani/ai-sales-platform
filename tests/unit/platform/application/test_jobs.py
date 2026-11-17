@@ -5,7 +5,7 @@ from uuid import uuid4
 
 import pytest
 
-from sales_platform.catalogue.ports.erp import CatalogueSourceMissing, ErpError, ErpErrorCode
+from sales_platform.catalogue.ports.sources import CatalogueSourceMissing, ErpError, ErpErrorCode
 from sales_platform.platform.application.jobs import JobRunner
 from sales_platform.platform.domain.jobs import JobKind, PermanentJobError
 from sales_platform.platform.ports.jobs import ClaimedJob, LeaseLost

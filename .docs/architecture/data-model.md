@@ -128,21 +128,11 @@ All five tables: forced RLS on `app.tenant_id`; the worker reads only. `pg_trgm`
 - New columns: `outbound_messages.action_ref_id` (the approval request a message belongs to) and `resent_from_id` (Resend); `connections.pending_action` (the step left, without one-time values).
 - New inbox event types `manager_reply`, `customer_action`, `connection_update`; connection event kind `resumed`; lookup policy `approval_link_lookup` (one action reference by its link token).
 
-### Added in phase 6 (migration 0014, ADR 0023)
-- `catalogue_sync_runs`: one copy of a product source's catalogue: trigger (connected, schedule, manual), status (running, succeeded, failed), counts, up to 200 issues, error, next run.
-- `catalogue_products`, `catalogue_prices`, `catalogue_stock` accept source `sync`; synced products keep the source's ID in `external_id` and `synced_at`.
-
-### Added in phase 7 (migration 0015, ADR 0024)
-- `orders`: one per quotation (`uq_orders_quotation`), pointing at the accepted version (tenant, quotation, version) and its hash.
-  - Status: placed, confirmed, in_progress, shipped, delivered, cancelled, on_hold.
-  - Fulfilment `local` or `erp` (with the connection), plus ERP customer, ERP order ID, totals and number `O-...`.
-  - Only status, hold reason, ERP customer, ERP order ID and `updated_at` change.
+### Orders (ADR 0024; local only, ADR 0027)
+- `orders`: one per quotation (`uq_orders_quotation`), pointing at the accepted version and its hash; status placed, confirmed, in_progress, shipped, delivered, cancelled, on_hold; totals and number `O-...`. Only status, hold reason and `updated_at` change.
 - `order_lines`: the accepted lines, copied exactly; immutable.
-- `order_events`: append-only timeline (type, from/to status, source system/staff/erp, actor, detail); external events dedupe on (tenant, source, external_event_id).
-- `order_operations`: the ERP write.
-  - Its reference `QO-<order id>` is unique per business and per connection.
-  - Status: pending, sending, succeeded, failed, unknown, needs_attention; also attempts, last error and `unknown_since`.
-- `tenants.order_creation` (`staff` or `automatic`); one active order destination per business (`uq_connections_one_orders`); inbox event type `order_status_request`.
+- `order_events`: append-only timeline (created, status_changed, held; source system or staff).
+- `tenants.order_creation` (`staff` or `automatic`); inbox event type `order_status_request`.
 
 ## Planned entities
 | Entity | Important contents |

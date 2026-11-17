@@ -3,7 +3,7 @@
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 
-from sales_platform.catalogue.ports.erp import ProductSource
+from sales_platform.catalogue.ports.sources import ProductSource
 from sales_platform.enquiries.domain.requirements import RequestedLine
 from sales_platform.platform.domain.tenancy import Permission, TenantContext
 from sales_platform.quotations.domain.pricing import PricingOutcome, calculate_quotation
